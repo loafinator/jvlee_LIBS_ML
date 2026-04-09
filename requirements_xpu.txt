@@ -1,0 +1,26 @@
+# jvlee_LIBS_ML>requirements_xpu.txt
+
+--index-url https://download.pytorch.org/whl/xpu
+
+torch==2.10.0+xpu
+torchaudio==2.10.0+xpu
+torchvision==0.25.0+xpu
+dpcpp-cpp-rt==2025.3.1
+intel-cmplr-lib-rt==2025.3.1
+intel-cmplr-lib-ur==2025.3.1
+intel-cmplr-lic-rt==2025.3.1
+intel-opencl-rt==2025.3.1
+intel-openmp==2025.3.1
+intel-pti==0.15.0
+intel-sycl-rt==2025.3.1
+mkl==2025.3.0
+onemkl-license==2025.3.0
+onemkl-sycl-blas==2025.3.0
+onemkl-sycl-dft==2025.3.0
+onemkl-sycl-lapack==2025.3.0
+onemkl-sycl-rng==2025.3.0
+onemkl-sycl-sparse==2025.3.0
+tbb==2022.3.0
+tcmlib==1.4.1
+triton-xpu==3.6.0
+umf==1.0.2

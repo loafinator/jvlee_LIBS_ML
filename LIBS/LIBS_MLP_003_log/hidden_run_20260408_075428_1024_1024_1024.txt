@@ -1,0 +1,398 @@
+
+========================================
+2026-04-08 07:54:28
+==================================================
+Feature columns (41): ['blank', 'conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'frac_KCl', 'frac_LiCl', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_molten', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+Columns surviving VarianceThreshold: ['blank', 'conc_CeCl3_wt%', 'conc_GdCl3_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+NaNs in trn_X: 0
+NaNs in trn_y: 0
+NaNs in val_X: 0
+NaNs in val_y: 0
+trn_y min/max: -1.2606 / 6.6702
+trn_X min/max: -50.3436 / 121.2634
+number of features is:          28
+Training features shape:        (147039, 28)
+Validation features shape:      (36760, 28)
+Training targets shape:         (147039, 10000)
+Validation targets shape:       (36760, 10000)
+Top 10 max intensities per spectrum before clip: [2.5765782e+07 2.5765782e+07 2.6284132e+07 2.6284132e+07 2.6284132e+07
+ 2.7678830e+07 2.7693350e+07 2.7762184e+07 2.8279066e+07 2.8317124e+07]
+Top 10 max intensities per spectrum after clip: [87526.195 87526.195 87526.195 87526.195 87526.195 87526.195 87526.195
+ 87526.195 87526.195 87526.195]
+Spectra with extreme max values: 1469 / 147039
+Training setup time: 105.05364079999708 seconds
+Training on xpu | Epochs: 400 | Batch size: 256
+Train samples: 147039
+Epoch 1/400 | Train Loss: 0.544370 | Val Loss: 0.225909 | Val MAE: 17.4306 | Res μ: +0.0066 σ: 0.4504 | 0.752 min
+Epoch 2/400 | Train Loss: 0.168363 | Val Loss: 0.168719 | Val MAE: 13.2121 | Res μ: -0.0065 σ: 0.3829 | 0.766 min
+Epoch 3/400 | Train Loss: 0.144228 | Val Loss: 0.130037 | Val MAE: 15.1451 | Res μ: +0.0599 σ: 0.3334 | 0.782 min
+Epoch 4/400 | Train Loss: 0.137056 | Val Loss: 0.123867 | Val MAE: 13.8865 | Res μ: -0.0228 σ: 0.3281 | 0.783 min
+Epoch 5/400 | Train Loss: 0.131789 | Val Loss: 0.124670 | Val MAE: 13.0913 | Res μ: +0.0173 σ: 0.3296 | 0.774 min
+Epoch 6/400 | Train Loss: 0.130600 | Val Loss: 0.120895 | Val MAE: 12.6264 | Res μ: +0.0233 σ: 0.3231 | 0.739 min
+Epoch 7/400 | Train Loss: 0.129248 | Val Loss: 0.123720 | Val MAE: 13.7319 | Res μ: +0.0239 σ: 0.3286 | 0.761 min
+Epoch 8/400 | Train Loss: 0.128448 | Val Loss: 0.122168 | Val MAE: 11.2679 | Res μ: -0.0266 σ: 0.3230 | 0.726 min
+Epoch 9/400 | Train Loss: 0.128749 | Val Loss: 0.125538 | Val MAE: 11.2844 | Res μ: -0.0196 σ: 0.3287 | 0.742 min
+Epoch 10/400 | Train Loss: 0.128576 | Val Loss: 0.123762 | Val MAE: 14.7078 | Res μ: +0.0412 σ: 0.3241 | 0.746 min
+Epoch 11/400 | Train Loss: 0.127860 | Val Loss: 0.127961 | Val MAE: 16.5489 | Res μ: +0.0308 σ: 0.3393 | 0.726 min
+Epoch 12/400 | Train Loss: 0.129174 | Val Loss: 0.120038 | Val MAE: 11.8726 | Res μ: -0.0197 σ: 0.3227 | 0.727 min
+Epoch 13/400 | Train Loss: 0.127887 | Val Loss: 0.123439 | Val MAE: 11.8628 | Res μ: -0.0491 σ: 0.3238 | 0.776 min
+Epoch 14/400 | Train Loss: 0.128623 | Val Loss: 0.123292 | Val MAE: 11.0967 | Res μ: -0.0446 σ: 0.3236 | 0.719 min
+Epoch 15/400 | Train Loss: 0.127839 | Val Loss: 0.120024 | Val MAE: 12.9042 | Res μ: +0.0184 σ: 0.3225 | 0.747 min
+Epoch 16/400 | Train Loss: 0.127461 | Val Loss: 0.121746 | Val MAE: 13.9645 | Res μ: +0.0062 σ: 0.3265 | 0.767 min
+Epoch 17/400 | Train Loss: 0.127641 | Val Loss: 0.139440 | Val MAE: 12.3290 | Res μ: -0.0655 σ: 0.3470 | 0.742 min
+Epoch 18/400 | Train Loss: 0.128374 | Val Loss: 0.132020 | Val MAE: 11.8907 | Res μ: -0.0473 σ: 0.3412 | 0.730 min
+Epoch 19/400 | Train Loss: 0.127641 | Val Loss: 0.121474 | Val MAE: 12.0534 | Res μ: +0.0085 σ: 0.3253 | 0.712 min
+Epoch 20/400 | Train Loss: 0.127532 | Val Loss: 0.120935 | Val MAE: 12.9349 | Res μ: +0.0196 σ: 0.3229 | 0.718 min
+Epoch 21/400 | Train Loss: 0.127688 | Val Loss: 0.120418 | Val MAE: 12.7980 | Res μ: +0.0288 σ: 0.3232 | 0.719 min
+Epoch 22/400 | Train Loss: 0.128277 | Val Loss: 0.117850 | Val MAE: 12.6214 | Res μ: +0.0230 σ: 0.3183 | 0.745 min
+Epoch 23/400 | Train Loss: 0.127208 | Val Loss: 0.122026 | Val MAE: 13.1169 | Res μ: +0.0304 σ: 0.3244 | 0.908 min
+Epoch 24/400 | Train Loss: 0.126648 | Val Loss: 0.121350 | Val MAE: 11.2453 | Res μ: -0.0084 σ: 0.3241 | 0.877 min
+Epoch 25/400 | Train Loss: 0.126563 | Val Loss: 0.133651 | Val MAE: 18.4071 | Res μ: -0.0016 σ: 0.3434 | 0.833 min
+Epoch 26/400 | Train Loss: 0.125773 | Val Loss: 0.120334 | Val MAE: 12.4311 | Res μ: +0.0244 σ: 0.3224 | 0.799 min
+Epoch 27/400 | Train Loss: 0.127789 | Val Loss: 0.121882 | Val MAE: 13.0677 | Res μ: +0.0183 σ: 0.3233 | 0.758 min
+Epoch 28/400 | Train Loss: 0.126537 | Val Loss: 0.117714 | Val MAE: 11.4878 | Res μ: -0.0073 σ: 0.3180 | 0.781 min
+Epoch 29/400 | Train Loss: 0.126617 | Val Loss: 0.120618 | Val MAE: 11.9410 | Res μ: -0.0081 σ: 0.3206 | 0.754 min
+Epoch 30/400 | Train Loss: 0.127934 | Val Loss: 0.118874 | Val MAE: 11.2064 | Res μ: -0.0079 σ: 0.3219 | 0.755 min
+Epoch 31/400 | Train Loss: 0.126985 | Val Loss: 0.122196 | Val MAE: 14.1063 | Res μ: +0.0051 σ: 0.3263 | 0.740 min
+Epoch 32/400 | Train Loss: 0.127561 | Val Loss: 0.119979 | Val MAE: 12.5667 | Res μ: -0.0215 σ: 0.3210 | 0.728 min
+Epoch 33/400 | Train Loss: 0.126889 | Val Loss: 0.130644 | Val MAE: 14.1043 | Res μ: -0.0140 σ: 0.3433 | 0.738 min
+Epoch 34/400 | Train Loss: 0.127415 | Val Loss: 0.118518 | Val MAE: 11.1812 | Res μ: -0.0185 σ: 0.3202 | 0.734 min
+Epoch 35/400 | Train Loss: 0.126687 | Val Loss: 0.121125 | Val MAE: 12.1744 | Res μ: -0.0539 σ: 0.3219 | 2.467 min
+Epoch 36/400 | Train Loss: 0.127148 | Val Loss: 0.120362 | Val MAE: 11.6154 | Res μ: -0.0353 σ: 0.3235 | 2.940 min
+Epoch 37/400 | Train Loss: 0.126849 | Val Loss: 0.123580 | Val MAE: 14.0917 | Res μ: +0.0188 σ: 0.3326 | 2.947 min
+Epoch 38/400 | Train Loss: 0.126895 | Val Loss: 0.119736 | Val MAE: 13.7967 | Res μ: +0.0133 σ: 0.3201 | 2.940 min
+Epoch 39/400 | Train Loss: 0.126254 | Val Loss: 0.119184 | Val MAE: 12.3004 | Res μ: -0.0034 σ: 0.3194 | 2.749 min
+Epoch 40/400 | Train Loss: 0.123429 | Val Loss: 0.116427 | Val MAE: 11.8855 | Res μ: +0.0027 σ: 0.3179 | 2.744 min
+Epoch 41/400 | Train Loss: 0.122063 | Val Loss: 0.118621 | Val MAE: 11.1451 | Res μ: -0.0254 σ: 0.3205 | 2.735 min
+Epoch 42/400 | Train Loss: 0.122179 | Val Loss: 0.115706 | Val MAE: 11.4757 | Res μ: -0.0117 σ: 0.3158 | 2.741 min
+Epoch 43/400 | Train Loss: 0.121467 | Val Loss: 0.115423 | Val MAE: 12.5742 | Res μ: +0.0204 σ: 0.3158 | 2.728 min
+Epoch 44/400 | Train Loss: 0.122232 | Val Loss: 0.117489 | Val MAE: 12.7521 | Res μ: +0.0254 σ: 0.3184 | 2.767 min
+Epoch 45/400 | Train Loss: 0.121319 | Val Loss: 0.116363 | Val MAE: 12.5338 | Res μ: +0.0271 σ: 0.3169 | 2.773 min
+Epoch 46/400 | Train Loss: 0.121240 | Val Loss: 0.115390 | Val MAE: 10.9815 | Res μ: -0.0020 σ: 0.3157 | 2.798 min
+Epoch 47/400 | Train Loss: 0.121847 | Val Loss: 0.115978 | Val MAE: 10.9256 | Res μ: -0.0118 σ: 0.3175 | 2.757 min
+Epoch 48/400 | Train Loss: 0.121762 | Val Loss: 0.115492 | Val MAE: 10.8266 | Res μ: -0.0111 σ: 0.3157 | 2.778 min
+Epoch 49/400 | Train Loss: 0.120785 | Val Loss: 0.116688 | Val MAE: 12.0657 | Res μ: -0.0300 σ: 0.3179 | 2.765 min
+Epoch 50/400 | Train Loss: 0.120393 | Val Loss: 0.114567 | Val MAE: 11.9578 | Res μ: +0.0186 σ: 0.3147 | 2.788 min
+Epoch 51/400 | Train Loss: 0.120886 | Val Loss: 0.115209 | Val MAE: 10.7705 | Res μ: -0.0145 σ: 0.3152 | 2.759 min
+Epoch 52/400 | Train Loss: 0.120616 | Val Loss: 0.114747 | Val MAE: 12.1159 | Res μ: -0.0093 σ: 0.3151 | 2.767 min
+Epoch 53/400 | Train Loss: 0.120188 | Val Loss: 0.115002 | Val MAE: 11.8709 | Res μ: +0.0058 σ: 0.3160 | 2.777 min
+Epoch 54/400 | Train Loss: 0.120448 | Val Loss: 0.114924 | Val MAE: 12.3976 | Res μ: +0.0206 σ: 0.3145 | 2.770 min
+Epoch 55/400 | Train Loss: 0.120922 | Val Loss: 0.114546 | Val MAE: 11.0624 | Res μ: -0.0020 σ: 0.3152 | 2.788 min
+Epoch 56/400 | Train Loss: 0.120227 | Val Loss: 0.113401 | Val MAE: 11.3538 | Res μ: +0.0067 σ: 0.3131 | 2.787 min
+Epoch 57/400 | Train Loss: 0.120898 | Val Loss: 0.117290 | Val MAE: 11.2920 | Res μ: -0.0154 σ: 0.3206 | 2.774 min
+Epoch 58/400 | Train Loss: 0.120148 | Val Loss: 0.113453 | Val MAE: 11.3741 | Res μ: +0.0027 σ: 0.3133 | 14.012 min
+Epoch 59/400 | Train Loss: 0.120344 | Val Loss: 0.114036 | Val MAE: 11.9672 | Res μ: -0.0056 σ: 0.3141 | 0.470 min
+Epoch 60/400 | Train Loss: 0.120194 | Val Loss: 0.115086 | Val MAE: 12.7473 | Res μ: +0.0128 σ: 0.3172 | 0.455 min
+Epoch 61/400 | Train Loss: 0.119774 | Val Loss: 0.116137 | Val MAE: 11.1982 | Res μ: -0.0107 σ: 0.3182 | 0.478 min
+Epoch 62/400 | Train Loss: 0.120028 | Val Loss: 0.114836 | Val MAE: 12.6742 | Res μ: +0.0150 σ: 0.3141 | 0.582 min
+Epoch 63/400 | Train Loss: 0.120148 | Val Loss: 0.112894 | Val MAE: 12.5700 | Res μ: +0.0218 σ: 0.3127 | 0.679 min
+Epoch 64/400 | Train Loss: 0.120285 | Val Loss: 0.113593 | Val MAE: 11.2119 | Res μ: -0.0054 σ: 0.3143 | 0.609 min
+Epoch 65/400 | Train Loss: 0.119284 | Val Loss: 0.112786 | Val MAE: 12.5253 | Res μ: +0.0274 σ: 0.3115 | 0.616 min
+Epoch 66/400 | Train Loss: 0.120068 | Val Loss: 0.112719 | Val MAE: 12.6926 | Res μ: +0.0213 σ: 0.3117 | 0.620 min
+Epoch 67/400 | Train Loss: 0.120159 | Val Loss: 0.113345 | Val MAE: 13.6110 | Res μ: +0.0333 σ: 0.3122 | 0.616 min
+Epoch 68/400 | Train Loss: 0.120262 | Val Loss: 0.114682 | Val MAE: 12.8131 | Res μ: +0.0175 σ: 0.3161 | 0.611 min
+Epoch 69/400 | Train Loss: 0.119191 | Val Loss: 0.114969 | Val MAE: 12.4909 | Res μ: -0.0330 σ: 0.3140 | 0.608 min
+Epoch 70/400 | Train Loss: 0.120640 | Val Loss: 0.111097 | Val MAE: 11.6045 | Res μ: +0.0046 σ: 0.3102 | 0.607 min
+Epoch 71/400 | Train Loss: 0.120177 | Val Loss: 0.111550 | Val MAE: 10.8347 | Res μ: -0.0040 σ: 0.3106 | 0.614 min
+Epoch 72/400 | Train Loss: 0.120553 | Val Loss: 0.118285 | Val MAE: 9.8995 | Res μ: -0.0461 σ: 0.3168 | 0.602 min
+Epoch 73/400 | Train Loss: 0.119802 | Val Loss: 0.119418 | Val MAE: 11.5083 | Res μ: -0.0183 σ: 0.3228 | 0.611 min
+Epoch 74/400 | Train Loss: 0.120168 | Val Loss: 0.116067 | Val MAE: 10.4614 | Res μ: -0.0452 σ: 0.3154 | 0.608 min
+Epoch 75/400 | Train Loss: 0.119953 | Val Loss: 0.111900 | Val MAE: 12.2652 | Res μ: +0.0181 σ: 0.3111 | 0.611 min
+Epoch 76/400 | Train Loss: 0.119673 | Val Loss: 0.112573 | Val MAE: 11.7779 | Res μ: +0.0112 σ: 0.3119 | 0.624 min
+Epoch 77/400 | Train Loss: 0.119910 | Val Loss: 0.113236 | Val MAE: 10.9349 | Res μ: -0.0154 σ: 0.3147 | 0.629 min
+Epoch 78/400 | Train Loss: 0.119524 | Val Loss: 0.113600 | Val MAE: 12.8172 | Res μ: +0.0173 σ: 0.3149 | 0.608 min
+Epoch 79/400 | Train Loss: 0.119862 | Val Loss: 0.115048 | Val MAE: 12.8348 | Res μ: +0.0125 σ: 0.3162 | 0.608 min
+Epoch 80/400 | Train Loss: 0.119894 | Val Loss: 0.111616 | Val MAE: 11.2441 | Res μ: -0.0075 σ: 0.3108 | 0.609 min
+Epoch 81/400 | Train Loss: 0.119704 | Val Loss: 0.111917 | Val MAE: 12.5529 | Res μ: +0.0214 σ: 0.3108 | 0.618 min
+Epoch 82/400 | Train Loss: 0.117986 | Val Loss: 0.113841 | Val MAE: 10.2644 | Res μ: -0.0197 σ: 0.3132 | 0.611 min
+Epoch 83/400 | Train Loss: 0.116579 | Val Loss: 0.110076 | Val MAE: 10.9592 | Res μ: -0.0111 σ: 0.3081 | 0.611 min
+Epoch 84/400 | Train Loss: 0.116952 | Val Loss: 0.109644 | Val MAE: 11.5913 | Res μ: +0.0074 σ: 0.3087 | 0.621 min
+Epoch 85/400 | Train Loss: 0.116618 | Val Loss: 0.111442 | Val MAE: 11.5805 | Res μ: +0.0042 σ: 0.3109 | 0.605 min
+Epoch 86/400 | Train Loss: 0.116533 | Val Loss: 0.110219 | Val MAE: 11.3063 | Res μ: +0.0048 σ: 0.3091 | 0.604 min
+Epoch 87/400 | Train Loss: 0.116041 | Val Loss: 0.109844 | Val MAE: 11.6882 | Res μ: +0.0162 σ: 0.3081 | 0.609 min
+Epoch 88/400 | Train Loss: 0.115508 | Val Loss: 0.111531 | Val MAE: 10.2452 | Res μ: -0.0182 σ: 0.3103 | 0.604 min
+Epoch 89/400 | Train Loss: 0.116749 | Val Loss: 0.109196 | Val MAE: 10.7180 | Res μ: -0.0120 σ: 0.3072 | 0.613 min
+Epoch 90/400 | Train Loss: 0.116035 | Val Loss: 0.109863 | Val MAE: 10.4167 | Res μ: -0.0176 σ: 0.3077 | 0.626 min
+Epoch 91/400 | Train Loss: 0.116479 | Val Loss: 0.110385 | Val MAE: 10.7815 | Res μ: -0.0088 σ: 0.3096 | 0.610 min
+Epoch 92/400 | Train Loss: 0.114998 | Val Loss: 0.108504 | Val MAE: 10.4281 | Res μ: -0.0083 σ: 0.3063 | 0.614 min
+Epoch 93/400 | Train Loss: 0.115384 | Val Loss: 0.109833 | Val MAE: 10.9636 | Res μ: +0.0064 σ: 0.3081 | 0.609 min
+Epoch 94/400 | Train Loss: 0.115899 | Val Loss: 0.110292 | Val MAE: 12.3095 | Res μ: -0.0374 σ: 0.3068 | 0.631 min
+Epoch 95/400 | Train Loss: 0.116032 | Val Loss: 0.110312 | Val MAE: 11.1472 | Res μ: -0.0167 σ: 0.3083 | 0.661 min
+Epoch 96/400 | Train Loss: 0.115603 | Val Loss: 0.110416 | Val MAE: 10.5084 | Res μ: -0.0189 σ: 0.3092 | 0.695 min
+Epoch 97/400 | Train Loss: 0.115311 | Val Loss: 0.107921 | Val MAE: 11.4858 | Res μ: +0.0152 σ: 0.3053 | 0.763 min
+Epoch 98/400 | Train Loss: 0.115236 | Val Loss: 0.111271 | Val MAE: 12.2834 | Res μ: +0.0301 σ: 0.3094 | 0.721 min
+Epoch 99/400 | Train Loss: 0.115606 | Val Loss: 0.117098 | Val MAE: 13.6492 | Res μ: +0.0369 σ: 0.3171 | 0.697 min
+Epoch 100/400 | Train Loss: 0.116096 | Val Loss: 0.109877 | Val MAE: 10.7388 | Res μ: -0.0162 σ: 0.3080 | 0.697 min
+Epoch 101/400 | Train Loss: 0.115385 | Val Loss: 0.110173 | Val MAE: 11.7258 | Res μ: +0.0135 σ: 0.3087 | 0.696 min
+Epoch 102/400 | Train Loss: 0.115332 | Val Loss: 0.108020 | Val MAE: 10.8276 | Res μ: -0.0072 σ: 0.3058 | 0.686 min
+Epoch 103/400 | Train Loss: 0.115894 | Val Loss: 0.108038 | Val MAE: 11.4009 | Res μ: +0.0127 σ: 0.3053 | 0.689 min
+Epoch 104/400 | Train Loss: 0.115199 | Val Loss: 0.107919 | Val MAE: 11.1248 | Res μ: +0.0033 σ: 0.3062 | 0.692 min
+Epoch 105/400 | Train Loss: 0.115591 | Val Loss: 0.108035 | Val MAE: 11.1992 | Res μ: -0.0118 σ: 0.3054 | 0.685 min
+Epoch 106/400 | Train Loss: 0.115436 | Val Loss: 0.108256 | Val MAE: 11.1248 | Res μ: +0.0062 σ: 0.3058 | 0.687 min
+Epoch 107/400 | Train Loss: 0.115209 | Val Loss: 0.110101 | Val MAE: 12.6398 | Res μ: +0.0236 σ: 0.3086 | 0.678 min
+Epoch 108/400 | Train Loss: 0.115123 | Val Loss: 0.111087 | Val MAE: 11.6639 | Res μ: +0.0050 σ: 0.3100 | 0.680 min
+Epoch 109/400 | Train Loss: 0.113197 | Val Loss: 0.108797 | Val MAE: 10.4348 | Res μ: -0.0059 σ: 0.3069 | 0.677 min
+Epoch 110/400 | Train Loss: 0.113829 | Val Loss: 0.107879 | Val MAE: 11.1724 | Res μ: +0.0012 σ: 0.3051 | 0.700 min
+Epoch 111/400 | Train Loss: 0.113352 | Val Loss: 0.107405 | Val MAE: 10.6731 | Res μ: -0.0014 σ: 0.3054 | 0.711 min
+Epoch 112/400 | Train Loss: 0.112770 | Val Loss: 0.107627 | Val MAE: 11.3478 | Res μ: +0.0060 σ: 0.3053 | 0.702 min
+Epoch 113/400 | Train Loss: 0.112201 | Val Loss: 0.108865 | Val MAE: 10.2735 | Res μ: -0.0236 σ: 0.3065 | 0.718 min
+Epoch 114/400 | Train Loss: 0.112800 | Val Loss: 0.107902 | Val MAE: 11.7447 | Res μ: +0.0171 σ: 0.3046 | 0.676 min
+Epoch 115/400 | Train Loss: 0.113041 | Val Loss: 0.106460 | Val MAE: 10.6284 | Res μ: -0.0026 σ: 0.3034 | 0.664 min
+Epoch 116/400 | Train Loss: 0.113251 | Val Loss: 0.107807 | Val MAE: 10.4517 | Res μ: -0.0022 σ: 0.3048 | 0.640 min
+Epoch 117/400 | Train Loss: 0.112971 | Val Loss: 0.106806 | Val MAE: 10.6298 | Res μ: -0.0008 σ: 0.3045 | 0.622 min
+Epoch 118/400 | Train Loss: 0.112588 | Val Loss: 0.108028 | Val MAE: 10.4619 | Res μ: -0.0158 σ: 0.3051 | 0.600 min
+Epoch 119/400 | Train Loss: 0.112269 | Val Loss: 0.106866 | Val MAE: 10.3221 | Res μ: -0.0092 σ: 0.3040 | 0.602 min
+Epoch 120/400 | Train Loss: 0.112076 | Val Loss: 0.107377 | Val MAE: 10.3745 | Res μ: -0.0112 σ: 0.3053 | 0.614 min
+Epoch 121/400 | Train Loss: 0.111805 | Val Loss: 0.108625 | Val MAE: 10.3793 | Res μ: -0.0105 σ: 0.3063 | 0.633 min
+Epoch 122/400 | Train Loss: 0.111865 | Val Loss: 0.106612 | Val MAE: 10.5383 | Res μ: -0.0024 σ: 0.3036 | 0.632 min
+Epoch 123/400 | Train Loss: 0.112225 | Val Loss: 0.106202 | Val MAE: 10.4040 | Res μ: -0.0038 σ: 0.3029 | 0.602 min
+Epoch 124/400 | Train Loss: 0.111991 | Val Loss: 0.107098 | Val MAE: 10.7896 | Res μ: +0.0017 σ: 0.3041 | 0.610 min
+Epoch 125/400 | Train Loss: 0.111652 | Val Loss: 0.106364 | Val MAE: 10.7868 | Res μ: +0.0044 σ: 0.3027 | 0.626 min
+Epoch 126/400 | Train Loss: 0.111643 | Val Loss: 0.107957 | Val MAE: 11.0969 | Res μ: +0.0015 σ: 0.3058 | 0.632 min
+Epoch 127/400 | Train Loss: 0.111816 | Val Loss: 0.106468 | Val MAE: 10.8262 | Res μ: -0.0036 σ: 0.3032 | 0.628 min
+Epoch 128/400 | Train Loss: 0.112149 | Val Loss: 0.109115 | Val MAE: 11.8554 | Res μ: -0.0014 σ: 0.3076 | 0.625 min
+Epoch 129/400 | Train Loss: 0.111674 | Val Loss: 0.107242 | Val MAE: 11.1437 | Res μ: +0.0024 σ: 0.3048 | 0.616 min
+Epoch 130/400 | Train Loss: 0.111307 | Val Loss: 0.106049 | Val MAE: 10.3844 | Res μ: -0.0128 σ: 0.3032 | 0.631 min
+Epoch 131/400 | Train Loss: 0.112225 | Val Loss: 0.107034 | Val MAE: 10.3980 | Res μ: -0.0082 σ: 0.3041 | 0.644 min
+Epoch 132/400 | Train Loss: 0.111840 | Val Loss: 0.106657 | Val MAE: 10.4318 | Res μ: -0.0060 σ: 0.3033 | 0.626 min
+Epoch 133/400 | Train Loss: 0.112027 | Val Loss: 0.106342 | Val MAE: 10.2150 | Res μ: -0.0099 σ: 0.3029 | 0.628 min
+Epoch 134/400 | Train Loss: 0.111394 | Val Loss: 0.106939 | Val MAE: 10.0990 | Res μ: -0.0159 σ: 0.3035 | 0.633 min
+Epoch 135/400 | Train Loss: 0.111252 | Val Loss: 0.106650 | Val MAE: 10.3844 | Res μ: -0.0124 σ: 0.3037 | 0.629 min
+Epoch 136/400 | Train Loss: 0.111491 | Val Loss: 0.106417 | Val MAE: 11.1003 | Res μ: -0.0121 σ: 0.3030 | 0.625 min
+Epoch 137/400 | Train Loss: 0.111625 | Val Loss: 0.107458 | Val MAE: 10.0610 | Res μ: -0.0123 σ: 0.3044 | 0.628 min
+Epoch 138/400 | Train Loss: 0.111332 | Val Loss: 0.105951 | Val MAE: 10.5274 | Res μ: -0.0175 σ: 0.3018 | 0.653 min
+Epoch 139/400 | Train Loss: 0.111660 | Val Loss: 0.107352 | Val MAE: 10.9692 | Res μ: -0.0271 σ: 0.3033 | 0.643 min
+Epoch 140/400 | Train Loss: 0.111190 | Val Loss: 0.107007 | Val MAE: 10.6519 | Res μ: +0.0005 σ: 0.3039 | 0.639 min
+Epoch 141/400 | Train Loss: 0.112181 | Val Loss: 0.109662 | Val MAE: 10.3124 | Res μ: -0.0170 σ: 0.3087 | 0.653 min
+Epoch 142/400 | Train Loss: 0.111616 | Val Loss: 0.106002 | Val MAE: 11.5942 | Res μ: +0.0134 σ: 0.3022 | 0.645 min
+Epoch 143/400 | Train Loss: 0.110878 | Val Loss: 0.108365 | Val MAE: 10.1778 | Res μ: -0.0135 σ: 0.3053 | 0.639 min
+Epoch 144/400 | Train Loss: 0.111024 | Val Loss: 0.105843 | Val MAE: 10.8294 | Res μ: +0.0008 σ: 0.3022 | 0.657 min
+Epoch 145/400 | Train Loss: 0.111484 | Val Loss: 0.106665 | Val MAE: 10.6678 | Res μ: -0.0135 σ: 0.3033 | 0.605 min
+Epoch 146/400 | Train Loss: 0.110732 | Val Loss: 0.105904 | Val MAE: 11.0384 | Res μ: +0.0006 σ: 0.3021 | 0.615 min
+Epoch 147/400 | Train Loss: 0.111535 | Val Loss: 0.106146 | Val MAE: 10.7463 | Res μ: +0.0014 σ: 0.3028 | 0.589 min
+Epoch 148/400 | Train Loss: 0.110846 | Val Loss: 0.106284 | Val MAE: 10.0030 | Res μ: -0.0156 σ: 0.3025 | 0.645 min
+Epoch 149/400 | Train Loss: 0.111271 | Val Loss: 0.107170 | Val MAE: 10.3988 | Res μ: -0.0098 σ: 0.3049 | 0.627 min
+Epoch 150/400 | Train Loss: 0.111643 | Val Loss: 0.105418 | Val MAE: 10.6882 | Res μ: +0.0013 σ: 0.3016 | 0.617 min
+Epoch 151/400 | Train Loss: 0.110977 | Val Loss: 0.105775 | Val MAE: 10.4963 | Res μ: -0.0023 σ: 0.3021 | 0.617 min
+Epoch 152/400 | Train Loss: 0.111637 | Val Loss: 0.108221 | Val MAE: 10.3573 | Res μ: -0.0196 σ: 0.3060 | 0.613 min
+Epoch 153/400 | Train Loss: 0.110746 | Val Loss: 0.106865 | Val MAE: 10.6753 | Res μ: -0.0009 σ: 0.3038 | 0.604 min
+Epoch 154/400 | Train Loss: 0.111529 | Val Loss: 0.106592 | Val MAE: 10.7947 | Res μ: -0.0146 σ: 0.3028 | 0.600 min
+Epoch 155/400 | Train Loss: 0.111177 | Val Loss: 0.105538 | Val MAE: 10.1733 | Res μ: -0.0121 σ: 0.3017 | 0.610 min
+Epoch 156/400 | Train Loss: 0.111312 | Val Loss: 0.106824 | Val MAE: 12.6550 | Res μ: +0.0225 σ: 0.3031 | 0.597 min
+Epoch 157/400 | Train Loss: 0.111690 | Val Loss: 0.106672 | Val MAE: 10.6509 | Res μ: +0.0015 σ: 0.3030 | 0.582 min
+Epoch 158/400 | Train Loss: 0.111789 | Val Loss: 0.107140 | Val MAE: 11.4060 | Res μ: +0.0052 σ: 0.3042 | 0.569 min
+Epoch 159/400 | Train Loss: 0.110800 | Val Loss: 0.106369 | Val MAE: 10.5935 | Res μ: -0.0033 σ: 0.3029 | 0.585 min
+Epoch 160/400 | Train Loss: 0.111058 | Val Loss: 0.105841 | Val MAE: 10.6650 | Res μ: -0.0008 σ: 0.3028 | 0.584 min
+Epoch 161/400 | Train Loss: 0.111204 | Val Loss: 0.106424 | Val MAE: 10.6260 | Res μ: -0.0012 σ: 0.3034 | 0.584 min
+Epoch 162/400 | Train Loss: 0.110397 | Val Loss: 0.105346 | Val MAE: 10.3058 | Res μ: -0.0043 σ: 0.3012 | 0.585 min
+Epoch 163/400 | Train Loss: 0.109793 | Val Loss: 0.105146 | Val MAE: 10.3679 | Res μ: -0.0040 σ: 0.3012 | 0.573 min
+Epoch 164/400 | Train Loss: 0.109683 | Val Loss: 0.105561 | Val MAE: 10.5667 | Res μ: -0.0025 σ: 0.3018 | 0.612 min
+Epoch 165/400 | Train Loss: 0.109875 | Val Loss: 0.105038 | Val MAE: 10.8810 | Res μ: +0.0051 σ: 0.3008 | 0.597 min
+Epoch 166/400 | Train Loss: 0.109930 | Val Loss: 0.105940 | Val MAE: 10.6648 | Res μ: +0.0014 σ: 0.3023 | 0.585 min
+Epoch 167/400 | Train Loss: 0.109763 | Val Loss: 0.108452 | Val MAE: 10.8278 | Res μ: -0.0066 σ: 0.3064 | 0.573 min
+Epoch 168/400 | Train Loss: 0.109608 | Val Loss: 0.107596 | Val MAE: 10.2681 | Res μ: -0.0165 σ: 0.3046 | 0.569 min
+Epoch 169/400 | Train Loss: 0.109542 | Val Loss: 0.104867 | Val MAE: 10.8826 | Res μ: +0.0060 σ: 0.3007 | 0.601 min
+Epoch 170/400 | Train Loss: 0.109566 | Val Loss: 0.105334 | Val MAE: 10.8160 | Res μ: +0.0025 σ: 0.3012 | 0.607 min
+Epoch 171/400 | Train Loss: 0.109906 | Val Loss: 0.105071 | Val MAE: 10.5476 | Res μ: -0.0012 σ: 0.3011 | 0.583 min
+Epoch 172/400 | Train Loss: 0.109757 | Val Loss: 0.105251 | Val MAE: 10.9138 | Res μ: +0.0121 σ: 0.3007 | 0.595 min
+Epoch 173/400 | Train Loss: 0.109920 | Val Loss: 0.105697 | Val MAE: 10.2642 | Res μ: -0.0224 σ: 0.3012 | 0.613 min
+Epoch 174/400 | Train Loss: 0.109807 | Val Loss: 0.104757 | Val MAE: 11.1131 | Res μ: +0.0100 σ: 0.3003 | 0.638 min
+Epoch 175/400 | Train Loss: 0.109525 | Val Loss: 0.106731 | Val MAE: 9.8498 | Res μ: -0.0179 σ: 0.3030 | 0.636 min
+Epoch 176/400 | Train Loss: 0.109552 | Val Loss: 0.105939 | Val MAE: 10.4827 | Res μ: -0.0051 σ: 0.3023 | 0.652 min
+Epoch 177/400 | Train Loss: 0.109407 | Val Loss: 0.106685 | Val MAE: 10.7410 | Res μ: -0.0026 σ: 0.3041 | 0.579 min
+Epoch 178/400 | Train Loss: 0.109513 | Val Loss: 0.106318 | Val MAE: 10.4297 | Res μ: -0.0077 σ: 0.3032 | 0.605 min
+Epoch 179/400 | Train Loss: 0.109780 | Val Loss: 0.107441 | Val MAE: 10.1308 | Res μ: -0.0225 σ: 0.3044 | 0.582 min
+Epoch 180/400 | Train Loss: 0.109538 | Val Loss: 0.105112 | Val MAE: 10.1493 | Res μ: -0.0090 σ: 0.3010 | 0.566 min
+Epoch 181/400 | Train Loss: 0.109737 | Val Loss: 0.104950 | Val MAE: 10.3734 | Res μ: -0.0065 σ: 0.3007 | 0.607 min
+Epoch 182/400 | Train Loss: 0.109076 | Val Loss: 0.106418 | Val MAE: 10.5167 | Res μ: -0.0085 σ: 0.3040 | 0.611 min
+Epoch 183/400 | Train Loss: 0.109187 | Val Loss: 0.105562 | Val MAE: 10.7769 | Res μ: +0.0015 σ: 0.3016 | 0.611 min
+Epoch 184/400 | Train Loss: 0.109380 | Val Loss: 0.105696 | Val MAE: 10.8557 | Res μ: +0.0010 σ: 0.3022 | 0.601 min
+Epoch 185/400 | Train Loss: 0.109163 | Val Loss: 0.105041 | Val MAE: 10.1981 | Res μ: -0.0122 σ: 0.3005 | 0.584 min
+Epoch 186/400 | Train Loss: 0.108660 | Val Loss: 0.104602 | Val MAE: 10.5996 | Res μ: +0.0044 σ: 0.2999 | 0.570 min
+Epoch 187/400 | Train Loss: 0.108822 | Val Loss: 0.106019 | Val MAE: 10.3044 | Res μ: -0.0112 σ: 0.3029 | 0.582 min
+Epoch 188/400 | Train Loss: 0.108546 | Val Loss: 0.104519 | Val MAE: 10.4725 | Res μ: -0.0011 σ: 0.2999 | 0.597 min
+Epoch 189/400 | Train Loss: 0.108187 | Val Loss: 0.105978 | Val MAE: 10.3106 | Res μ: -0.0095 σ: 0.3024 | 0.603 min
+Epoch 190/400 | Train Loss: 0.108229 | Val Loss: 0.104478 | Val MAE: 10.3307 | Res μ: -0.0024 σ: 0.3000 | 0.558 min
+Epoch 191/400 | Train Loss: 0.108644 | Val Loss: 0.105280 | Val MAE: 10.5972 | Res μ: -0.0020 σ: 0.3012 | 0.609 min
+Epoch 192/400 | Train Loss: 0.108853 | Val Loss: 0.105533 | Val MAE: 10.3589 | Res μ: -0.0061 σ: 0.3017 | 0.554 min
+Epoch 193/400 | Train Loss: 0.108438 | Val Loss: 0.104685 | Val MAE: 10.5530 | Res μ: +0.0010 σ: 0.3003 | 0.607 min
+Epoch 194/400 | Train Loss: 0.108563 | Val Loss: 0.104543 | Val MAE: 10.4750 | Res μ: -0.0004 σ: 0.3001 | 0.586 min
+Epoch 195/400 | Train Loss: 0.108464 | Val Loss: 0.104485 | Val MAE: 10.2205 | Res μ: -0.0033 σ: 0.3000 | 0.592 min
+Epoch 196/400 | Train Loss: 0.108107 | Val Loss: 0.104251 | Val MAE: 11.1243 | Res μ: +0.0106 σ: 0.2995 | 0.600 min
+Epoch 197/400 | Train Loss: 0.108502 | Val Loss: 0.104764 | Val MAE: 10.5223 | Res μ: -0.0007 σ: 0.3005 | 0.616 min
+Epoch 198/400 | Train Loss: 0.108255 | Val Loss: 0.105102 | Val MAE: 10.4284 | Res μ: -0.0047 σ: 0.3009 | 0.603 min
+Epoch 199/400 | Train Loss: 0.108207 | Val Loss: 0.104510 | Val MAE: 10.2087 | Res μ: -0.0031 σ: 0.2999 | 0.575 min
+Epoch 200/400 | Train Loss: 0.108340 | Val Loss: 0.104637 | Val MAE: 10.3456 | Res μ: -0.0027 σ: 0.3001 | 0.609 min
+Epoch 201/400 | Train Loss: 0.108537 | Val Loss: 0.104431 | Val MAE: 10.2516 | Res μ: -0.0050 σ: 0.3001 | 0.580 min
+Epoch 202/400 | Train Loss: 0.108511 | Val Loss: 0.104640 | Val MAE: 10.0481 | Res μ: -0.0083 σ: 0.3002 | 0.621 min
+Epoch 203/400 | Train Loss: 0.107941 | Val Loss: 0.105644 | Val MAE: 10.1583 | Res μ: -0.0106 σ: 0.3021 | 0.610 min
+Epoch 204/400 | Train Loss: 0.108545 | Val Loss: 0.105262 | Val MAE: 10.4983 | Res μ: -0.0058 σ: 0.3016 | 0.566 min
+Epoch 205/400 | Train Loss: 0.108459 | Val Loss: 0.105242 | Val MAE: 10.2079 | Res μ: -0.0093 σ: 0.3014 | 0.563 min
+Epoch 206/400 | Train Loss: 0.107848 | Val Loss: 0.104117 | Val MAE: 10.4678 | Res μ: -0.0005 σ: 0.2995 | 0.590 min
+Epoch 207/400 | Train Loss: 0.108695 | Val Loss: 0.104462 | Val MAE: 10.3904 | Res μ: -0.0021 σ: 0.3003 | 0.586 min
+Epoch 208/400 | Train Loss: 0.108394 | Val Loss: 0.104943 | Val MAE: 10.2603 | Res μ: -0.0057 σ: 0.3008 | 0.572 min
+Epoch 209/400 | Train Loss: 0.107882 | Val Loss: 0.104449 | Val MAE: 10.3232 | Res μ: -0.0021 σ: 0.2998 | 0.613 min
+Epoch 210/400 | Train Loss: 0.108341 | Val Loss: 0.105887 | Val MAE: 9.8625 | Res μ: -0.0166 σ: 0.3020 | 0.596 min
+Epoch 211/400 | Train Loss: 0.107893 | Val Loss: 0.104967 | Val MAE: 10.1957 | Res μ: -0.0071 σ: 0.3008 | 0.611 min
+Epoch 212/400 | Train Loss: 0.107855 | Val Loss: 0.104615 | Val MAE: 10.1157 | Res μ: -0.0067 σ: 0.3002 | 0.555 min
+Epoch 213/400 | Train Loss: 0.108506 | Val Loss: 0.106421 | Val MAE: 9.8985 | Res μ: -0.0174 σ: 0.3031 | 0.592 min
+Epoch 214/400 | Train Loss: 0.107684 | Val Loss: 0.103987 | Val MAE: 10.4944 | Res μ: +0.0022 σ: 0.2992 | 0.589 min
+Epoch 215/400 | Train Loss: 0.107892 | Val Loss: 0.105781 | Val MAE: 9.9088 | Res μ: -0.0165 σ: 0.3021 | 0.606 min
+Epoch 216/400 | Train Loss: 0.108167 | Val Loss: 0.104723 | Val MAE: 10.6452 | Res μ: +0.0003 σ: 0.3002 | 0.597 min
+Epoch 217/400 | Train Loss: 0.108843 | Val Loss: 0.104670 | Val MAE: 10.2858 | Res μ: -0.0055 σ: 0.3006 | 0.618 min
+Epoch 218/400 | Train Loss: 0.108196 | Val Loss: 0.105160 | Val MAE: 9.9400 | Res μ: -0.0124 σ: 0.3008 | 0.591 min
+Epoch 219/400 | Train Loss: 0.108299 | Val Loss: 0.105406 | Val MAE: 10.1724 | Res μ: -0.0086 σ: 0.3011 | 0.586 min
+Epoch 220/400 | Train Loss: 0.108311 | Val Loss: 0.104316 | Val MAE: 9.9981 | Res μ: -0.0097 σ: 0.2997 | 0.578 min
+Epoch 221/400 | Train Loss: 0.108372 | Val Loss: 0.103829 | Val MAE: 10.3714 | Res μ: +0.0009 σ: 0.2988 | 0.577 min
+Epoch 222/400 | Train Loss: 0.107944 | Val Loss: 0.104729 | Val MAE: 10.1360 | Res μ: -0.0085 σ: 0.3006 | 0.615 min
+Epoch 223/400 | Train Loss: 0.107990 | Val Loss: 0.105147 | Val MAE: 10.4101 | Res μ: -0.0068 σ: 0.3012 | 0.569 min
+Epoch 224/400 | Train Loss: 0.108139 | Val Loss: 0.104339 | Val MAE: 10.3920 | Res μ: -0.0015 σ: 0.2996 | 0.585 min
+Epoch 225/400 | Train Loss: 0.108434 | Val Loss: 0.105202 | Val MAE: 10.0154 | Res μ: -0.0235 σ: 0.3004 | 0.591 min
+Epoch 226/400 | Train Loss: 0.108445 | Val Loss: 0.103946 | Val MAE: 10.6974 | Res μ: +0.0049 σ: 0.2990 | 0.620 min
+Epoch 227/400 | Train Loss: 0.107988 | Val Loss: 0.106726 | Val MAE: 9.9751 | Res μ: -0.0171 σ: 0.3042 | 0.588 min
+Epoch 228/400 | Train Loss: 0.108237 | Val Loss: 0.104226 | Val MAE: 10.1921 | Res μ: -0.0063 σ: 0.2994 | 0.623 min
+Epoch 229/400 | Train Loss: 0.108229 | Val Loss: 0.103871 | Val MAE: 10.6279 | Res μ: +0.0064 σ: 0.2989 | 0.646 min
+Epoch 230/400 | Train Loss: 0.107983 | Val Loss: 0.105536 | Val MAE: 10.4711 | Res μ: -0.0060 σ: 0.3018 | 0.637 min
+Epoch 231/400 | Train Loss: 0.108337 | Val Loss: 0.104508 | Val MAE: 10.5755 | Res μ: -0.0002 σ: 0.3000 | 0.634 min
+Epoch 232/400 | Train Loss: 0.107945 | Val Loss: 0.105232 | Val MAE: 10.5511 | Res μ: -0.0042 σ: 0.3013 | 0.629 min
+Epoch 233/400 | Train Loss: 0.107901 | Val Loss: 0.104204 | Val MAE: 10.2466 | Res μ: -0.0052 σ: 0.2996 | 0.626 min
+Epoch 234/400 | Train Loss: 0.107635 | Val Loss: 0.104856 | Val MAE: 9.9980 | Res μ: -0.0118 σ: 0.3007 | 0.605 min
+Epoch 235/400 | Train Loss: 0.107423 | Val Loss: 0.104294 | Val MAE: 10.3163 | Res μ: -0.0035 σ: 0.2998 | 0.582 min
+Epoch 236/400 | Train Loss: 0.107556 | Val Loss: 0.104443 | Val MAE: 10.1588 | Res μ: -0.0071 σ: 0.2999 | 0.591 min
+Epoch 237/400 | Train Loss: 0.107751 | Val Loss: 0.103807 | Val MAE: 10.3173 | Res μ: -0.0018 σ: 0.2990 | 0.575 min
+Epoch 238/400 | Train Loss: 0.107578 | Val Loss: 0.104332 | Val MAE: 10.2544 | Res μ: -0.0058 σ: 0.2998 | 0.608 min
+Epoch 239/400 | Train Loss: 0.107920 | Val Loss: 0.106078 | Val MAE: 9.6452 | Res μ: -0.0240 σ: 0.3023 | 0.597 min
+Epoch 240/400 | Train Loss: 0.107787 | Val Loss: 0.104733 | Val MAE: 10.2032 | Res μ: -0.0063 σ: 0.3003 | 0.575 min
+Epoch 241/400 | Train Loss: 0.107460 | Val Loss: 0.104073 | Val MAE: 10.5309 | Res μ: +0.0017 σ: 0.2994 | 0.595 min
+Epoch 242/400 | Train Loss: 0.107388 | Val Loss: 0.104024 | Val MAE: 10.4642 | Res μ: +0.0022 σ: 0.2995 | 0.589 min
+Epoch 243/400 | Train Loss: 0.107727 | Val Loss: 0.104092 | Val MAE: 10.3376 | Res μ: -0.0025 σ: 0.2993 | 0.618 min
+Epoch 244/400 | Train Loss: 0.107541 | Val Loss: 0.103966 | Val MAE: 10.4466 | Res μ: +0.0001 σ: 0.2991 | 0.623 min
+Epoch 245/400 | Train Loss: 0.107179 | Val Loss: 0.104859 | Val MAE: 9.8755 | Res μ: -0.0150 σ: 0.3003 | 0.614 min
+Epoch 246/400 | Train Loss: 0.107569 | Val Loss: 0.105155 | Val MAE: 10.2247 | Res μ: -0.0095 σ: 0.3012 | 0.617 min
+Epoch 247/400 | Train Loss: 0.107361 | Val Loss: 0.104733 | Val MAE: 10.1255 | Res μ: -0.0086 σ: 0.3009 | 0.595 min
+Epoch 248/400 | Train Loss: 0.107662 | Val Loss: 0.104174 | Val MAE: 10.5015 | Res μ: +0.0013 σ: 0.2994 | 0.561 min
+Epoch 249/400 | Train Loss: 0.107201 | Val Loss: 0.105163 | Val MAE: 10.1840 | Res μ: -0.0091 σ: 0.3011 | 0.557 min
+Epoch 250/400 | Train Loss: 0.107574 | Val Loss: 0.105033 | Val MAE: 10.1074 | Res μ: -0.0080 σ: 0.3009 | 0.592 min
+Epoch 251/400 | Train Loss: 0.107237 | Val Loss: 0.104813 | Val MAE: 9.6929 | Res μ: -0.0170 σ: 0.3002 | 0.578 min
+Epoch 252/400 | Train Loss: 0.107113 | Val Loss: 0.103655 | Val MAE: 10.2597 | Res μ: -0.0026 σ: 0.2986 | 0.586 min
+Epoch 253/400 | Train Loss: 0.107694 | Val Loss: 0.104107 | Val MAE: 9.9759 | Res μ: -0.0098 σ: 0.2993 | 0.580 min
+Epoch 254/400 | Train Loss: 0.107602 | Val Loss: 0.104591 | Val MAE: 9.8613 | Res μ: -0.0137 σ: 0.3001 | 0.580 min
+Epoch 255/400 | Train Loss: 0.107073 | Val Loss: 0.104404 | Val MAE: 10.1220 | Res μ: -0.0082 σ: 0.2999 | 0.581 min
+Epoch 256/400 | Train Loss: 0.107370 | Val Loss: 0.103894 | Val MAE: 10.1850 | Res μ: -0.0048 σ: 0.2991 | 0.568 min
+Epoch 257/400 | Train Loss: 0.107731 | Val Loss: 0.103934 | Val MAE: 10.0589 | Res μ: -0.0072 σ: 0.2990 | 0.595 min
+Epoch 258/400 | Train Loss: 0.107331 | Val Loss: 0.104008 | Val MAE: 10.1160 | Res μ: -0.0062 σ: 0.2995 | 0.588 min
+Epoch 259/400 | Train Loss: 0.107218 | Val Loss: 0.103886 | Val MAE: 10.2202 | Res μ: -0.0046 σ: 0.2990 | 0.586 min
+Epoch 260/400 | Train Loss: 0.107301 | Val Loss: 0.103588 | Val MAE: 10.1769 | Res μ: -0.0045 σ: 0.2986 | 0.569 min
+Epoch 261/400 | Train Loss: 0.107357 | Val Loss: 0.103907 | Val MAE: 10.6975 | Res μ: +0.0039 σ: 0.2990 | 0.598 min
+Epoch 262/400 | Train Loss: 0.106954 | Val Loss: 0.104224 | Val MAE: 10.1209 | Res μ: -0.0074 σ: 0.2998 | 0.616 min
+Epoch 263/400 | Train Loss: 0.107281 | Val Loss: 0.104222 | Val MAE: 10.0693 | Res μ: -0.0085 σ: 0.2996 | 0.568 min
+Epoch 264/400 | Train Loss: 0.107029 | Val Loss: 0.104940 | Val MAE: 9.9566 | Res μ: -0.0123 σ: 0.3009 | 0.591 min
+Epoch 265/400 | Train Loss: 0.107194 | Val Loss: 0.104172 | Val MAE: 10.2253 | Res μ: -0.0060 σ: 0.2994 | 0.594 min
+Epoch 266/400 | Train Loss: 0.106991 | Val Loss: 0.104091 | Val MAE: 10.0971 | Res μ: -0.0072 σ: 0.2994 | 0.579 min
+Epoch 267/400 | Train Loss: 0.107377 | Val Loss: 0.105717 | Val MAE: 9.8988 | Res μ: -0.0168 σ: 0.3019 | 0.511 min
+Epoch 268/400 | Train Loss: 0.107476 | Val Loss: 0.104977 | Val MAE: 9.7540 | Res μ: -0.0182 σ: 0.3007 | 0.496 min
+Epoch 269/400 | Train Loss: 0.107090 | Val Loss: 0.103827 | Val MAE: 10.1977 | Res μ: -0.0048 σ: 0.2990 | 0.565 min
+Epoch 270/400 | Train Loss: 0.107281 | Val Loss: 0.105244 | Val MAE: 10.1448 | Res μ: -0.0095 σ: 0.3012 | 0.511 min
+Epoch 271/400 | Train Loss: 0.107199 | Val Loss: 0.103877 | Val MAE: 10.3111 | Res μ: -0.0003 σ: 0.2993 | 0.557 min
+Epoch 272/400 | Train Loss: 0.107115 | Val Loss: 0.104000 | Val MAE: 10.1857 | Res μ: -0.0047 σ: 0.2991 | 0.502 min
+Epoch 273/400 | Train Loss: 0.106771 | Val Loss: 0.104242 | Val MAE: 10.1505 | Res μ: -0.0067 σ: 0.2996 | 0.589 min
+Epoch 274/400 | Train Loss: 0.106714 | Val Loss: 0.103701 | Val MAE: 10.0701 | Res μ: -0.0058 σ: 0.2989 | 0.573 min
+Epoch 275/400 | Train Loss: 0.107021 | Val Loss: 0.104842 | Val MAE: 10.1342 | Res μ: -0.0101 σ: 0.3008 | 0.526 min
+Epoch 276/400 | Train Loss: 0.107195 | Val Loss: 0.103848 | Val MAE: 10.3978 | Res μ: -0.0021 σ: 0.2991 | 0.553 min
+Epoch 277/400 | Train Loss: 0.107262 | Val Loss: 0.104715 | Val MAE: 9.9380 | Res μ: -0.0131 σ: 0.3005 | 0.572 min
+Epoch 278/400 | Train Loss: 0.107064 | Val Loss: 0.104726 | Val MAE: 10.0752 | Res μ: -0.0101 σ: 0.3005 | 0.592 min
+Epoch 279/400 | Train Loss: 0.107331 | Val Loss: 0.104878 | Val MAE: 9.8374 | Res μ: -0.0162 σ: 0.3007 | 0.631 min
+Epoch 280/400 | Train Loss: 0.106920 | Val Loss: 0.103888 | Val MAE: 10.1809 | Res μ: -0.0055 σ: 0.2991 | 0.593 min
+Epoch 281/400 | Train Loss: 0.106972 | Val Loss: 0.104614 | Val MAE: 9.9994 | Res μ: -0.0105 σ: 0.3001 | 0.549 min
+Epoch 282/400 | Train Loss: 0.107017 | Val Loss: 0.103665 | Val MAE: 10.5552 | Res μ: +0.0017 σ: 0.2987 | 0.532 min
+Epoch 283/400 | Train Loss: 0.106960 | Val Loss: 0.104947 | Val MAE: 10.4214 | Res μ: -0.0047 σ: 0.3017 | 0.550 min
+Epoch 284/400 | Train Loss: 0.106968 | Val Loss: 0.103376 | Val MAE: 10.2427 | Res μ: -0.0018 σ: 0.2983 | 0.555 min
+Epoch 285/400 | Train Loss: 0.107553 | Val Loss: 0.106057 | Val MAE: 9.9902 | Res μ: -0.0136 σ: 0.3024 | 0.597 min
+Epoch 286/400 | Train Loss: 0.107412 | Val Loss: 0.103462 | Val MAE: 10.4611 | Res μ: +0.0013 σ: 0.2984 | 0.587 min
+Epoch 287/400 | Train Loss: 0.107298 | Val Loss: 0.103789 | Val MAE: 9.9557 | Res μ: -0.0092 σ: 0.2988 | 0.618 min
+Epoch 288/400 | Train Loss: 0.107235 | Val Loss: 0.104238 | Val MAE: 10.1625 | Res μ: -0.0080 σ: 0.2999 | 0.596 min
+Epoch 289/400 | Train Loss: 0.106696 | Val Loss: 0.104183 | Val MAE: 10.1527 | Res μ: -0.0072 σ: 0.2995 | 0.576 min
+Epoch 290/400 | Train Loss: 0.107259 | Val Loss: 0.103566 | Val MAE: 10.3185 | Res μ: -0.0017 σ: 0.2985 | 0.633 min
+Epoch 291/400 | Train Loss: 0.107111 | Val Loss: 0.105026 | Val MAE: 9.9851 | Res μ: -0.0121 σ: 0.3007 | 0.655 min
+Epoch 292/400 | Train Loss: 0.106915 | Val Loss: 0.103624 | Val MAE: 10.4895 | Res μ: +0.0005 σ: 0.2987 | 0.559 min
+Epoch 293/400 | Train Loss: 0.107467 | Val Loss: 0.103618 | Val MAE: 10.3006 | Res μ: -0.0023 σ: 0.2987 | 0.562 min
+Epoch 294/400 | Train Loss: 0.106748 | Val Loss: 0.103556 | Val MAE: 10.4453 | Res μ: +0.0009 σ: 0.2985 | 0.650 min
+Epoch 295/400 | Train Loss: 0.107256 | Val Loss: 0.103440 | Val MAE: 10.2155 | Res μ: -0.0027 σ: 0.2984 | 0.605 min
+Epoch 296/400 | Train Loss: 0.107136 | Val Loss: 0.103901 | Val MAE: 10.2666 | Res μ: -0.0040 σ: 0.2991 | 0.570 min
+Epoch 297/400 | Train Loss: 0.106892 | Val Loss: 0.103710 | Val MAE: 10.1333 | Res μ: -0.0053 σ: 0.2988 | 0.559 min
+Epoch 298/400 | Train Loss: 0.106742 | Val Loss: 0.103703 | Val MAE: 10.3344 | Res μ: -0.0001 σ: 0.2990 | 0.559 min
+Epoch 299/400 | Train Loss: 0.106643 | Val Loss: 0.104782 | Val MAE: 10.3343 | Res μ: -0.0063 σ: 0.3007 | 0.496 min
+Epoch 300/400 | Train Loss: 0.106945 | Val Loss: 0.104880 | Val MAE: 9.9685 | Res μ: -0.0141 σ: 0.3009 | 0.498 min
+Epoch 301/400 | Train Loss: 0.107615 | Val Loss: 0.104346 | Val MAE: 9.9127 | Res μ: -0.0122 σ: 0.3001 | 0.515 min
+Epoch 302/400 | Train Loss: 0.106972 | Val Loss: 0.103757 | Val MAE: 10.2612 | Res μ: -0.0038 σ: 0.2989 | 0.519 min
+Epoch 303/400 | Train Loss: 0.107063 | Val Loss: 0.104601 | Val MAE: 9.9607 | Res μ: -0.0126 σ: 0.3004 | 0.474 min
+Epoch 304/400 | Train Loss: 0.107456 | Val Loss: 0.103469 | Val MAE: 10.1420 | Res μ: -0.0042 σ: 0.2984 | 0.515 min
+Epoch 305/400 | Train Loss: 0.107479 | Val Loss: 0.103717 | Val MAE: 10.2545 | Res μ: -0.0033 σ: 0.2988 | 0.624 min
+Epoch 306/400 | Train Loss: 0.106971 | Val Loss: 0.104467 | Val MAE: 10.0185 | Res μ: -0.0106 σ: 0.3001 | 0.523 min
+Epoch 307/400 | Train Loss: 0.106856 | Val Loss: 0.103764 | Val MAE: 10.3886 | Res μ: -0.0012 σ: 0.2991 | 0.521 min
+Epoch 308/400 | Train Loss: 0.107029 | Val Loss: 0.104010 | Val MAE: 10.0077 | Res μ: -0.0090 σ: 0.2993 | 0.513 min
+Epoch 309/400 | Train Loss: 0.107240 | Val Loss: 0.103851 | Val MAE: 10.3670 | Res μ: -0.0023 σ: 0.2989 | 0.496 min
+Epoch 310/400 | Train Loss: 0.106912 | Val Loss: 0.105819 | Val MAE: 10.4331 | Res μ: -0.0054 σ: 0.3021 | 0.518 min
+Epoch 311/400 | Train Loss: 0.106720 | Val Loss: 0.103764 | Val MAE: 10.2251 | Res μ: -0.0043 σ: 0.2990 | 0.501 min
+Epoch 312/400 | Train Loss: 0.107167 | Val Loss: 0.104982 | Val MAE: 9.9474 | Res μ: -0.0127 σ: 0.3007 | 0.512 min
+Epoch 313/400 | Train Loss: 0.107501 | Val Loss: 0.104223 | Val MAE: 10.0205 | Res μ: -0.0086 σ: 0.2994 | 0.498 min
+Early stopping at epoch 314
+Training plot saved to G:\My Drive\RLSL\Python\LIBS\MLP_003_trn_Hist\hidden_run_20260408_075428_1024_1024_1024\training_history_20260408_075613.png
+Training time: 257.39243337166675 minutes
+Starting post-training spectral evaluation...
+Residual history plot saved to G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024\residual_history_20260408_075428.png
+Composition-range sampling column: conc_CeCl3_wt%
+Evaluation sample indices: [0]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024\spectral_overlay_20260408_075428.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024\error_heatmap_20260408_075428.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=38755.45 | MaxErr=85046.27 @ 317.5 nm
+Evaluation sample indices: [0]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024\spectral_overlay_20260408_075428.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024\error_heatmap_20260408_075428.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=38755.45 | MaxErr=85046.27 @ 317.5 nm
+Evaluation sample indices: [0]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024\spectral_overlay_20260408_075428.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024\error_heatmap_20260408_075428.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=38755.45 | MaxErr=85046.27 @ 317.5 nm
+Evaluation sample indices: [0, 7127]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)', 'conc_CeCl3_wt% = 1.0000 (p15)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024\spectral_overlay_20260408_075428.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024\error_heatmap_20260408_075428.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=38755.45 | MaxErr=85046.27 @ 317.5 nm
+  conc_CeCl3_wt% = 1.0000 (p15)                      | MAE=  157.25 | MaxErr=20541.06 @ 610.3 nm
+Evaluation sample indices: [0, 7127, 16392]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)', 'conc_CeCl3_wt% = 1.0000 (p15)', 'conc_CeCl3_wt% = 2.8960 (p30)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024\spectral_overlay_20260408_075428.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024\error_heatmap_20260408_075428.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=38755.45 | MaxErr=85046.27 @ 317.5 nm
+  conc_CeCl3_wt% = 1.0000 (p15)                      | MAE=  157.25 | MaxErr=20541.06 @ 610.3 nm
+  conc_CeCl3_wt% = 2.8960 (p30)                      | MAE=  429.80 | MaxErr=52254.46 @ 611.1 nm
+Evaluation sample indices: [0, 7127, 16392, 3008]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)', 'conc_CeCl3_wt% = 1.0000 (p15)', 'conc_CeCl3_wt% = 2.8960 (p30)', 'conc_CeCl3_wt% = 5.0000 (p50)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024\spectral_overlay_20260408_075428.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024\error_heatmap_20260408_075428.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=38755.45 | MaxErr=85046.27 @ 317.5 nm
+  conc_CeCl3_wt% = 1.0000 (p15)                      | MAE=  157.25 | MaxErr=20541.06 @ 610.3 nm
+  conc_CeCl3_wt% = 2.8960 (p30)                      | MAE=  429.80 | MaxErr=52254.46 @ 611.1 nm
+  conc_CeCl3_wt% = 5.0000 (p50)                      | MAE=   70.49 | MaxErr=13693.58 @ 610.4 nm
+Evaluation sample indices: [0, 7127, 16392, 3008]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)', 'conc_CeCl3_wt% = 1.0000 (p15)', 'conc_CeCl3_wt% = 2.8960 (p30)', 'conc_CeCl3_wt% = 5.0000 (p50)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024\spectral_overlay_20260408_075428.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024\error_heatmap_20260408_075428.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_MLP_003\hidden_run_20260408_075428_1024_1024_1024
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=38755.45 | MaxErr=85046.27 @ 317.5 nm
+  conc_CeCl3_wt% = 1.0000 (p15)                      | MAE=  157.25 | MaxErr=20541.06 @ 610.3 nm
+  conc_CeCl3_wt% = 2.8960 (p30)                      | MAE=  429.80 | MaxErr=52254.46 @ 611.1 nm
+  conc_CeCl3_wt% = 5.0000 (p50)                      | MAE=   70.49 | MaxErr=13693.58 @ 610.4 nm
+Total training time: 259.301 minutes

@@ -1,0 +1,11 @@
+# jvlee_LIBS_ML>requirements_base.txt
+
+numpy==2.4.3
+pandas==3.0.2
+scikit-learn==1.8.0
+scipy==1.17.1
+matplotlib==3.10.8
+h5py==3.16.0
+joblib==1.5.3
+tqdm==4.67.3
+galvani==0.5.0

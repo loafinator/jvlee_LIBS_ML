@@ -1,0 +1,3 @@
+__pycache__/
+.venv/
+LIBS/trn_val_split_LIBS.h5
