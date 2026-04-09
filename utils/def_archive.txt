@@ -1,0 +1,828 @@
+
+def init_xpu_mlp_trainer(
+        # region Arguments
+        model: nn.Module,
+        X_train: np.ndarray | pd.DataFrame,
+        y_train: np.ndarray | pd.DataFrame,
+        X_val: Optional[np.ndarray | pd.DataFrame] = None,
+        y_val: Optional[np.ndarray | pd.DataFrame] = None,
+        max_epochs: int = 10,
+        device: torch.device = torch.device('xpu'),
+        batch_size: int = 64,
+        shuffle: bool = True,
+        num_workers: int = 4,
+        pin_memory: bool = False,
+        learning_rate: float = 0.001,
+        criterion: nn.Module = nn.MSELoss(),
+        clip_grads: bool = True,
+        optimizer_cls = optim.Adam,
+        weight_decay: float = 1e-4,
+        verbose: bool = True,
+        plot_animation: bool = True,
+        save_path: Optional[str] = None,
+        # endregion
+) -> Tuple[nn.Module, Dict[str, Any]]:
+    """
+    Trains a 1D CNN (or any nn.Module) on XPU with a simple loop.
+
+    Args:
+        model: Your nn.Module (e.g. Simple1DCNN)
+        X_train, y_train: Training features and targets
+        X_val, y_val: Optional validation data
+        max_epochs: Number of epochs
+        device: 'xpu' by default
+        batch_size, shuffle, learning_rate: Training hyperparameters
+        criterion: Loss function (MSELoss for regression by default)
+        optimizer_cls: Optimizer class (Adam by default)
+        verbose: Print progress or not
+
+    Returns:
+        (trained_model, history_dict)
+        history_dict contains: train_losses, val_losses (if val provided)
+    """
+    # region Setup
+    # region Convert inputs to numpy if pandas
+    if isinstance(X_train, pd.DataFrame):
+        X_train = X_train.values.astype(np.float32)
+    if isinstance(y_train, pd.Series):
+        y_train = y_train.values.astype(np.float32)
+    if X_val is not None and isinstance(X_val, pd.DataFrame):
+        X_val = X_val.values.astype(np.float32)
+    if y_val is not None and isinstance(y_val, pd.Series):
+        y_val = y_val.values.astype(np.float32)
+    # endregion
+
+    # region Make sure y is 2D for regression (n_samples, 1)
+    if y_train.ndim == 1:
+        y_train = y_train.reshape(-1, 1)
+    if y_val is not None and y_val.ndim == 1:
+        y_val = y_val.reshape(-1, 1)
+    # endregion
+
+    # region Create datasets
+    train_dataset = TensorDataset(
+        torch.from_numpy(X_train),
+        torch.from_numpy(y_train)
+    )
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        pin_memory=pin_memory
+    )
+    val_loader = None
+    if X_val is not None and y_val is not None:
+        val_dataset = TensorDataset(
+            torch.from_numpy(X_val),
+            torch.from_numpy(y_val)
+        )
+        val_loader = DataLoader(
+            val_dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=num_workers,
+            pin_memory=pin_memory
+        )
+    # endregion
+
+    # region Move model and optimizer to device
+    model = model.to(device)
+    optimizer = optimizer_cls(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    # endregion
+
+    # region Save directories resolution
+    time_stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    if save_path is None:
+        save_dir = Path(r"G:\My Drive\RLSL\Python\LIBS")
+    else:
+        save_dir = Path(save_path).resolve()
+    save_dir.mkdir(parents=True, exist_ok=True)
+    best_model_path = save_dir / f'best_model_{time_stamp}.pt'
+    fig_save_path = save_dir / f"training_history_{time_stamp}.png"
+    # endregion
+
+    # region Scheduler / Early Stopping
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='min', factor=0.5, patience=10
+    )
+
+    best_val_loss = float('inf')
+    patience_counter = 0
+    early_stop_patience = 30
+    # endregion
+
+    # region Track losses
+    history = {
+        'train_losses': [],
+        'val_losses': [] if val_loader else None,
+        'val_mae': [] if val_loader else None,
+        'val_residuals_mean' : [] if val_loader else None,
+        'val_residuals_std' : [] if val_loader else None,
+    }
+    # endregion
+
+    # region Print training size details
+    if verbose:
+        print(f"Training on {device} | Epochs: {max_epochs} | Batch size: {batch_size}")
+        print(f"Train samples: {len(train_dataset)}")
+    # endregion
+    # endregion
+
+    # region Train and Validate
+    # region Epoch Loop
+    epoch_counter = 0
+    for epoch in range(max_epochs):
+        epoch_counter += 1
+        start_time = time.perf_counter()
+        model.train()
+        train_loss = 0.0
+        n_batches = 0
+
+        # region Training Loop
+        for batch_x, batch_y in train_loader:
+            batch_x = batch_x.to(device)
+            batch_y = batch_y.to(device)
+            optimizer.zero_grad()
+            outputs = model(batch_x)
+            loss = criterion(outputs, batch_y)
+            loss.backward()
+            if clip_grads:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
+            train_loss += loss.item()
+            n_batches += 1
+        # endregion
+
+        # region Training Losses
+        avg_train_loss = train_loss / n_batches
+        history['train_losses'].append(avg_train_loss)
+        # endregion
+
+        # region Validation Loader
+        val_loss = None
+        val_mae = None
+        if val_loader:
+            model.eval()
+            val_loss_sum = 0.0
+            val_mae_sum = 0.0
+            n_val = 0
+            all_residuals = []
+
+            # region Validation
+            with torch.no_grad():
+                for batch_x, batch_y in val_loader:
+                    batch_x = batch_x.to(device)
+                    batch_y = batch_y.to(device)
+                    outputs = model(batch_x)
+                    val_loss_sum += criterion(outputs, batch_y).item()
+                    val_mae_sum += mae(outputs, batch_y)
+                    n_val += 1
+            # endregion
+
+            # region Validation Losses
+            val_loss = val_loss_sum / n_val
+            val_mae = val_mae_sum / n_val * 100
+            history['val_losses'].append(val_loss)
+            history['val_mae'].append(val_mae)
+            # endregion
+            
+            # region Residuals calcs
+            all_residuals = np.concatenate(all_residuals, axis=0)
+            per_wl_mean = all_residuals.mean(axis=0)
+            per_wl_std = all_residuals.std(axis=0)
+            history['val_residuals_mean'].append(float(per_wl_mean.mean()))
+            history['val_residuals_std'].append(float(per_wl_std.mean()))
+            # endregion
+
+            # region Schedule / Save / Early stop
+            scheduler.step(val_loss)
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                patience_counter = 0
+                torch.save(model.state_dict(), best_model_path)
+            else:
+                patience_counter += 1
+                if patience_counter >= early_stop_patience:
+                    print(f'Early stopping at epoch {epoch + 1}')
+                    break
+            # endregion
+        # endregion
+
+        # region Epoch Report
+        end_time = time.perf_counter()
+        print(f'Epoch {epoch + 1}/{max_epochs} | Train Loss: {avg_train_loss:.6f}', end='')
+
+        if val_loss is not None:
+            print(f' | Val Loss: {val_loss:.6f} | Val MAE: {val_mae:.4f}'
+                  f' | Res μ: {history["val_residuals_mean"][-1]:+.4f}'
+                  f'  σ: {history["val_residuals_std"][-1]:.4f}', end='')
+        print(f' | {(end_time - start_time)/60:.3f} min')
+        # endregion
+    # endregion
+
+    # region Plotting loss
+    if plot_animation:
+        fig, ax = plt.subplots(figsize=(8, 5))
+        epochs_range = range(1, len(history['train_losses']) + 1)
+        ax.plot(epochs_range, history['train_losses'], 'b-o', label='Train Loss')
+        if history.get('val_losses'):
+            ax.plot(epochs_range, history['val_losses'], 'r-o', label='Val Loss')
+        
+        # region Plot Details
+        ax.set_xlabel('Epoch')
+        ax.set_ylabel('Loss')
+        ax.set_title('Training History')
+        ax.legend()
+        ax.grid(True)
+        plt.tight_layout()
+        # endregion
+
+        # region Saving the Plot Figure        
+        time_stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        fig_save_path = f"training_history_{time_stamp}.png"
+        plt.savefig(fig_save_path, dpi=150, bbox_inches='tight')
+        plt.close(fig)
+        print(f"Training plot saved to {fig_save_path}")
+        # endregion
+        
+        # region Force open the saved image with Windows default viewer
+        import os
+        os.startfile(os.path.abspath(fig_save_path))
+        # endregion
+    # endregion
+    # endregion
+
+    return model, history
+
+def init_xpu_1d_cnn_trainer(
+        # region Arguments
+        model: nn.Module,
+        X_train: np.ndarray | pd.DataFrame,
+        y_train: np.ndarray | pd.DataFrame,
+        X_val: Optional[np.ndarray | pd.DataFrame] = None,
+        y_val: Optional[np.ndarray | pd.DataFrame] = None,
+        max_epochs: int = 10,
+        device: torch.device = torch.device('xpu'),
+        batch_size: int = 64,
+        shuffle: bool = True,
+        num_workers: int = 4,
+        pin_memory: bool = False,
+        learning_rate: float = 0.001,
+        criterion: nn.Module = nn.MSELoss(),
+        clip_grads: bool = True,
+        optimizer_cls = optim.Adam,
+        weight_decay: float = 1e-4,
+        verbose: bool = True,
+        plot_animation: bool = True,
+        save_path: Optional[str] = None,
+        # endregion
+) -> Tuple[nn.Module, Dict[str, Any]]:
+    """
+    Trains a 1D CNN (or any nn.Module) on XPU with a simple loop.
+
+    Args:
+        model: Your nn.Module (e.g. Simple1DCNN)
+        X_train, y_train: Training features and targets
+        X_val, y_val: Optional validation data
+        max_epochs: Number of epochs
+        device: 'xpu' by default
+        batch_size, shuffle, learning_rate: Training hyperparameters
+        criterion: Loss function (MSELoss for regression by default)
+        optimizer_cls: Optimizer class (Adam by default)
+        verbose: Print progress or not
+
+    Returns:
+        (trained_model, history_dict)
+        history_dict contains: train_losses, val_losses (if val provided)
+    """
+    # region Setup
+    # region Convert inputs to numpy if pandas
+    if isinstance(X_train, pd.DataFrame):
+        X_train = X_train.values.astype(np.float32)
+    if isinstance(y_train, pd.Series):
+        y_train = y_train.values.astype(np.float32)
+    if X_val is not None and isinstance(X_val, pd.DataFrame):
+        X_val = X_val.values.astype(np.float32)
+    if y_val is not None and isinstance(y_val, pd.Series):
+        y_val = y_val.values.astype(np.float32)
+    # endregion
+
+    # region Make sure y is 2D for regression (n_samples, 1)
+    if y_train.ndim == 1:
+        y_train = y_train.reshape(-1, 1)
+    if y_val is not None and y_val.ndim == 1:
+        y_val = y_val.reshape(-1, 1)
+    # endregion
+
+    # region Create datasets
+    train_dataset = TensorDataset(
+        torch.from_numpy(X_train),
+        torch.from_numpy(y_train)
+    )
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        pin_memory=pin_memory
+    )
+
+    val_loader = None
+    if X_val is not None and y_val is not None:
+        val_dataset = TensorDataset(
+            torch.from_numpy(X_val),
+            torch.from_numpy(y_val)
+        )
+        val_loader = DataLoader(
+            val_dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=num_workers,
+            pin_memory=pin_memory
+        )
+    # endregion
+
+    # region Move model to device
+    model = model.to(device)
+    optimizer = optimizer_cls(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    # endregion
+
+    # region Save directories resolution
+    time_stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    if save_path is None:
+        save_dir = Path(r"G:\My Drive\RLSL\Python\LIBS")
+    else:
+        save_dir = Path(save_path).resolve()
+    save_dir.mkdir(parents=True, exist_ok=True)
+    best_model_path = save_dir / f'best_model_{time_stamp}.pt'
+    fig_save_path = save_dir / f"training_history_{time_stamp}.png"
+    # endregion
+
+    # region Scheduler / Early Stopping
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='min', factor=0.5, patience=10
+    )
+
+    best_val_loss = float('inf')
+    patience_counter = 0
+    early_stop_patience = 30
+    # endregion
+
+    # region Track losses
+    history = {
+        'train_losses': [],
+        'val_losses': [] if val_loader else None,
+        'val_mae': [] if val_loader else None,
+        'val_residuals_mean' : [] if val_loader else None,
+        'val_residuals_std' : [] if val_loader else None,
+    }
+    # endregion
+    
+    # region Print training size details
+    if verbose:
+        print(f"Training on {device} | Epochs: {max_epochs} | Batch size: {batch_size}")
+        print(f"Train samples: {len(train_dataset)}")
+    # endregion
+    # endregion
+    
+    # region Train and Validate
+    # region Epoch Loop
+    epoch_counter = 0
+    for epoch in range(max_epochs):
+        epoch_counter += 1
+        start_time = time.perf_counter()
+        model.train()
+        train_loss = 0.0
+        n_batches = 0
+
+        # region Training Loop
+        for batch_x, batch_y in train_loader:
+            batch_x = batch_x.to(device)
+            batch_y = batch_y.to(device)
+            optimizer.zero_grad()
+            outputs = model(batch_x)
+            loss = criterion(outputs, batch_y)
+            loss.backward()
+            if clip_grads:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
+            train_loss += loss.item()
+            n_batches += 1
+        # endregion
+    
+        # region Training loss
+        avg_train_loss = train_loss / n_batches
+        history['train_losses'].append(avg_train_loss)
+        # endregion
+    
+        # region Validation Loader
+        val_loss = None
+        val_mae = None
+        if val_loader:
+            model.eval()
+            val_loss_sum = 0.0
+            val_mae_sum = 0.0
+            n_val = 0
+            all_residuals = []
+
+            # region Validation
+            with torch.no_grad():
+                for batch_x, batch_y in val_loader:
+                    batch_x = batch_x.to(device)
+                    batch_y = batch_y.to(device)
+                    outputs = model(batch_x)
+                    val_loss_sum += criterion(outputs, batch_y).item()
+                    val_mae_sum += mae(outputs, batch_y)
+                    residual = (outputs - batch_y).cpu().numpy()
+                    all_residuals.append(residual)
+                    n_val += 1
+            # endregion
+    
+            # region Validation Losses
+            val_loss = val_loss_sum / n_val
+            val_mae = val_mae_sum / n_val * 100
+            history['val_losses'].append(val_loss)
+            history['val_mae'].append(val_mae)
+            # endregion
+    
+            # region Residuals calcs
+            all_residuals = np.concatenate(all_residuals, axis=0)
+            per_wl_mean = all_residuals.mean(axis=0)
+            per_wl_std = all_residuals.std(axis=0)
+            history['val_residuals_mean'].append(float(per_wl_mean.mean()))
+            history['val_residuals_std'].append(float(per_wl_std.mean()))
+            # endregion
+
+            # region Schedule / Save / Early stop
+            scheduler.step(val_loss)
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                patience_counter = 0
+                torch.save(model.state_dict(), best_model_path)
+            else:
+                patience_counter += 1
+                if patience_counter >= early_stop_patience:
+                    print(f'Early stopping at epoch {epoch + 1}')
+                    break
+            # endregion
+                
+        # endregion
+
+        # region Epoch Report
+        end_time = time.perf_counter()
+        print(f'Epoch {epoch + 1}/{max_epochs} | Train Loss: {avg_train_loss:.6f}', end='')
+
+        if val_loss is not None:
+            print(f' | Val Loss: {val_loss:.6f} | Val MAE: {val_mae:.4f}'
+                  f' | Res μ: {history["val_residuals_mean"][-1]:+.4f}'
+                  f'  σ: {history["val_residuals_std"][-1]:.4f}', end='')
+        print(f' | {(end_time - start_time)/60:.3f} min')
+        # endregion
+    # endregion
+
+    # region Plotting loss
+    if plot_animation:
+        fig, ax = plt.subplots(figsize=(8, 5))
+        epochs_range = range(1, len(history['train_losses']) + 1)
+        ax.plot(epochs_range, history['train_losses'], 'b-o', label='Train Loss')
+        if history.get('val_losses'):
+            ax.plot(epochs_range, history['val_losses'], 'r-o', label='Val Loss')
+
+        # region Plot Details
+        ax.set_xlabel('Epoch')
+        ax.set_ylabel('Loss')
+        ax.set_title('Training History')
+        ax.legend()
+        ax.grid(True)
+        plt.tight_layout()
+        # endregion
+
+        # region Saving the Plot Figure        
+        time_stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        fig_save_path = f"training_history_{time_stamp}.png"
+        plt.savefig(fig_save_path, dpi=150, bbox_inches='tight')
+        plt.close(fig)
+        print(f"Training plot saved to {fig_save_path}")
+        # endregion
+        
+        # region Force open the saved image with Windows default viewer
+        import os
+        os.startfile(os.path.abspath(fig_save_path))
+        # endregion
+    # endregion
+    # endregion
+
+    return model, history
+
+
+
+"""
+def animate_training(history, max_epochs, plot_animation=True):
+    if not plot_animation:
+        return None, None
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.set_xlabel('Epoch')
+    ax.set_ylabel('Loss')
+    ax.set_title('Training Progress')
+    ax.set_xlim(0, max_epochs + 1)
+    ax.set_ylim(0, max(history['train_losses'] or [1]) * 1.1)
+
+    train_line, = ax.plot([], [], 'b-', label='Train Loss')
+    val_line = None
+    if history.get('val_losses'):
+        val_line, = ax.plot([], [], 'r-', label='Val Loss')
+    ax.legend()
+    ax.grid(True)
+
+    def update(frame):
+        train_line.set_data(range(1, frame + 2), history['train_losses'][:frame + 1])
+        if val_line:
+            val_line.set_data(range(1, frame + 2), history['val_losses'][:frame + 1])
+        ax.relim()
+        ax.autoscale_view()
+        return (train_line, val_line) if val_line else (train_line,)
+
+    ani = FuncAnimation(
+        fig=fig,
+        func=update,
+        frames=max_epochs,
+        interval=500,
+        repeat=False,
+        blit=True,
+        cache_frame_data=False
+    )
+
+    plt.show(block=False)  # non-blocking
+
+    return ani, update  # ← return both!
+"""
+
+"""
+Python > utils > def_archive.py
+"""
+
+
+def technique_csv_enrichment_and_combination(
+    data_root: str | Path,
+    csv_root: str | Path,
+    technique: str = 'cv',
+    drop_columns: Optional[List[str]] = None,
+    rename_columns: Optional[List[str]] = None,
+    composition_columns: Optional[List[str]] = None,
+    min_wavelength: Optional[float] = None,
+    max_wavelength: Optional[float] = None,
+    allowed_extensions: Optional[List[str]] = None,
+    required_columns: Optional[List[str]] = None,
+    salt_states: Optional[List[str]] = None,
+    experimental_variation_columns: Optional[List[str]] = None,
+    include_experimental_variation_columns: bool = True,
+) -> Optional[pd.DataFrame]:
+    """
+    Arguments:
+        data_root: str | Path,
+            Folder location of CSV data files. Given as a raw string.
+            ex: ' r"W:\Phongikaroon Group\AndrewsH" '
+        csv_root: str | Path,
+            Folder location of where the enriched and combined CSV data
+            will be saved. Also given as a raw string.
+            ex: ' r"W:\Phongikaroon Group\AndrewsH" '
+        technique: str = 'cv',
+            This is the key that is used in pulling metadata from parent
+            folder names and file names. It is inserted into the 'pattern'
+            that the Regex uses to search the folder/file names. It 
+            defaults to 'cv'.
+        drop_columns: Optional[List[str]] = None,
+            This is an optional arguement for a list of columns the user
+            specifically wants dropped. It defaults to 'None'. 
+        rename_columns: Optional[List[str]] = None,
+            This is an optional arguement for a list of columns the user
+            specifically wants to rename. It defaults to 'None'.
+        composition_columns: Optional[List[str]] = None,
+            This is an optional arguement for a list of columns containing
+            the potential materials that the specimens could contain. Each
+            file will have all of these columns and percentages of each
+            material will be populated into the correct columns. Columns
+            default to zero and most will stay at zero.
+            
+    """
+    
+    data_root = Path(data_root)
+    csv_root = Path(csv_root)
+    
+    # ====================== 1. Convert .mpr → .csv ======================
+    # ====================================================================
+    """
+    Ensure that .mpr files were converted to .csv files prior to running 
+    this function. This conversion can be done by calling the
+    'recursive_mpr_to_csv' function from the 'file_type_processing.py'
+    file in the 'utils' folder.
+    """
+
+    # ====================== 2. Segregate by technique ===================
+    # ====================================================================
+    start_time = time.perf_counter()
+    technique = technique.upper()
+    print(f"\n=== Step 2: Segregating {technique} files ===")
+    data_destination = csv_root / f"{technique}_data"
+    file_segregator(
+        data_root=csv_root, 
+        data_destination=data_destination, 
+        pattern=f'*_{technique}_C01*', 
+        preserve_structure=False)
+    end_time = time.perf_counter()
+    print(f'Segregating {technique} files took {end_time - start_time} s.')
+    gen_speak(f'Segregation of {technique} files is complete.')
+
+    # ====================== 3. Enrich all files =========================
+    # ====================================================================
+    start_time = time.perf_counter()
+    print(f"\n=== Step 3: Enriching {technique} CSVs with metadata ===")
+    enriched_root = csv_root / f"enriched_{technique}_data"
+    csv_files = list(data_destination.glob("*.csv"))
+    enrich_with_progress(
+        files=csv_files,
+        enriched_root=enriched_root,
+        technique_name=technique,
+        drop_columns=drop_columns,
+        rename_columns=rename_columns,
+        composition_columns=composition_columns,
+        min_wavelength=min_wavelength,
+        max_wavelength=max_wavelength,
+        allowed_extensions=allowed_extensions,
+        required_columns=required_columns,
+        salt_states=salt_states,
+        experimental_variation_columns=experimental_variation_columns,
+        include_experimental_variation_columns=include_experimental_variation_columns,
+    )
+    end_time = time.perf_counter()
+    print(f'Enriching {technique} files with metadata took {end_time - start_time} s.')
+    gen_speak(f'Metadata {technique} file enrichment is complete.')
+
+    # ====================== 4. Combine & Save ===========================
+    # ====================================================================
+    start_time = time.perf_counter()
+    print(f"\n=== Step 4: Combining and saving enriched {technique} data ===")
+    combined_path = combine_and_save(
+        individuals_root=enriched_root,
+        combined_root= csv_root / f'combined_data',
+        technique=technique,
+        cleaning=False,
+        drop_columns=None,
+        rename_columns=None,
+        min_wavelength=min_wavelength,
+        max_wavelength=max_wavelength
+    )
+    end_time = time.perf_counter()
+    print(f'combining the {technique} files and saving them took {end_time - start_time} s.')
+    gen_speak(f'Combining and saving the {technique} files is complete.')
+    
+    # ====================== Complete ====================================
+    # ====================================================================
+    play_completion_sound()
+    print("\n ====== Batch Enrichment Pipeline Completed Successfully! ======")
+    return combined_path
+
+def split_training_and_validation_dataframes(
+    combined_path: str | Path,
+    technique: str = 'cv'
+):
+    # ====================== 5. Train/Val splits =========================
+    # ====================================================================
+    start_time = time.perf_counter()
+    technique = technique.upper()
+    print(f"\n=== Step 5: Splitting {technique} data into Training and Validation DataFrames ===")
+    split_technique(combined_path, technique)
+    end_time = time.perf_counter()
+    print(f'Dividing {technique} data into training and validation sets took {end_time - start_time} s.')
+    gen_speak(f'Dividing {technique} data into training and validation sets is complete.')
+
+def play_completion_sound():
+    """
+    Play a nice audible chime when the full pipeline finishes.
+    Works on Windows (your lab computers). Cross-platform fallback included.
+    """
+    try:
+        # Fancy three-tone success sound
+        winsound.Beep(800, 200)
+        time.sleep(0.08)
+        winsound.Beep(1200, 300)
+        time.sleep(0.08)
+        winsound.Beep(1600, 400)
+        print("\n🎉🎵 PIPELINE COMPLETE! Sound played.\n")
+    except Exception:
+        # Fallback if winsound fails (very rare on Windows)
+        print("\n🎉 PIPELINE COMPLETE!\n")
+        print('\a')  # terminal bell
+
+def split_technique(
+        combined_path: Path, 
+        technique: str
+):
+    if combined_path is None:
+        return
+    trn_path = combined_path.parent / f"{technique}_training_data.csv"
+    val_path = combined_path.parent / f"{technique}_validation_data.csv"
+
+    trn_val_splitter(
+        df_path=combined_path,
+        trn_path=trn_path,
+        val_path=val_path,
+        test_size=0.2,
+        random_state=42,
+        shuffle=True
+    )
+
+def wavelength_trim(
+        file: str | Path,
+        min_wl: float = 350.0,
+        max_wl: float = 800.0,
+) -> Optional[pd.DataFrame]:
+    # Vectorized Version
+    df = pd.read_csv(file, index_col=0)
+    numeric_cols = pd.to_numeric(df.columns, errors='coerce')
+    mask = (numeric_cols >= min_wl) & (numeric_cols <= max_wl)
+    cols_to_keep = df.columns[mask].tolist()
+    if not cols_to_keep:
+        print(f'{Path(file).name} has no wavelengths in range {min_wl} to {max_wl}')
+        return None
+    return df[cols_to_keep]
+
+def recursive_col_trim(
+        data_root: str | Path,
+        save_root: str | Path,
+        wavelength: bool = False,
+        min_wl: float = 350.0,
+        max_wl: float = 800.0,
+        n_points: int = 451,
+) -> None:
+    data_root = Path(data_root).resolve()
+    save_root = Path(save_root).resolve()
+    save_root.mkdir(parents=True, exist_ok=True)
+
+    for file in data_root.glob('*.csv'):
+        file = Path(file).resolve()
+        trimmed_data = None
+
+        if wavelength:
+            trimmed_data = standardize_wavelength_grid(
+                file_path=file,
+                min_wl=min_wl,
+                max_wl=max_wl,
+                n_points=n_points
+            )
+#            trimmed_data = other_trim(...)
+        if trimmed_data is None:
+            print(f'Skipping {file.name}: no columns in range')
+            continue
+        new_path = save_root / file.name
+        trimmed_data.to_csv(new_path, index=True)
+        print(f'Saved {new_path.name} | shape: {trimmed_data.shape}')
+
+def combo_b_clean_CSVs(
+    source_data_paths: List[str | Path],
+    drop_columns: Optional[List[str]] = None,
+    rename_columns: Optional[dict] = None,
+    technique: str = 'cv',
+    min_wavelength: Optional[float] = None,
+    max_wavelength: Optional[float] = None,
+) -> pd.DataFrame:
+    """
+    Clean and combine multiple CV CSV files using the shared single-file cleaner.
+    """
+    dfs = []
+    skipped_files = []
+    
+
+    for i, path in enumerate(source_data_paths):
+        cleaned_df = clean_single_technique_file(
+            path=path,
+            technique=technique,
+            drop_columns=drop_columns,
+            rename_columns=rename_columns,
+            min_wavelength=min_wavelength,
+            max_wavelength=max_wavelength
+        )
+
+        if cleaned_df is None:
+            skipped_files.append(Path(path).name)
+            continue
+
+        # Optional: use the enumerated file_id style you had before
+        cleaned_df['file_id'] = f'file_{i:04d}_{Path(path).stem}'
+
+        dfs.append(cleaned_df)
+
+    if not dfs:
+        raise ValueError(f"No valid {technique} CSVs loaded. Skipped: {skipped_files}")
+
+    combined_df = pd.concat(dfs, ignore_index=True, sort=False)
+
+    print(f'\nCombined shape: {combined_df.shape}')
+    print("Final columns:", list(combined_df.columns))
+    print(combined_df.head())
+    print(f"\nSkipped {len(skipped_files)} files: {skipped_files}")
+
+    return combined_df
+
