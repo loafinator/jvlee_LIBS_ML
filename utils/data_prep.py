@@ -856,6 +856,10 @@ def parent_concentration_data(
             if temp_match:
                 temp = float(temp_match.group(1))
                 if temp > 360:
+                    # 352 C is melting point of LiCl-KCl, doing 360 for error. Reference:
+                    # M. DEL ROCÍO RODRÍGUEZ-LAGUNA et al., “Effect of iodides on thermal behavior 
+                    # and phase partitioning in LiCl-KCl,” J. Mol. Liq. 418, 126706 (2025); 
+                    # https://doi.org/10.1016/j.molliq.2024.126706.
                     data['temperature_C'] = temp
                     data['state_molten'] = 1
                     data['state_solid'] = 0
