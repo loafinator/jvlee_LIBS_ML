@@ -7,11 +7,6 @@ Full definition and implimentation of LIBS_1D_CNN_003().
 
 """
 
-# region Paths
-logger_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\1D_CNN\LIBS_M003_log.txt"
-h5_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\trn_val_split_LIBS.h5"
-eval_dir = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\eval_003")
-# endregion
 
 # region Imports
 # region imports
@@ -91,6 +86,11 @@ except ImportError:
 # endregion
 # endregion
 
+# region Paths
+logger_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\1D_CNN\LIBS_M003_log.txt"
+h5_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\trn_val_split_LIBS.h5"
+eval_dir = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\eval_003")
+# endregion
 
 class LIBS_1D_CNN_003(nn.Module):
     def __init__(

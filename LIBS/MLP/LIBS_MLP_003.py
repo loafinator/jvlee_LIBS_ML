@@ -9,10 +9,6 @@ structures. This looping takes place in the 'if __name__ == "__main__"'
 
 """
 
-logger_root = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\LIBS_MLP_003_log")
-eval_root = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\eval_MLP_003")
-h5_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\trn_val_split_LIBS.h5"
-hidden_study_root = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\MLP_003_trn_Hist"
 
 # region Imports
 # region plain
@@ -41,8 +37,9 @@ from typing import Optional
 # endregion
 
 # region custom
-from setup import add_project_root_to_path
-add_project_root_to_path(parent_generation=1)
+# from setup import add_project_root_to_path
+# add_project_root_to_path(parent_generation=1)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 try:
     from utils import (
         Logger, 
@@ -93,6 +90,10 @@ except ImportError:
 # endregion
 # endregion
 
+logger_root = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\LIBS_MLP_003_log")
+eval_root = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\eval_MLP_003")
+h5_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\trn_val_split_LIBS.h5"
+hidden_study_root = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\MLP_003_trn_Hist"
 
 class LIBS_MLP_003(nn.Module):
     def __init__(
@@ -292,7 +293,7 @@ def full_run(
         # endregion
         
         # region 
-        log(logger=logger, msg= f"Columns surviving VarianceThreshold: {X_trn_filtered.columns.tolist()}")
+        log(logger=logger, msg= f"Columns surviving VarianceThreshold({X_trn_filtered.shape}): {X_trn_filtered.columns.tolist()}")
 
         log(logger=logger, msg= f"NaNs in trn_X: {np.isnan(X_trn).sum()}")
         log(logger=logger, msg= f"NaNs in trn_y: {np.isnan(y_trn).sum()}")
@@ -345,7 +346,7 @@ def full_run(
             weight_decay=1e-4,
             verbose= True,
             plot_animation= True,
-            save_path= hidden_study_root / f"hidden_run_{time_stamp}_{hidden_str}"
+            save_path= hidden_study_root + f"hidden_run_{time_stamp}_{hidden_str}"
         )
 
         end_time_b = time.perf_counter()
@@ -474,7 +475,7 @@ if __name__ == "__main__":
         # (1024, 1024, 1024, 1024)
     ]
     for hc, h in enumerate(hiddens):
-        full_run(hiddens=h,hidden_count=hc)
+        full_run(hiddens=h)
         # time.sleep(5)
 
     loop_time_end = time.perf_counter()
