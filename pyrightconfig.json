@@ -1,0 +1,10 @@
+// jvlee_LIBS_ML > pyrightconfig.json
+
+{
+    "pythonVersion": "3.11",
+    "venvPath": "C:/Users/leejv2/Documents/git_repos/jvlee_LIBS_ML",
+    "venv": ".venv",
+    "extraPaths": [
+        "C:/Users/leejv2/Documents/git_repos"
+    ]
+}

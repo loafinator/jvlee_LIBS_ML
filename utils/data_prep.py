@@ -23,6 +23,7 @@ import re
 import logging
 import os
 import warnings
+import h5py
 # endregion
 
 # region as
@@ -1491,16 +1492,18 @@ def load_h5_dataset(
     """
     import h5py
     with h5py.File(h5_path, 'r') as hf:
-        spectra     = hf['spectra'][:]          # loads entire array into RAM
-        wavelengths = hf['wavelengths'][:]
+        spectra     = hf_get(hf, 'spectra')
+        wavelengths = hf_get(hf, 'wavelengths')
 
-        meta_cols = meta_cols_wanted or list(hf['metadata'].keys())
-        metadata  = {col: hf['metadata'][col][:] for col in meta_cols}
+        metadata_grp = hf['metadata']
+        assert isinstance(metadata_grp, h5py.Group), "Expected a Group at 'metadata'"
+        meta_cols = meta_cols_wanted or list(metadata_grp.keys())
+        metadata  = {col: hf_get(hf, f'metadata/{col}') for col in meta_cols}
 
     return spectra, metadata, wavelengths
 
 def sanitize_path(
-        path: Path = None,
+        path: Path | None = None,
 ) -> Path:
     """
     Renames any path components containing illegal Windows characters.
@@ -1563,6 +1566,9 @@ def _worker_init(log_q):
 
 def _get_worker_logger(name):
     return logging.getLogger(f'worker.{name}')
+
+def hf_get(hf: h5py.File, key: 'str') -> np.ndarray:
+    return hf[key][:]   # type: ignore[index]
 
 if __name__=="__main__":
     print("hi")

@@ -57,6 +57,7 @@ __all__ = [
     "_long_path",
     "_worker_init",
     "_get_worker_logger",
+    "hf_get",
     # endregion
 
     # region plotting

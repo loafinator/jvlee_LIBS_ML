@@ -1,5 +1,5 @@
 """
-Python > LIBS > MLP > Predictions_MLP_003 > pred_mlp_003.py
+jvlee_LIBS_ML > LIBS > MLP > Predictions_MLP_003 > pred_mlp_003.py
 """
 
 # region Imports
@@ -24,7 +24,7 @@ from logging.handlers import QueueListener
 
 # region custom
 try:
-    from LIBS_MLP_003 import(
+    from LIBS.conc_to_spec.MLP.LIBS_MLP_003 import(
         LIBS_MLP_003, 
     ) 
     from utils import(
@@ -39,25 +39,25 @@ try:
         plot_residual_history
     )
 except ImportError:
-    from Python.LIBS.MLP.LIBS_MLP_003 import(
+    from jvlee_LIBS_ML.LIBS.conc_to_spec.MLP.LIBS_MLP_003 import(
         LIBS_MLP_003, 
     ) 
-    from Python.utils.debug import(
+    from jvlee_LIBS_ML.utils.debug import(
         log,
         logging,
         Logger,
         get_worker_logger,
     )
-    from Python.utils.speak import(
+    from jvlee_LIBS_ML.utils.speak import(
         gen_speak,
     )
-    from Python.utils.post_processing import(
+    from jvlee_LIBS_ML.utils.post_processing import(
         run_spectral_inference,
     )
-    from Python.utils.plotting import(
+    from jvlee_LIBS_ML.utils.plotting import(
         plot_peak_error_heatmap,
         plot_predicted_vs_actual,
-        plot_residual_history
+        # plot_residual_history
     )
 # endregion
 # endregion

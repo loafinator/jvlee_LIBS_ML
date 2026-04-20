@@ -37,56 +37,20 @@ from typing import Optional
 # endregion
 
 # region custom
-# from setup import add_project_root_to_path
-# add_project_root_to_path(parent_generation=1)
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-try:
-    from utils import (
-        Logger, 
-        gen_speak,
-        get_worker_logger,
-        log,
-        init_xpu_trainer,
-        plot_residual_history,
-        plot_peak_error_heatmap,
-        plot_predicted_vs_actual,
-        run_spectral_inference,
-
-    )
-except ImportError:
-    try:
-        from ...utils import (
-            Logger, 
-            get_worker_logger, 
-            log, 
-            init_xpu_trainer,
-            plot_residual_history,
-            plot_peak_error_heatmap,
-            plot_predicted_vs_actual,
-            run_spectral_inference,
-        )
-    except ImportError:
-        try:
-            # from ..utils.data_prep import enrich_with_progress, combine_and_save_as_HDF5, trn_val_splitter_HDF5, load_h5_dataset
-            from ...utils.debug import (
-                Logger, 
-                get_worker_logger, 
-                log
-            )
-            from ...utils.speak import gen_speak
-            from ...utils.xpu_setup import (
-                init_xpu_trainer,
-            ) 
-            from ...utils.plotting import (
-                plot_residual_history,
-                plot_peak_error_heatmap,
-                plot_predicted_vs_actual,
-            )
-            from ...utils.plotting import (
-                run_spectral_inference,
-            )
-        except ImportError as e:
-            print(f'Utils import error: {e}')
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from setup import add_project_root_to_path
+add_project_root_to_path(parent_generation=1)
+from utils import (
+    Logger, 
+    gen_speak,
+    get_worker_logger,
+    log,
+    init_xpu_trainer,
+    plot_residual_history,
+    plot_peak_error_heatmap,
+    plot_predicted_vs_actual,
+    run_spectral_inference,
+)
 # endregion
 # endregion
 

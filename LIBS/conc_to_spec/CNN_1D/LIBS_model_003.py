@@ -28,61 +28,29 @@ import numpy as np
 from datetime import datetime
 from torch import optim
 from pathlib import Path
+from h5py import Group
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import VarianceThreshold
 from logging.handlers import QueueListener
 # endregion
 
 # region custom
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from setup import add_project_root_to_path
 add_project_root_to_path(parent_generation=1)
-try:
-    from utils import (
-        Logger, 
-        gen_speak,
-        get_worker_logger,
-        log,
-        init_xpu_1d_cnn_trainer,
-        plot_residual_history,
-        plot_peak_error_heatmap,
-        plot_predicted_vs_actual,
-        run_spectral_inference,
+from utils import (
+    Logger, 
+    gen_speak,
+    get_worker_logger,
+    log,
+    init_xpu_trainer,
+    plot_residual_history,
+    plot_peak_error_heatmap,
+    plot_predicted_vs_actual,
+    run_spectral_inference,
+    hf_get
+)
 
-    )
-except ImportError:
-    try:
-        from utils import (
-            Logger, 
-            get_worker_logger, 
-            log, 
-            init_xpu_1d_cnn_trainer,
-            plot_residual_history,
-            plot_peak_error_heatmap,
-            plot_predicted_vs_actual,
-            run_spectral_inference,
-        )
-    except ImportError:
-        try:
-            # from ..utils.data_prep import enrich_with_progress, combine_and_save_as_HDF5, trn_val_splitter_HDF5, load_h5_dataset
-            from utils.debug import (
-                Logger, 
-                get_worker_logger, 
-                log
-            )
-            from utils.speak import gen_speak
-            from utils.xpu_setup import (
-                init_xpu_1d_cnn_trainer,
-            ) 
-            from utils.plotting import (
-                plot_residual_history,
-                plot_peak_error_heatmap,
-                plot_predicted_vs_actual,
-            )
-            from utils.plotting import (
-                run_spectral_inference,
-            )
-        except ImportError as e:
-            print(f'Utils import error: {e}')
 # endregion
 # endregion
 
@@ -126,6 +94,8 @@ class LIBS_1D_CNN_003(nn.Module):
 
     def forward(self, x):
         return self.fc(self.conv(x))
+    
+
     
 
 if __name__ == "__main__":
@@ -173,18 +143,21 @@ if __name__ == "__main__":
 
         # region Load H5 Data file
         with h5py.File(h5_path, 'r') as hf:
-            y_trn_raw = hf['train/spectra'][:]
-            y_val_raw   = hf['val/spectra'][:]
-            wavelengths = hf['wavelengths'][:]
+            y_trn_raw = hf_get(hf, 'train/spectra')
+            y_val_raw   = hf_get(hf, 'val/spectra')
+            wavelengths = hf_get(hf, 'wavelengths')
+            
+            metadata_grp = hf['train/metadata']
+            assert isinstance(metadata_grp, Group), "Expected a Group at 'train/metadata'"
 
-            all_cols = list(hf['train/metadata'].keys())
+            all_cols = list(metadata_grp.keys())
             feature_cols = [c for c in all_cols
                             if c in ALLOWED_FEATURE_COLS]
             
-            X_trn_raw = np.stack([hf[f'train/metadata/{c}'][:] for c in feature_cols], axis=1).astype(np.float32)
-            X_val_raw = np.stack([hf[f'val/metadata/{c}'][:] for c in feature_cols], axis=1).astype(np.float32)
+            X_trn_raw = np.stack([hf_get(hf, f'train/metadata/{c}') for c in feature_cols], axis=1).astype(np.float32)
+            X_val_raw = np.stack([hf_get(hf, f'val/metadata/{c}') for c in feature_cols], axis=1).astype(np.float32)
 
-            meta_val_dict = {c: hf[f'val/metadata/{c}'][:] for c in feature_cols}
+            meta_val_dict = {c: hf_get(hf, f'val/metadata/{c}') for c in feature_cols}
             meta_val_df = pd.DataFrame(meta_val_dict)
             
             log(logger=logger, msg= f'Feature columns ({len(feature_cols)}): {feature_cols}')
@@ -233,10 +206,10 @@ if __name__ == "__main__":
         selector.fit(X_trn_raw)
         surviving_cols = [c for c, keep in zip(feature_cols, selector.get_support()) if keep]
         X_trn_filtered = pd.DataFrame(
-            selector.transform(X_trn_raw),
+            np.array(selector.transform(X_trn_raw)),
             columns=surviving_cols)
         X_val_filtered = pd.DataFrame(
-            selector.transform(X_val_raw),
+            np.array(selector.transform(X_val_raw)),
             columns=surviving_cols)
         # Filter the metadata df so that index alignment is preserved
         meta_val_df = meta_val_df[[c for c in surviving_cols if c in meta_val_df.columns]]
@@ -310,7 +283,7 @@ if __name__ == "__main__":
 
 
         start_time_b = time.perf_counter()
-        training_model, history = init_xpu_1d_cnn_trainer(
+        training_model, history = init_xpu_trainer(
             model=model,
             X_train=X_trn,
             y_train=y_trn,
@@ -326,8 +299,8 @@ if __name__ == "__main__":
             criterion= nn.MSELoss(),
             clip_grads= True,
             optimizer_cls= optim.Adam,
-            scheduler_cls= torch.optim.lr_scheduler.ReduceLROnPlateau,
-            scheduler_kwargs= None,
+            # scheduler_cls= torch.optim.lr_scheduler.ReduceLROnPlateau,
+            # scheduler_kwargs= None,
             verbose= True,
             plot_animation= True
         )
