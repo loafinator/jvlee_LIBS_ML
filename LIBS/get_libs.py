@@ -1,5 +1,5 @@
 """
-jvlee_LIBS_ML>LIBS>get_libs.py
+jvlee_LIBS_ML > LIBS > get_libs.py
 
 NOTE: update all paths before running from new location(machine).
 
@@ -8,8 +8,6 @@ Cleans, labels, compiles, and splits all data in preperation for training
 and validation.
 
 """
-
-log_path = r"G:\My Drive\RLSL\Python\LIBS\get_libs_log.txt"
 
 # region Imports
 # region plain
@@ -33,29 +31,21 @@ from logging.handlers import QueueHandler, QueueListener
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, parent_dir)
 
-try:
-    from utils import (
-        # recursive_file_extension_converter, 
-        # get_file_genre, 
-        Logger, 
-        enrich_with_progress, 
-        gen_speak, 
-        combine_and_save_as_HDF5, 
-        trn_val_splitter_HDF5, 
-        load_h5_dataset
-    )
-except ImportError:
-    try:
-        from ..utils import Logger, enrich_with_progress, gen_speak, combine_and_save_as_HDF5, trn_val_splitter_HDF5, load_h5_dataset
-    except ImportError:
-        try:
-            from ..utils.data_prep import enrich_with_progress, combine_and_save_as_HDF5, trn_val_splitter_HDF5, load_h5_dataset
-            from ..utils.debug import Logger
-            from ..utils.speak import gen_speak
-        except ImportError as e:
-            print(f'Utils import error: {e}')
+from utils import (
+    recursive_file_extension_converter, 
+    get_file_genre, 
+    Logger, 
+    enrich_with_progress, 
+    gen_speak, 
+    combine_and_save_as_HDF5, 
+    trn_val_splitter_HDF5, 
+    load_h5_dataset
+)
 # endregion
 # endregion
+
+log_path = Path(r"G:\My Drive\RLSL\Python\LIBS\get_libs_log.txt")
+
 
 if __name__ == '__main__':
     start_time = time.perf_counter()
@@ -77,7 +67,8 @@ if __name__ == '__main__':
         #     key=['libs', 'spectra'],
         #     skip_key=['aqueous', 'water', 'cement', 'obsidian'],
         #     allowed_extensions=['.txt'],        #'.csv', '.mat', '.asc', 
-        #     preserve_structure=True
+        #     preserve_structure=True,
+        #     log_path=log_path
         # )
         # gen_speak('Libs files successfully copied.')
         # print('\nAll LIBS files have been copied from W: drive')
@@ -91,7 +82,8 @@ if __name__ == '__main__':
         #     end_extension='.csv',
         #     skip_key=['Laser Energy Test'],
         #     preserve_structure=True,
-        #     libs=True
+        #     libs=True,
+        #     log_path=log_path
         # )
         # gen_speak('m a t files converted to c s v files successfully.')
         # print('\nFile extension converter complete\n')
@@ -257,7 +249,7 @@ if __name__ == '__main__':
         # enrich_with_progress(
         #     files=files,
         #     enriched_root=enriched_root,
-        #     technique_name=None,
+        #     technique_name='libs',
         #     drop_columns=None,
         #     rename_columns=None,
         #     composition_columns=None,
@@ -381,6 +373,7 @@ if __name__ == '__main__':
         #     technique='libs',
         #     compression='gzip',
         #     compression_level=3,
+        #     log_path=log_path
         # )
         # gen_speak('All files have been combined.')
         # if combined_path:
@@ -415,7 +408,8 @@ if __name__ == '__main__':
             h5_path= h5_path,
             output_path= h5_split_path,
             test_size= 0.2,
-            random_state= 42
+            random_state= 42,
+            log_path=log_path
         )
 
         # trn_val_splitter(

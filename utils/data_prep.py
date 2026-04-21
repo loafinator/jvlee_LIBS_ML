@@ -1523,29 +1523,43 @@ def combine_and_save_as_CSV(
         log(logger=logger, msg = f'  ❌ {e}')
         return None
 
-def load_h5_dataset(
-        h5_path: str | Path, 
-        meta_cols_wanted = None,
-        # log_path: Path | None = None,
-):
+def load_h5_split_dataset(
+        h5_path: str | Path,
+        allowed_feature_cols: set[str],
+        log_path: Path | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str], np.ndarray, pd.DataFrame]:
     """
     Returns:
-        spectra   : np.ndarray, shape (N, W), float32
-        metadata  : dict of {col_name: np.ndarray}
-        wavelengths: np.ndarray of wavelength values
+        X_trn_raw    : np.ndarray, shape (N_trn, n_features), float32
+        X_val_raw    : np.ndarray, shape (N_val, n_features), float32
+        y_trn_raw    : np.ndarray, shape (N_trn, W), float32
+        y_val_raw    : np.ndarray, shape (N_val, W), float32
+        feature_cols : list[str]
+        wavelengths  : np.ndarray
+        meta_val_df  : pd.DataFrame
     """
-    import h5py
     with h5py.File(h5_path, 'r') as hf:
-        spectra     = hf_get(hf, 'spectra')
+        y_trn_raw   = hf_get(hf, 'train/spectra')
+        y_val_raw   = hf_get(hf, 'val/spectra')
         wavelengths = hf_get(hf, 'wavelengths')
 
-        metadata_grp = hf['metadata']
-        assert isinstance(metadata_grp, h5py.Group), "Expected a Group at 'metadata'"
-        meta_cols = meta_cols_wanted or list(metadata_grp.keys())
-        metadata  = {col: hf_get(hf, f'metadata/{col}') for col in meta_cols}
+        trn_meta_grp = hf['train/metadata']
+        assert isinstance(trn_meta_grp, h5py.Group), "Expected a Group at 'train/metadata'"
+        all_cols     = list(trn_meta_grp.keys())
+        feature_cols = [c for c in all_cols if c in allowed_feature_cols]
 
-    return spectra, metadata, wavelengths
+        X_trn_raw = np.stack(
+            [hf_get(hf, f'train/metadata/{c}') for c in feature_cols], axis=1
+        ).astype(np.float32)
+        X_val_raw = np.stack(
+            [hf_get(hf, f'val/metadata/{c}') for c in feature_cols], axis=1
+        ).astype(np.float32)
 
+        meta_val_df = pd.DataFrame(
+            {c: hf_get(hf, f'val/metadata/{c}') for c in feature_cols}
+        )
+
+    return X_trn_raw, X_val_raw, y_trn_raw, y_val_raw, feature_cols, wavelengths, meta_val_df
 def sanitize_path(
         path: Path | None = None,
         log_path: Path | None = None,

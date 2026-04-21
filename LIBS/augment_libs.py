@@ -1,5 +1,5 @@
 """
-jvlee_LIBS_ML>LIBS>augment_libs.py
+jvlee_LIBS_ML > LIBS > augment_libs.py
 
 Currently not in use.
 
@@ -19,7 +19,7 @@ from pathlib import Path
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, parent_dir)
 log_path = r"G:\My Drive\RLSL\Python\LIBS\augment_libs_log.txt"
-from utils import recursive_file_extension_converter, get_file_genre, Logger, recursive_col_trim, enrich_with_progress, gen_speak, combine_and_save, trn_val_splitter
+from utils import recursive_file_extension_converter, get_file_genre, Logger, enrich_with_progress, gen_speak
 # endregion
 # endregion
 

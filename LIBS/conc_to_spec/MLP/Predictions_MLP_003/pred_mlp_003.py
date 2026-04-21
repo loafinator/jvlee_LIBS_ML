@@ -3,8 +3,6 @@ jvlee_LIBS_ML > LIBS > MLP > Predictions_MLP_003 > pred_mlp_003.py
 """
 
 # region Imports
-from setup import add_project_root_to_path
-add_project_root_to_path(parent_generation=1)
 # region library sourced
 import torch
 import h5py
@@ -23,42 +21,24 @@ from logging.handlers import QueueListener
 # endregion
 
 # region custom
-try:
-    from LIBS.conc_to_spec.MLP.LIBS_MLP_003 import(
-        LIBS_MLP_003, 
-    ) 
-    from utils import(
-        log,
-        logging,
-        Logger,
-        get_worker_logger,
-        gen_speak,
-        run_spectral_inference,
-        plot_peak_error_heatmap,
-        plot_predicted_vs_actual,
-        plot_residual_history
-    )
-except ImportError:
-    from jvlee_LIBS_ML.LIBS.conc_to_spec.MLP.LIBS_MLP_003 import(
-        LIBS_MLP_003, 
-    ) 
-    from jvlee_LIBS_ML.utils.debug import(
-        log,
-        logging,
-        Logger,
-        get_worker_logger,
-    )
-    from jvlee_LIBS_ML.utils.speak import(
-        gen_speak,
-    )
-    from jvlee_LIBS_ML.utils.post_processing import(
-        run_spectral_inference,
-    )
-    from jvlee_LIBS_ML.utils.plotting import(
-        plot_peak_error_heatmap,
-        plot_predicted_vs_actual,
-        # plot_residual_history
-    )
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from setup import add_project_root_to_path
+add_project_root_to_path(parent_generation=1)
+from LIBS.conc_to_spec.MLP.LIBS_MLP_003 import(
+    LIBS_MLP_003, 
+) 
+from utils import(
+    log,
+    logging,
+    Logger,
+    get_worker_logger,
+    gen_speak,
+    run_spectral_inference,
+    plot_peak_error_heatmap,
+    plot_predicted_vs_actual,
+    plot_residual_history,
+    load_h5_split_dataset
+)
 # endregion
 # endregion
 
@@ -67,7 +47,7 @@ except ImportError:
 h5_path = r"G:\My Drive\RLSL\Data\combined_CSVs\trn_val_split_LIBS.h5"
 model_path = r"G:\My Drive\RLSL\Python\LIBS\MLP\MLP_003_trn_Hist\best_model_20260406_232918.pt"
 pred_dir = r"G:\My Drive\RLSL\Python\LIBS\MLP\Predictions_MLP_003"
-logger_path = r"G:\My Drive\RLSL\Python\LIBS\MLP\Predictions_MLP_003\pred_mlp_003_logfile.txt"
+log_path = r"G:\My Drive\RLSL\Python\LIBS\MLP\Predictions_MLP_003\pred_mlp_003_logfile.txt"
 # endregion
 
 # region Variables
@@ -106,7 +86,7 @@ if __name__ == '__main__':
     # endregion
 
     # region Logging Setup
-    my_logger = Logger(logger_path)
+    my_logger = Logger(log_path)
     my_logger.setFormatter(logging.Formatter('%(asctime)s  |  %(message)s'))
 
     sys.stdout = my_logger
@@ -117,7 +97,7 @@ if __name__ == '__main__':
     # endregion
 
     try:
-        logger = get_worker_logger(Path(logger_path).stem)
+        logger = get_worker_logger(Path(log_path).stem)
         # region recreate scalers
         # NOTE This will not be needed once I re-train with the joblib.dump's in place in xpu_setup.py
             # NOTE The scaler saving has been implimented but I haven't re-trained with it yet.
@@ -125,25 +105,15 @@ if __name__ == '__main__':
             #       - X_scaler = joblib.load(path to X_scaler)
             #       - y_scaler = joblib.load(path to y_scaler) 
         # region Load H5 Data file
-        with h5py.File(r"G:\My Drive\RLSL\Data\combined_CSVs\trn_val_split_LIBS.h5", 'r') as hf:
-            y_trn_raw = hf['train/spectra'][:]
-            y_val_raw   = hf['val/spectra'][:]
-            wavelengths = hf['wavelengths'][:]
-
-            all_cols = list(hf['train/metadata'].keys())
-            feature_cols = [c for c in all_cols
-                            if c in ALLOWED_FEATURE_COLS]
-            
-            X_trn_raw = np.stack([hf[f'train/metadata/{c}'][:] for c in feature_cols], axis=1).astype(np.float32)
-            X_val_raw = np.stack([hf[f'val/metadata/{c}'][:] for c in feature_cols], axis=1).astype(np.float32)
-
-            meta_val_dict = {c: hf[f'val/metadata/{c}'][:] for c in feature_cols}
-            meta_val_df = pd.DataFrame(meta_val_dict)
-            
-            log(logger=logger, msg= f'Feature columns ({len(feature_cols)}): {feature_cols}')
+        X_trn_raw, X_val_raw, y_trn_raw, y_val_raw, feature_cols, wavelengths, meta_val_df = load_h5_split_dataset(
+            h5_path=h5_path,
+            allowed_feature_cols=ALLOWED_FEATURE_COLS,
+        )
 
         assert X_trn_raw.shape[0] == y_trn_raw.shape[0], \
             f'X/y row mismatch: {X_trn_raw.shape[0]} vs {y_trn_raw.shape[0]}'
+
+        log(logger=logger, msg=f'Feature columns ({len(feature_cols)}): {feature_cols}')
         # endregion
 
         # region Drop Columns
@@ -186,10 +156,10 @@ if __name__ == '__main__':
         selector.fit(X_trn_raw)
         surviving_cols = [c for c, keep in zip(feature_cols, selector.get_support()) if keep]
         X_trn_filtered = pd.DataFrame(
-            selector.transform(X_trn_raw),
+            np.asarray(selector.transform(X_trn_raw), dtype=np.float32),
             columns=surviving_cols)
         X_val_filtered = pd.DataFrame(
-            selector.transform(X_val_raw),
+            np.asarray(selector.transform(X_val_raw), dtype=np.float32),
             columns=surviving_cols)
         # Filter the metadata df so that index alignment is preserved
         meta_val_df = meta_val_df[[c for c in surviving_cols if c in meta_val_df.columns]]
@@ -264,7 +234,7 @@ if __name__ == '__main__':
 
         target_percentiles = [5, 35, 65, 95]
         for c in composition_cols:
-            conc_vals = meta_val_df[c].values
+            conc_vals = meta_val_df[c].to_numpy(dtype=np.float32)
 
             # Split into non-zero and zero indices
             nonzero_mask = conc_vals > 0

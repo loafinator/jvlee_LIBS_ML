@@ -50,11 +50,13 @@ from utils import (
     plot_peak_error_heatmap,
     plot_predicted_vs_actual,
     run_spectral_inference,
+    load_h5_split_dataset,
 )
 # endregion
 # endregion
 
 logger_root = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\LIBS_MLP_003_log")
+log_path = logger_root
 eval_root = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\eval_MLP_003")
 h5_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\trn_val_split_LIBS.h5"
 hidden_study_root = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\MLP_003_trn_Hist"
@@ -63,7 +65,7 @@ class LIBS_MLP_003(nn.Module):
     def __init__(
             self, 
             n_features: int = 21,
-            hidden_dims: tuple = (512, 1024, 2048, 1024, 512),
+            hidden_dims: tuple[int, ...] | list[int] = (512, 1024, 2048, 1024, 512),
             dropout: float = 0.3,
             n_wavelengths: int = 451
     ):
@@ -121,7 +123,7 @@ ALLOWED_FEATURE_COLS = {
 }
 
 def full_run(
-        hiddens: Optional[list] = None,
+        hiddens: Optional[list[int] | tuple[int, ...]] = None,
 ):
     
     if hiddens is None:
@@ -169,25 +171,15 @@ def full_run(
         logger = get_worker_logger(Path(logger_path).stem)
 
         # region Load H5 Data file
-        with h5py.File(h5_path, 'r') as hf:
-            y_trn_raw = hf['train/spectra'][:]
-            y_val_raw   = hf['val/spectra'][:]
-            wavelengths = hf['wavelengths'][:]
-
-            all_cols = list(hf['train/metadata'].keys())
-            feature_cols = [c for c in all_cols
-                            if c in ALLOWED_FEATURE_COLS]
-            
-            X_trn_raw = np.stack([hf[f'train/metadata/{c}'][:] for c in feature_cols], axis=1).astype(np.float32)
-            X_val_raw = np.stack([hf[f'val/metadata/{c}'][:] for c in feature_cols], axis=1).astype(np.float32)
-
-            meta_val_dict = {c: hf[f'val/metadata/{c}'][:] for c in feature_cols}
-            meta_val_df = pd.DataFrame(meta_val_dict)
-            
-            log(logger=logger, msg= f'Feature columns ({len(feature_cols)}): {feature_cols}')
+        X_trn_raw, X_val_raw, y_trn_raw, y_val_raw, feature_cols, wavelengths, meta_val_df = load_h5_split_dataset(
+            h5_path=h5_path,
+            allowed_feature_cols=ALLOWED_FEATURE_COLS,
+        )
 
         assert X_trn_raw.shape[0] == y_trn_raw.shape[0], \
             f'X/y row mismatch: {X_trn_raw.shape[0]} vs {y_trn_raw.shape[0]}'
+
+        log(logger=logger, msg=f'Feature columns ({len(feature_cols)}): {feature_cols}')
         # endregion
 
         # region Drop Columns
@@ -228,10 +220,10 @@ def full_run(
         selector.fit(X_trn_raw)
         surviving_cols = [c for c, keep in zip(feature_cols, selector.get_support()) if keep]
         X_trn_filtered = pd.DataFrame(
-            selector.transform(X_trn_raw),
+            np.asarray(selector.transform(X_trn_raw), dtype=np.float32),
             columns=surviving_cols)
         X_val_filtered = pd.DataFrame(
-            selector.transform(X_val_raw),
+            np.asarray(selector.transform(X_val_raw), dtype=np.float32),
             columns=surviving_cols)
         # Filter the metadata df so that index alignment is preserved
         meta_val_df = meta_val_df[[c for c in surviving_cols if c in meta_val_df.columns]]
@@ -310,7 +302,8 @@ def full_run(
             weight_decay=1e-4,
             verbose= True,
             plot_animation= True,
-            save_path= hidden_study_root + f"hidden_run_{time_stamp}_{hidden_str}"
+            save_path= hidden_study_root + f"hidden_run_{time_stamp}_{hidden_str}",
+            log_path=log_path
         )
 
         end_time_b = time.perf_counter()
@@ -344,7 +337,7 @@ def full_run(
         log(logger=logger, msg=f'Composition-range sampling column: {composition_col}')
 
         target_percentiles = [5, 15, 30, 50, 70, 85, 95]
-        conc_vals = meta_val_df[composition_col].values
+        conc_vals = meta_val_df[composition_col].to_numpy(dtype=np.float32)
         eval_indices = []
         for pct in target_percentiles:
             target_val = np.percentile(conc_vals, pct)
