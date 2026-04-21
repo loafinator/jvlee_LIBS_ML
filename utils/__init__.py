@@ -2,27 +2,18 @@
 jvlee_LIBS_ML>utils>__init__.py
 """
 
-# print('init: file_type_processing importing')
 from .file_type_processing import *
-# print('init: speak importing')
 from .speak import *
-# print('init: data_prep importing')
 from .data_prep import * 
-# print('init: plotting importing')
 from .plotting import *
-# print('init: debug importing')
 from .debug import *
-# print('all non-xpu imports done')
 from .post_processing import *
 
 import multiprocessing
-# print(f'process name: {multiprocessing.current_process().name}')
 if multiprocessing.current_process().name == 'MainProcess':
-    # print('loading xpu_setup...')
     from .xpu_setup import *
-    # print('xpu_setup loaded.')
 
-__all__ = [
+__all__: list[str] = [
     # region file_type_processing
     "mpr_to_csv",
     "recursive_file_extension_converter",
@@ -31,10 +22,7 @@ __all__ = [
     # endregion
 
     # region xpu_setup
-    # "init_xpu_d2l_classifier_trainer",
-    # # "init_xpu_1d_cnn_trainer",
     "mae",
-    # "init_xpu_mlp_trainer",
     "init_xpu_trainer",
     # endregion
 
@@ -70,12 +58,11 @@ __all__ = [
     # region debug    
     "Logger",
     "log",
-    "get_worker_logger"
+    "get_worker_logger",
     # endregion
 
     # region post processing
     "run_spectral_inference",
     "accuracy",
     # endregion
-    
 ]
