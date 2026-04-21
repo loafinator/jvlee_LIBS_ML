@@ -1,5 +1,5 @@
 """
-jvlee_LIBS_ML > LIBS > spec_to_conc > CNN_1D > stc_CNN_1D_001.py
+jvlee_LIBS_ML > LIBS > spec_to_conc > PLSR > stc_PLSR_001.py
 
 NOTE: update all paths before running from new location(machine).
 
@@ -31,6 +31,8 @@ from pathlib import Path
 from h5py import Group
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import VarianceThreshold
+from sklearn.cross_decomposition import PLSRegression
+from sklearn.metrics import mean_absolute_error
 from logging.handlers import QueueListener
 # endregion
 
@@ -56,53 +58,10 @@ from utils import (
 # endregion
 
 # region Paths
-logger_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\spec_to_conc\CNN_1D\stc_CNN_1D_001_log.txt"
+logger_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\spec_to_conc\PLSR\stc_PLSR_001_log.txt"
 h5_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\trn_val_split_LIBS.h5"
-eval_dir = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\spec_to_conc\eval_CNN_1D_001")
+eval_dir = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\spec_to_conc\PLSR\eval_PLSR_001")
 # endregion
-
-class LIBS_1D_CNN_003(nn.Module):
-    def __init__(
-            self, 
-            input_channels: int = 1, 
-            layer_1_out: int = 32, 
-            layer_2_out: int = 128,
-            layer_3_out: int = 512,
-            kernel_size: int = 3,
-            padding: int = 1,
-            n_features: int = 21, 
-            dropout: float = 0.3,
-            n_targets: int = 451):
-        super().__init__()
-        self.conv = nn.Sequential(
-            # TODO: add in another layer (currently very shallow for 10000 input features (wavelength intensities))
-            # TODO: Replace final pool with AdaptiveAvgPool1d(256) This will give ~16000 instad of 40000 for inputs
-            #       into the FC 
-            nn.Conv1d(input_channels, layer_1_out, kernel_size=kernel_size, padding=padding),
-            nn.BatchNorm1d(layer_1_out),
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=4),
-            nn.Conv1d(layer_1_out, layer_2_out, kernel_size=kernel_size, padding=padding),
-            nn.BatchNorm1d(layer_2_out),
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=4),
-            nn.Flatten()
-        )
-
-        conv_out_size = layer_2_out * (n_features // 16)
-        self.fc = nn.Sequential(
-            nn.Linear(conv_out_size,layer_3_out),
-            nn.BatchNorm1d(layer_3_out),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(layer_3_out, n_targets)
-        )
-
-    def forward(self, x):
-        return self.fc(self.conv(x))
-    
-
-    
 
 if __name__ == "__main__":
     # region Timing Setup
@@ -133,15 +92,7 @@ if __name__ == "__main__":
         'conc_La_wt%', 'conc_LaCl3_wt%',
         'conc_Mg_wt%', 'conc_MgCl2_wt%',
         'conc_H2o_wt%', 'conc_Nd_wt%',
-        'temperature_C', 'state_aerosol', 'state_molten', 'state_solid',
-        'delay_study', 'delay', 
-        'width_study', 'width', 
-        'energy_study', 'energy',
-        'qdelay_study', 'qdelay',
-        'shot_study', 'shots',
-        'flow_study', 'flow',
-        'pressure_study', 'pressure', 
-        'repetition', 'blank', 'kinetic', 'static_',
+        # 'temperature_C',
     }
 
     try:  
@@ -263,146 +214,22 @@ if __name__ == "__main__":
         # endregion
         # endregion
 
-        # region Training
-        model = LIBS_1D_CNN_003(
-            input_channels=1,
-            layer_1_out= 16, 
-            layer_2_out = 64,
-            layer_3_out = 256,
-            kernel_size=3,
-            padding=1,
-            n_features=n_features,
-            dropout = 0.5,
-            n_targets=n_targets
-        )
-        end_time_a = time.perf_counter()
-        log(logger=logger, msg= f'Training setup time: {(end_time_a - start_time_a):.3f} seconds')
+        # region PLSR
+        pls = PLSRegression(n_components=50)
+        pls.fit(X_trn_scaled, y_trn)
 
+        y_pred_val = pls.predict(X_val_scaled)
 
-        start_time_b = time.perf_counter()
-        training_model, history = init_xpu_trainer(
-            model=model,
-            X_train=X_trn,
-            y_train=y_trn,
-            X_val=X_val,
-            y_val=y_val,
-            max_epochs=500,
-            batch_size=64,
-            device= torch.device('xpu'),
-            shuffle= True,
-            num_workers= 0,
-            pin_memory= False,
-            learning_rate= 0.00001,
-            criterion= nn.MSELoss(),
-            clip_grads= True,
-            optimizer_cls= optim.Adam,
-            # scheduler_cls= torch.optim.lr_scheduler.ReduceLROnPlateau,
-            # scheduler_kwargs= None,
-            verbose= True,
-            plot_animation= True,
-            ReduceLROnPlateau=False
-        )
-
-        end_time_b = time.perf_counter()
-        log(logger=logger, msg= f'Training time: {((end_time_b - start_time_b)/60):.3f} minutes')
+        val_mse = np.mean((y_pred_val - y_val) ** 2)
+        y_pred_physical = y_scaler.inverse_transform(y_pred_val)
+        y_val_physical_filtered = y_scaler.inverse_transform(y_val)
+        val_mae = mean_absolute_error(y_val_physical_filtered, y_pred_physical)
+        log(logger=logger, msg=f'PLS Val MSE: {val_mse:.6f} | Val MAE: {val_mae:.6f}')
+        per_target_mae = np.abs(y_pred_physical - y_val_physical_filtered).mean(axis=0)
+        for col, mae_val in zip(surviving_cols, per_target_mae):
+            log(logger=logger, msg=f'  {col:30s} | MAE: {mae_val:.4f}')
         # endregion
 
-        # region Residual Plot
-        time_stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        log(logger=logger, msg='Starting post-training spectral evaluation...')
-        plot_residual_history(
-            history=history,
-            save_path=str(eval_dir / f'residual_history_{time_stamp}.png'),
-            show=False
-        )
-        # endregion 
-
-        # region Sample Plots
-        # region plot prep
-        # composition_col = next(
-        #     (c for c in [
-        #         'conc_CaCl3_wt%', 
-        #         'conc_CeCl3_wt%', 
-        #         'conc_UCl3_wt%', 
-        #         'conc_SmCl3_wt%',
-        #         'conc_GdCl3_wt%',
-        #         'conc_LaCl3_wt%',
-        #         'conc_MgCl2_wt%',
-        #         ] if c in meta_val_df.columns),
-        #     None
-        # )
-        # if composition_col is None:
-        #     raise ValueError(f'Could not find any concentration columns in : {list(meta_val_df.columns)}')
-        # log(logger=logger, msg=f'Composition-range sampling column: {composition_col}')
-
-        # target_percentiles = [5, 15, 30, 50, 70, 85, 95]
-        # conc_vals = meta_val_df[composition_col].to_numpy(dtype=np.float32)
-        # eval_indices = []
-        # for pct in target_percentiles:
-        #     target_val = np.percentile(conc_vals, pct)
-        #     closest = int(np.argmin(np.abs(conc_vals - target_val)))
-        #     if closest not in eval_indices:
-        #         eval_indices.append(closest)
-
-        #     eval_labels = [
-        #         f'{composition_col} = {conc_vals[i]:.4f} (p{p})'
-        #         for i, p in zip(eval_indices, target_percentiles[:len(eval_indices)])
-        #     ]
-
-        #     log(logger=logger, msg = f'Evaluation sample indices: {eval_indices}')
-        #     log(logger=logger, msg = f'Evaluation sample labels: {eval_labels}')
-        #     # endregion
-
-        #     # region Prediction
-        #     X_eval = X_val[eval_indices]
-        #     y_eval_true = y_val_physical[eval_indices]
-        #     y_eval_pred = run_spectral_inference(
-        #         model = training_model,
-        #         X_samples= X_eval,
-        #         y_scaler=y_scaler,
-        #         device=torch.device('xpu')
-        #     )
-        #     # endregion
-
-        #     # region Plot prediction
-        #     plot_predicted_vs_actual(
-        #         wavelengths=np.array(surviving_cols),
-        #         y_actual_raw=y_eval_true,
-        #         y_predicted=y_eval_pred,
-        #         sample_indices=list(range(len(eval_indices))),
-        #         sample_labels=eval_labels,
-        #         save_path=str(eval_dir / f'spectral_overlay_{time_stamp}.png'),
-        #         show=False,
-        #         ncols=2,
-        #     )
-        #     # endregion
-
-        #     # region Plot error heatmap
-        #     plot_peak_error_heatmap(
-        #         wavelengths=np.array(surviving_cols),
-        #         y_actual_raw=y_eval_true,
-        #         y_predicted=y_eval_pred,
-        #         sample_labels=eval_labels,
-        #         save_path=str(eval_dir / f'error_heatmap_{time_stamp}.png'),
-        #         show=False,
-        #     )
-        #     # endregion
-
-        #     log(logger=logger, msg=f'Post-training evaluation plots saved to: {eval_dir}')
-
-        #     # region Report
-        #     for i, label in enumerate(eval_labels):
-        #         actual    = y_eval_true[i]
-        #         predicted = y_eval_pred[i]
-        #         mae_val   = np.mean(np.abs(predicted - actual))
-        #         peak_err  = np.abs(predicted - actual).max()
-        #         peak_col   = surviving_cols[np.abs(predicted - actual).argmax()]
-        #         log(logger=logger, msg=(
-        #             f'  {label:50s} | MAE={mae_val:8.2f} '
-        #             f'| MaxErr={peak_err:8.2f} @ {peak_col}'
-        #         ))
-            # endregion
-        # endregion
 
         end_time = time.perf_counter()
         log(logger=logger, msg= f'Total training time: {((end_time - start_time) / 60):.3f} minutes')
@@ -411,8 +238,3 @@ if __name__ == "__main__":
         listener.stop()
         sys.stdout = sys.__stdout__
         my_logger.close()
-
-
-# region Imporvements
-    # - Update xpu_setup.py to log instead of print
-# endregion

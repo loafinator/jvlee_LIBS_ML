@@ -70,6 +70,7 @@ def init_xpu_trainer(
         plot_animation: bool = True,
         save_path: Optional[str] = None,
         log_path: Path | None = None,
+        ReduceLROnPlateau: bool = True,
         # endregion
 ) -> Tuple[nn.Module, Dict[str, Any]]:
     """
@@ -166,9 +167,19 @@ def init_xpu_trainer(
     # endregion
 
     # region Scheduler / Early Stopping
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.5, patience=10
-    )
+    if ReduceLROnPlateau is True:
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, 
+            mode='min', 
+            factor=0.5, 
+            patience=10
+        )
+    else:
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+            optimizer=optimizer,
+            T_0=50,
+            T_mult=2
+        )
 
     best_val_loss = float('inf')
     patience_counter = 0
@@ -194,13 +205,12 @@ def init_xpu_trainer(
 
     # region Train and Validate
     # region Epoch Loop
-    epoch_counter = 0
     for epoch in range(max_epochs):
-        epoch_counter += 1
         start_time = time.perf_counter()
         model.train()
         train_loss = 0.0
         n_batches = 0
+        batch_idx = 0
 
         # region Training Loop
         for batch_x, batch_y in train_loader:
@@ -215,6 +225,11 @@ def init_xpu_trainer(
             optimizer.step()
             train_loss += loss.item()
             n_batches += 1
+            batch_idx += 1
+            scheduler.step(epoch + batch_idx / n_batches)   # type: ignore[arg-type]
+                                                            # This ignore is actually correct, not just a
+                                                            # lazy workaround. Docs explicitly support floats
+                                                            # for fractional epochs. 
         # endregion
 
         # region Training Losses
@@ -261,7 +276,6 @@ def init_xpu_trainer(
             # endregion
 
             # region Schedule / Save / Early stop
-            scheduler.step(val_loss)
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
                 patience_counter = 0
