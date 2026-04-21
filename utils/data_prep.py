@@ -41,13 +41,13 @@ from logging import handlers
 # endregion
 
 # region custom
-from utils import (
-    recursive_file_extension_converter, 
-    file_segregator, 
-    gen_speak, 
-    log,
-    get_worker_logger
-)
+# from utils import (
+#     recursive_file_extension_converter, 
+#     file_segregator, 
+#     gen_speak, 
+#     log,
+    # get_worker_logger
+# )
 # endregion
 # endregion
 
@@ -1525,7 +1525,7 @@ def combine_and_save_as_CSV(
 
 def load_h5_split_dataset(
         h5_path: str | Path,
-        allowed_feature_cols: set[str],
+        allowed_cols: set[str],
         log_path: Path | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str], np.ndarray, pd.DataFrame]:
     """
@@ -1546,7 +1546,7 @@ def load_h5_split_dataset(
         trn_meta_grp = hf['train/metadata']
         assert isinstance(trn_meta_grp, h5py.Group), "Expected a Group at 'train/metadata'"
         all_cols     = list(trn_meta_grp.keys())
-        feature_cols = [c for c in all_cols if c in allowed_feature_cols]
+        feature_cols = [c for c in all_cols if c in allowed_cols]
 
         X_trn_raw = np.stack(
             [hf_get(hf, f'train/metadata/{c}') for c in feature_cols], axis=1
@@ -1560,6 +1560,7 @@ def load_h5_split_dataset(
         )
 
     return X_trn_raw, X_val_raw, y_trn_raw, y_val_raw, feature_cols, wavelengths, meta_val_df
+
 def sanitize_path(
         path: Path | None = None,
         log_path: Path | None = None,
@@ -1635,6 +1636,15 @@ def worker_init(log_q):
         logger.setLevel(logging.DEBUG)
         logger.propagate = False
 
+def get_worker_logger(name):
+    return logging.getLogger(f'worker.{name}')
+
+def log(logger,msg):
+    if logger.handlers:
+        logger.info(msg)
+    else:
+        print(msg)
+        
 def hf_get(
         hf: h5py.File, 
         key: 'str'

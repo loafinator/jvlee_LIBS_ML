@@ -28,7 +28,7 @@ from logging import handlers
 # endregion
 
 # region custom
-from utils import get_worker_logger, log
+# from utils import log
 # endregion
 # endregion
 
@@ -514,6 +514,15 @@ def file_segregator(
     log(logger=logger, msg = '\n' + '='*60)
 
     return processed, skipped, failed
+
+def get_worker_logger(name):
+    return logging.getLogger(f'worker.{name}')
+
+def log(logger,msg):
+    if logger.handlers:
+        logger.info(msg)
+    else:
+        print(msg)
 
 if __name__ == '__main__':
     print('hi')

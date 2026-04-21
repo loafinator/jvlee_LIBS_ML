@@ -107,7 +107,7 @@ if __name__ == '__main__':
         # region Load H5 Data file
         X_trn_raw, X_val_raw, y_trn_raw, y_val_raw, feature_cols, wavelengths, meta_val_df = load_h5_split_dataset(
             h5_path=h5_path,
-            allowed_feature_cols=ALLOWED_FEATURE_COLS,
+            allowed_cols=ALLOWED_FEATURE_COLS,
         )
 
         assert X_trn_raw.shape[0] == y_trn_raw.shape[0], \
