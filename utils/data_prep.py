@@ -33,8 +33,9 @@ import numpy as np
 
 # region from
 from pathlib import Path 
-from typing import List, Optional
+from typing import List, Optional, cast
 from tqdm import tqdm
+from h5py import Group
 from concurrent.futures import ProcessPoolExecutor, as_completed #, ThreadPoolExecutor
 from functools import partial
 from logging import handlers
@@ -242,7 +243,7 @@ _STANDARD_SHOTS = 50         # "W:\Phongikaroon Group\AndrewsH\Backup\Experiment
 # endregion
 
 # region Default Columns
-_DEFAULT_CONC_COLS = (
+_DEFAULT_CONC_COLS: List[str] = [
     'frac_LiCl',        'frac_KCl', 
     'conc_Ce_wt%',      'conc_CeCl3_wt%',
                         'conc_CeN_wt%',
@@ -254,7 +255,7 @@ _DEFAULT_CONC_COLS = (
     'conc_Mg_wt%',      'conc_MgCl2_wt%',
     'conc_H2o_wt%',
     'conc_Nd_wt%',
-)
+]
 
 _SPECIES_MAP = {
     'CECL3': 'CeCl3',       'CE': 'Ce',         # CECL3 sorts before CE (longer)
@@ -271,21 +272,21 @@ _SPECIES_MAP = {
     'CEEN':      'CeN'
 }
 
-_DEFAULT_REQ_COLS = _DEFAULT_CONC_COLS + (
+_DEFAULT_REQ_COLS: List[str] =  list(_DEFAULT_CONC_COLS) + [
     'temperature_C', 
     'scan_rate_mVs', 
     'technique', 
     'file_path',
     'og_path'
-)
+]
 
-_DEFAULT_SALT_STATES = (
+_DEFAULT_SALT_STATES: List[str] = [
     'state_aerosol', 
     'state_molten', 
     'state_solid'
-)
+]
 
-_DEFAULT_EXP_VARS_COLS = (
+_DEFAULT_EXP_VARS_COLS: List[str] = [
     'delay_study', 'delay',
     'width_study', 'width',
     'energy_study', 'energy', 
@@ -298,7 +299,7 @@ _DEFAULT_EXP_VARS_COLS = (
     'blank',
     'kinetic',
     'repetition'
-)
+]
 # endregion
 
 # region Compile Patterns
@@ -314,37 +315,43 @@ _COMPILED_SPECIES_PATTERNS = {
 # endregion
 
 def enrich_file_with_metadata(
-    path: str | Path,
-    enriched_root: str | Path,
-    drop_columns: Optional[List[str]] = None,
-    rename_columns: Optional[dict] = None,
-    composition_columns: Optional[List[str]] = None,
-    technique: str = 'libs',
-    allowed_extensions: Optional[List[str]] = None,
-    required_columns: Optional[List[str]] = None,
-    salt_states: Optional[List[str]] = None,
-    experimental_variation_columns: Optional[List[str]] = None,
-    include_experimental_variation_columns: bool = True,
-    min_wavelength: Optional[float] = None,
-    max_wavelength: Optional[float] = None,
-) -> Path:
+        path: str | Path,
+        enriched_root: str | Path,
+        drop_columns: Optional[List[str]] = None,
+        rename_columns: Optional[dict] = None,
+        composition_columns: Optional[List[str]] = None,
+        technique: str = 'libs',
+        allowed_extensions: Optional[List[str]] = None,
+        required_columns: Optional[List[str]] = None,
+        salt_states: Optional[List[str]] = None,
+        experimental_variation_columns: Optional[List[str]] = None,
+        include_experimental_variation_columns: bool = True,
+        min_wavelength: Optional[float] = None,
+        max_wavelength: Optional[float] = None,
+        log_path: Path | None = None,
+) -> Optional[Path]:
     """
     Clean one CSV using the shared cleaner, add metadata, and save enriched version
     in the same directory (file structure abolished).
     """
 
     # region Logger Setup
-    logger = _get_worker_logger(Path(path).stem)
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+    logger = _get_worker_logger(Path(log_path).stem)
     # endregion
 
     # region Path initiation
     og_path = Path(path)
-    path = sanitize_path(
-        path=og_path
+    sanitized_path = sanitize_path(
+        path=og_path,
+        log_path=log_path
     )
-    if path is None:
+    if sanitized_path is None:
         log(logger=logger, msg = f'          Skipping (could not sanitize path): {og_path.name}')
         return None
+    path = sanitized_path
+
     enriched_root = Path(enriched_root)
     enriched_root.mkdir(parents=True, exist_ok=True)
     # endregion
@@ -384,7 +391,8 @@ def enrich_file_with_metadata(
         rename_columns=rename_columns,
         required_columns=required_columns,
         min_wavelength=min_wavelength,
-        max_wavelength=max_wavelength
+        max_wavelength=max_wavelength,
+        log_path=log_path,
     )
 
     if df is None:
@@ -424,20 +432,21 @@ def enrich_file_with_metadata(
     # endregion
 
 def enrich_with_progress(
-    files: List[Path],
-    enriched_root: Path,
-    technique_name: str = 'libs',
-    drop_columns: Optional[List[str]] = None,
-    rename_columns: Optional[dict] = None,
-    composition_columns: Optional[List[str]] = None,
-    min_wavelength: Optional[float] = None,
-    max_wavelength: Optional[float] = None,
-    allowed_extensions: Optional[List[str]] = None,
-    required_columns: Optional[List[str]] = None,
-    salt_states: Optional[List[str]] = None,
-    experimental_variation_columns: Optional[List[str]] = None,
-    include_experimental_variation_columns: bool = True,
-    log_q=None,
+        files: List[Path],
+        enriched_root: Path,
+        technique_name: str = 'libs',
+        drop_columns: Optional[List[str]] = None,
+        rename_columns: Optional[dict] = None,
+        composition_columns: Optional[List[str]] = None,
+        min_wavelength: Optional[float] = None,
+        max_wavelength: Optional[float] = None,
+        allowed_extensions: Optional[List[str]] = None,
+        required_columns: Optional[List[str]] = None,
+        salt_states: Optional[List[str]] = None,
+        experimental_variation_columns: Optional[List[str]] = None,
+        include_experimental_variation_columns: bool = True,
+        log_q=None,
+        # log_path: Path | None = None,
 ) -> List[Path]:
     """
     Reusable function with progress bar for enriching any technique.
@@ -512,9 +521,9 @@ def enrich_with_progress(
 
     # max_workers=None lets Python pick (usually cpu_count())
     # For I/O-heavy work you can go higher, e.g. max_workers=os.cpu_count() * 2
-    print(f"Starting ProcessPoolExecutor with {min(4, os.cpu_count())} workers...")
+    print(f"Starting ProcessPoolExecutor with {min(4, os.cpu_count() or 4)} workers...")
     with ProcessPoolExecutor(
-        max_workers=min(4,os.cpu_count()),
+        max_workers=min(4,os.cpu_count() or 4),
         initializer=_worker_init,
         initargs=(log_q,)
     ) as executor:
@@ -541,12 +550,13 @@ def species_sort_key(item):
     return (0 if is_compound else 1, -len(key))
         
 def parent_concentration_data(
-    source_data_paths: List[str | Path],
-    composition_columns: Optional[List[str]] = None,
-    required_columns: Optional[List[str]] = None,
-    salt_states: Optional[List[str]] = None,
-    experimental_variation_columns: Optional[List[str]] = None,
-    include_experimental_variation_columns: bool = True
+        source_data_paths: List[str | Path],
+        composition_columns: Optional[List[str]] = None,
+        required_columns: Optional[List[str]] = None,
+        salt_states: Optional[List[str]] = None,
+        experimental_variation_columns: Optional[List[str]] = None,
+        include_experimental_variation_columns: bool = True,
+        # log_path: Path | None = None,
 ) -> pd.DataFrame:
     # region composition columns, species map, required columns, and MS concentration map
     if composition_columns is None:
@@ -651,7 +661,9 @@ def parent_concentration_data(
         # endregion
         
         # region Default values
-        data = {col: 0.0 for col in composition_columns if 'conc_' in col}
+        data: dict[str, float | str | int | None] = {
+            col: 0.0 for col in composition_columns if 'conc_' in col
+        }
         data['frac_LiCl'] = 0.59  # Default eutectic mole frac
         data['frac_KCl'] = 0.41
         data['temperature_C'] = None
@@ -876,7 +888,10 @@ def parent_concentration_data(
         matched_nice_names = set()
         
         for key, nice_name in sorted(_SPECIES_MAP.items(), key=species_sort_key):
-            base_element = re.match(r'[A-Za-z]+', nice_name).group(0)
+            match = re.match(r'[A-Za-z]+', nice_name)
+            if match is None:
+                continue
+            base_element = match.group(0)
             if any(n.startswith(base_element) and n != nice_name for n in matched_nice_names):
                 continue
 
@@ -1016,14 +1031,15 @@ def parent_concentration_data(
     return df
 
 def clean_single_technique_file(
-    path: str | Path,
-    technique: str = 'cv',
-    drop_columns: Optional[List[str]] = None,
-    rename_columns: Optional[dict] = None,
-    required_dict: Optional[dict] = None,
-    required_columns: Optional[List[str]] = None,
-    min_wavelength: Optional[float] = None,
-    max_wavelength: Optional[float] = None,
+        path: Path,
+        technique: str = 'cv',
+        drop_columns: Optional[List[str]] = None,
+        rename_columns: Optional[dict] = None,
+        required_dict: Optional[dict] = None,
+        required_columns: Optional[List[str]] = None,
+        min_wavelength: Optional[float] = None,
+        max_wavelength: Optional[float] = None,
+        log_path: Path | None = None,
 ) -> Optional[pd.DataFrame]:
     """
     Clean and validate a SINGLE {technique} CSV file.
@@ -1043,17 +1059,21 @@ def clean_single_technique_file(
     """
     
     path = Path(path)
-    path = sanitize_path(
+    sanitized_path = sanitize_path(
         path=path,
+        log_path=log_path
     )
+    if sanitized_path is None:
+        return None
+    path = sanitized_path
+    # assert isinstance(path, Path)
+    path = cast(Path, sanitized_path)
 
     # region Logger Setup
-    logger = _get_worker_logger(Path(path).stem)
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+    logger = _get_worker_logger(Path(log_path).stem)
     # endregion
-    
-    if path is None:
-        log(logger=logger, msg = f'         Skipped: could not sanitize path')
-        return None
 
     # region Required Dictionary
     if required_dict is None:
@@ -1071,6 +1091,8 @@ def clean_single_technique_file(
             required_columns = []
         else:
             required_columns = required_dict.get(technique.lower(), ['Ewe/V'])
+
+    required_columns = required_columns or []   # fall back assertion for the 'missing = ...' in try
     # endregion
 
     try:
@@ -1091,12 +1113,12 @@ def clean_single_technique_file(
 
         # region Wavelength Trim
         if min_wavelength is not None and max_wavelength is not None:
-            numeric_cols = pd.to_numeric(
-                pd.Index(df.columns).str.strip(), 
-                errors='coerce'
-                )
-            mask = (numeric_cols >= min_wavelength) & (numeric_cols <= max_wavelength)
-            non_wl_mask = numeric_cols.isna()
+            cols = df.columns.astype(str).str.strip().tolist()
+            numeric_cols = pd.to_numeric(cols, errors='coerce')
+            numeric_arr = pd.Series(numeric_cols).to_numpy(dtype=float, na_value=np.nan)
+            
+            mask = ((numeric_arr >= min_wavelength) & (numeric_arr <= max_wavelength))
+            non_wl_mask = np.isnan(numeric_arr)
             df = df.loc[:, mask | non_wl_mask]
 
         df.columns = [str(c) for c in df.columns]
@@ -1139,9 +1161,10 @@ def clean_single_technique_file(
 
 def trn_val_splitter_HDF5(
         h5_path: str | Path,
-        output_path: str | Path = None,        # if None, splits in-place in same file
+        output_path: str | Path | None = None,        # if None, splits in-place in same file
         test_size: float = 0.2,
         random_state: int = 42,
+        log_path: Path | None = None,
 ) -> Path:
     """
     Reads a combined HDF5 file and writes train/val splits back into it
@@ -1160,17 +1183,21 @@ def trn_val_splitter_HDF5(
     )
     
     # region Logger Setup
-    logger = _get_worker_logger(Path(h5_path).stem)
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+    logger = _get_worker_logger(Path(log_path).stem)
     # endregion
     
     log(logger=logger, msg=f'Loading from {h5_path.name}...')
 
     with h5py.File(h5_path, 'r') as hf:
-        spectra     = hf['spectra'][:]
-        wavelengths = hf['wavelengths'][:]
-        meta_cols   = list(hf['metadata'].keys())
-        metadata    = {col: hf['metadata'][col][:] for col in meta_cols}
-        attrs       = dict(hf.attrs)
+        spectra = hf_get(hf, 'spectra')
+        wavelengths = hf_get(hf, 'wavelengths')
+        metadata_grp = hf['train/metadata']
+        assert isinstance(metadata_grp, Group), "Expected a Group at 'train/metadata'"
+        meta_cols = list(metadata_grp.keys())
+        metadata = {col: meta_cols[col][:] for col in meta_cols}
+        attrs = dict(hf.attrs)
 
     n_rows = spectra.shape[0]
     log(logger=logger, msg=f'  Total rows: {n_rows}  |  Wavelengths: {spectra.shape[1]}')
@@ -1235,6 +1262,7 @@ def trn_val_splitter_CSV(
     test_size: float=0.2,
     random_state: int=42,
     shuffle: bool=True,
+    log_path: Path | None = None,
 ):
     df_path = Path(df_path)
     trn_path = Path(trn_path)
@@ -1242,7 +1270,9 @@ def trn_val_splitter_CSV(
     from sklearn.model_selection import train_test_split
 
     # region Logger Setup
-    logger = _get_worker_logger(Path(df_path).stem)
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+    logger = _get_worker_logger(Path(log_path).stem)
     # endregion
 
     # Ensure that the designated DataFrame is actually there
@@ -1289,21 +1319,28 @@ def standardize_wavelength_grid(
         file_path: str | Path,
         min_wl: float=350.0,
         max_wl: float=800.0,
-        n_points: int=451
-) -> Optional[pd.DataFrame]:
+        n_points: int=451,
+        log_path: Path | None = None,
+) -> Optional[tuple[pd.DataFrame, np.ndarray]]:
+    
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+    logger = _get_worker_logger(Path(log_path).stem)
+
     file_path = Path(file_path).resolve()
     if not file_path.exists():
-        print(f'File not found: {file_path.name}')
+        log(logger=logger, msg=f'File not found: {file_path.name}')
         return None
     try:
         df = pd.read_csv(file_path)
     except Exception as e:
-        print(f'  ❌ Could not read {file_path.name}: {e}')
+        log(logger=logger, msg=f'  ❌ Could not read {file_path.name}: {e}')
         return None
     
     target_grid = np.linspace(min_wl, max_wl, n_points)
-    numeric_cols = pd.to_numeric(df.columns, errors='coerce')
-    wl_mask = numeric_cols.notna()
+    cols = df.columns.astype(str).str.strip().tolist()
+    numeric_cols = pd.to_numeric(cols, errors='coerce')
+    wl_mask = pd.Series(numeric_cols).notna().to_numpy().astype(bool)
 
     wl_cols = df.columns[wl_mask].astype(float)
     spectra = df.loc[:, wl_mask].values.astype(np.float32)
@@ -1316,7 +1353,7 @@ def standardize_wavelength_grid(
     meta_df = df[meta_cols].reset_index(drop=True)
     spectra_df = pd.DataFrame(standardized, columns=target_grid.astype(str))
 
-    return pd.concat([meta_df, spectra_df], axis=1)
+    return pd.concat([meta_df, spectra_df], axis=1), target_grid
 
 def combine_and_save_as_HDF5(
         individuals_root: str | Path,
@@ -1324,6 +1361,7 @@ def combine_and_save_as_HDF5(
         technique: Optional[str] = None,
         compression: str = 'gzip',         # 'gzip', 'lzf', or None
         compression_level: int = 3,        # 1 (fast) to 9 (small), only for gzip
+        log_path: Path | None = None,
 ) -> Optional[Path]:
     """
     Combines all enriched CSVs into a single HDF5 file with two groups:
@@ -1340,7 +1378,9 @@ def combine_and_save_as_HDF5(
     combined_root.mkdir(parents=True, exist_ok=True)
     
     # region Logger Setup
-    logger = _get_worker_logger(Path(combined_root).stem)
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+    logger = _get_worker_logger(Path(log_path).stem)
     # endregion
 
     if technique is None:
@@ -1359,24 +1399,25 @@ def combine_and_save_as_HDF5(
 
     for i, f in enumerate(enriched_files):
         try:
-            std_df = standardize_wavelength_grid(
+            swlg = standardize_wavelength_grid(
                 file_path=f,
                 min_wl=TARGET_MIN_WL,
                 max_wl=TARGET_MAX_WL,
                 n_points=TARGET_N_PTS
             )
+            if swlg is None:
+                log(logger=logger, msg=f'  ⚠️  Skipping {f.name} (standardize returned None)')
+                continue
+            std_df, target_grid = swlg
         except Exception as e:
             log(logger=logger, msg = f'  ❌ Could not read {f.name}: {e}')
             continue
 
-        if std_df is None:
-            log(logger=logger, msg=f'  ⚠️  Skipping {f.name} (standardize returned None)')
-            continue
 
         # Identify spectral columns (numeric column names = wavelengths)
-        numeric_mask = pd.to_numeric(
-            pd.Index(std_df.columns).str.strip(), errors='coerce'
-        ).notna()
+        col_index = std_df.columns.astype(str).str.strip().tolist()
+        numeric_vals = pd.to_numeric(col_index, errors='coerce')
+        numeric_mask = pd.Series(numeric_vals).notna().to_numpy().astype(bool)
 
         spectra = std_df.loc[:, numeric_mask].values.astype(np.float32)
         meta_df = std_df.loc[:, ~numeric_mask]
@@ -1445,13 +1486,16 @@ def combine_and_save_as_CSV(
         individuals_root: str | Path,
         combined_root: str | Path,
         technique: Optional[str] = None,
+        log_path: Path | None = None,
 ) -> Optional[Path]:
     individuals_root = Path(individuals_root).resolve()
     combined_root = Path(combined_root).resolve()
     combined_root.mkdir(parents=True, exist_ok=True)
     
     # region Logger Setup
-    logger = _get_worker_logger(Path(combined_root).stem)
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+    logger = _get_worker_logger(Path(log_path).stem)
     # endregion
 
     if technique is None:
@@ -1471,18 +1515,19 @@ def combine_and_save_as_CSV(
             ignore_index=True,
             sort=False
         )
+        label = technique.upper() if technique else 'LIBS'
+        combined_path = combined_root / f'cleaned_combined_{label}.csv'
+        combined_df.to_csv(combined_path, index=False)
+        log(logger=logger, msg = f'Saved: {combined_path.name}  |  shape={combined_df.shape}')
+        return combined_path
     except Exception as e:
         log(logger=logger, msg = f'  ❌ {e}')
-
-    label = technique.upper() if technique else 'LIBS'
-    combined_path = combined_root / f'cleaned_combined_{label}.csv'
-    combined_df.to_csv(combined_path, index=False)
-    log(logger=logger, msg = f'Saved: {combined_path.name}  |  shape={combined_df.shape}')
-    return combined_path
+        return None
 
 def load_h5_dataset(
         h5_path: str | Path, 
-        meta_cols_wanted = None
+        meta_cols_wanted = None,
+        # log_path: Path | None = None,
 ):
     """
     Returns:
@@ -1504,7 +1549,8 @@ def load_h5_dataset(
 
 def sanitize_path(
         path: Path | None = None,
-) -> Path:
+        log_path: Path | None = None,
+) -> Optional[Path]:
     """
     Renames any path components containing illegal Windows characters.
     Returns the new sanitized path.
@@ -1517,7 +1563,9 @@ def sanitize_path(
     parts = path.relative_to(root).parts
 
     # region Logger Setup
-    logger = _get_worker_logger(Path(path).stem)
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+    logger = _get_worker_logger(Path(log_path).stem)
     # endregion
 
     sanitized_parts = []
@@ -1542,16 +1590,26 @@ def sanitize_path(
     return current
 
 def _long_path(
-        path: Path = None,
+        path: Path,
+        log_path: Path | None = None,
 ) -> str:
-    """
+    r"""
     Returns \\?\ prefixed string for windows long path support.
     Use this only at the point of file I/O, not for path manipulation.
     """
-    s = str(Path(path).resolve())
-    if len(s) > 240 and not s.startswith('\\\\?\\'):
-        return '\\\\?\\' + s
-    return s
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+
+    logger = _get_worker_logger(Path(log_path).stem)
+
+    if path is None:
+        log(logger=logger, msg="No path provided")
+
+    else:
+        s = str(Path(path).resolve())
+        if len(s) > 240 and not s.startswith('\\\\?\\'):
+            return '\\\\?\\' + s
+        return s
 
 def _worker_init(log_q):
     """Called once per worker process at startup."""
@@ -1567,7 +1625,10 @@ def _worker_init(log_q):
 def _get_worker_logger(name):
     return logging.getLogger(f'worker.{name}')
 
-def hf_get(hf: h5py.File, key: 'str') -> np.ndarray:
+def hf_get(
+        hf: h5py.File, 
+        key: 'str'
+) -> np.ndarray:
     return hf[key][:]   # type: ignore[index]
 
 if __name__=="__main__":
