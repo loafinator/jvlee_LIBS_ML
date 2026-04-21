@@ -1,5 +1,5 @@
 """
-jvlee_LIBS_ML>LIBS>plot_spectra.py
+jvlee_LIBS_ML > LIBS > test_runs > plot_spectra.py
 
 NOTE: update all paths before running from new location(machine).
 

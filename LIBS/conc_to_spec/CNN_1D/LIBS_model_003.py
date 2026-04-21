@@ -1,5 +1,5 @@
 """
-jvlee_LIBS_ML>LIBS>LIBS_model_003.py
+jvlee_LIBS_ML > LIBS > conc_to_spec > CNN_1D > LIBS_model_003.py
 
 NOTE: update all paths before running from new location(machine).
 
