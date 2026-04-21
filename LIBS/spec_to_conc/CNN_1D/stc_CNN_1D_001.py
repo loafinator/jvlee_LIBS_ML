@@ -78,13 +78,15 @@ class LIBS_1D_CNN_003(nn.Module):
             nn.Conv1d(input_channels, layer_1_out, kernel_size=kernel_size, padding=padding),
             nn.BatchNorm1d(layer_1_out),
             nn.ReLU(),
+            nn.MaxPool1d(kernel_size=4),
             nn.Conv1d(layer_1_out, layer_2_out, kernel_size=kernel_size, padding=padding),
             nn.BatchNorm1d(layer_2_out),
             nn.ReLU(),
+            nn.MaxPool1d(kernel_size=4),
             nn.Flatten()
         )
 
-        conv_out_size = layer_2_out * n_features
+        conv_out_size = layer_2_out * (n_features // 16)
         self.fc = nn.Sequential(
             nn.Linear(conv_out_size,layer_3_out),
             nn.BatchNorm1d(layer_3_out),
@@ -261,9 +263,9 @@ if __name__ == "__main__":
         # region Training
         model = LIBS_1D_CNN_003(
             input_channels=1,
-            layer_1_out= 32, 
-            layer_2_out = 128,
-            layer_3_out = 512,
+            layer_1_out= 16, 
+            layer_2_out = 64,
+            layer_3_out = 256,
             kernel_size=3,
             padding=1,
             n_features=n_features,
@@ -282,7 +284,7 @@ if __name__ == "__main__":
             X_val=X_val,
             y_val=y_val,
             max_epochs=500,
-            batch_size=256,
+            batch_size=64,
             device= torch.device('xpu'),
             shuffle= True,
             num_workers= 0,
@@ -313,88 +315,88 @@ if __name__ == "__main__":
 
         # region Sample Plots
         # region plot prep
-        composition_col = next(
-            (c for c in [
-                'conc_CaCl3_wt%', 
-                'conc_CeCl3_wt%', 
-                'conc_UCl3_wt%', 
-                'conc_SmCl3_wt%',
-                'conc_GdCl3_wt%',
-                'conc_LaCl3_wt%',
-                'conc_MgCl2_wt%',
-                ] if c in meta_val_df.columns),
-            None
-        )
-        if composition_col is None:
-            raise ValueError(f'Could not find any concentration columns in : {list(meta_val_df.columns)}')
-        log(logger=logger, msg=f'Composition-range sampling column: {composition_col}')
+        # composition_col = next(
+        #     (c for c in [
+        #         'conc_CaCl3_wt%', 
+        #         'conc_CeCl3_wt%', 
+        #         'conc_UCl3_wt%', 
+        #         'conc_SmCl3_wt%',
+        #         'conc_GdCl3_wt%',
+        #         'conc_LaCl3_wt%',
+        #         'conc_MgCl2_wt%',
+        #         ] if c in meta_val_df.columns),
+        #     None
+        # )
+        # if composition_col is None:
+        #     raise ValueError(f'Could not find any concentration columns in : {list(meta_val_df.columns)}')
+        # log(logger=logger, msg=f'Composition-range sampling column: {composition_col}')
 
-        target_percentiles = [5, 15, 30, 50, 70, 85, 95]
-        conc_vals = meta_val_df[composition_col].to_numpy(dtype=np.float32)
-        eval_indices = []
-        for pct in target_percentiles:
-            target_val = np.percentile(conc_vals, pct)
-            closest = int(np.argmin(np.abs(conc_vals - target_val)))
-            if closest not in eval_indices:
-                eval_indices.append(closest)
+        # target_percentiles = [5, 15, 30, 50, 70, 85, 95]
+        # conc_vals = meta_val_df[composition_col].to_numpy(dtype=np.float32)
+        # eval_indices = []
+        # for pct in target_percentiles:
+        #     target_val = np.percentile(conc_vals, pct)
+        #     closest = int(np.argmin(np.abs(conc_vals - target_val)))
+        #     if closest not in eval_indices:
+        #         eval_indices.append(closest)
 
-            eval_labels = [
-                f'{composition_col} = {conc_vals[i]:.4f} (p{p})'
-                for i, p in zip(eval_indices, target_percentiles[:len(eval_indices)])
-            ]
+        #     eval_labels = [
+        #         f'{composition_col} = {conc_vals[i]:.4f} (p{p})'
+        #         for i, p in zip(eval_indices, target_percentiles[:len(eval_indices)])
+        #     ]
 
-            log(logger=logger, msg = f'Evaluation sample indices: {eval_indices}')
-            log(logger=logger, msg = f'Evaluation sample labels: {eval_labels}')
-            # endregion
+        #     log(logger=logger, msg = f'Evaluation sample indices: {eval_indices}')
+        #     log(logger=logger, msg = f'Evaluation sample labels: {eval_labels}')
+        #     # endregion
 
-            # region Prediction
-            X_eval = X_val[eval_indices]
-            y_eval_true = y_val_physical[eval_indices]
-            y_eval_pred = run_spectral_inference(
-                model = training_model,
-                X_samples= X_eval,
-                y_scaler=y_scaler,
-                device=torch.device('xpu')
-            )
-            # endregion
+        #     # region Prediction
+        #     X_eval = X_val[eval_indices]
+        #     y_eval_true = y_val_physical[eval_indices]
+        #     y_eval_pred = run_spectral_inference(
+        #         model = training_model,
+        #         X_samples= X_eval,
+        #         y_scaler=y_scaler,
+        #         device=torch.device('xpu')
+        #     )
+        #     # endregion
 
-            # region Plot prediction
-            plot_predicted_vs_actual(
-                wavelengths=np.array(surviving_cols),
-                y_actual_raw=y_eval_true,
-                y_predicted=y_eval_pred,
-                sample_indices=list(range(len(eval_indices))),
-                sample_labels=eval_labels,
-                save_path=str(eval_dir / f'spectral_overlay_{time_stamp}.png'),
-                show=False,
-                ncols=2,
-            )
-            # endregion
+        #     # region Plot prediction
+        #     plot_predicted_vs_actual(
+        #         wavelengths=np.array(surviving_cols),
+        #         y_actual_raw=y_eval_true,
+        #         y_predicted=y_eval_pred,
+        #         sample_indices=list(range(len(eval_indices))),
+        #         sample_labels=eval_labels,
+        #         save_path=str(eval_dir / f'spectral_overlay_{time_stamp}.png'),
+        #         show=False,
+        #         ncols=2,
+        #     )
+        #     # endregion
 
-            # region Plot error heatmap
-            plot_peak_error_heatmap(
-                wavelengths=np.array(surviving_cols),
-                y_actual_raw=y_eval_true,
-                y_predicted=y_eval_pred,
-                sample_labels=eval_labels,
-                save_path=str(eval_dir / f'error_heatmap_{time_stamp}.png'),
-                show=False,
-            )
-            # endregion
+        #     # region Plot error heatmap
+        #     plot_peak_error_heatmap(
+        #         wavelengths=np.array(surviving_cols),
+        #         y_actual_raw=y_eval_true,
+        #         y_predicted=y_eval_pred,
+        #         sample_labels=eval_labels,
+        #         save_path=str(eval_dir / f'error_heatmap_{time_stamp}.png'),
+        #         show=False,
+        #     )
+        #     # endregion
 
-            log(logger=logger, msg=f'Post-training evaluation plots saved to: {eval_dir}')
+        #     log(logger=logger, msg=f'Post-training evaluation plots saved to: {eval_dir}')
 
-            # region Report
-            for i, label in enumerate(eval_labels):
-                actual    = y_eval_true[i]
-                predicted = y_eval_pred[i]
-                mae_val   = np.mean(np.abs(predicted - actual))
-                peak_err  = np.abs(predicted - actual).max()
-                peak_col   = surviving_cols[np.abs(predicted - actual).argmax()]
-                log(logger=logger, msg=(
-                    f'  {label:50s} | MAE={mae_val:8.2f} '
-                    f'| MaxErr={peak_err:8.2f} @ {peak_col}'
-                ))
+        #     # region Report
+        #     for i, label in enumerate(eval_labels):
+        #         actual    = y_eval_true[i]
+        #         predicted = y_eval_pred[i]
+        #         mae_val   = np.mean(np.abs(predicted - actual))
+        #         peak_err  = np.abs(predicted - actual).max()
+        #         peak_col   = surviving_cols[np.abs(predicted - actual).argmax()]
+        #         log(logger=logger, msg=(
+        #             f'  {label:50s} | MAE={mae_val:8.2f} '
+        #             f'| MaxErr={peak_err:8.2f} @ {peak_col}'
+        #         ))
             # endregion
         # endregion
 
