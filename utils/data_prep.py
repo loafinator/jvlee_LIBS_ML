@@ -12,7 +12,6 @@ TODO:   - move the combine and save functions to file_type_processing.py
             - or I could make a save_and_load.py and move them into that instead?
               I don't think that would really change much, but would it make more
               sense to have them there?
-        - replace _get_worker_logger with get_worker_logger from debug.py
 """
 
 print('data_prep.py loading ...')
@@ -42,13 +41,13 @@ from logging import handlers
 # endregion
 
 # region custom
-try:
-    from utils import recursive_file_extension_converter, file_segregator, gen_speak, log
-except ImportError:
-    try:
-        from .debug import log
-    except ImportError:
-        from debug import log
+from utils import (
+    recursive_file_extension_converter, 
+    file_segregator, 
+    gen_speak, 
+    log,
+    get_worker_logger
+)
 # endregion
 # endregion
 
@@ -338,7 +337,7 @@ def enrich_file_with_metadata(
     # region Logger Setup
     if log_path is None:
         log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
-    logger = _get_worker_logger(Path(log_path).stem)
+    logger = get_worker_logger(Path(log_path).stem)
     # endregion
 
     # region Path initiation
@@ -1072,7 +1071,7 @@ def clean_single_technique_file(
     # region Logger Setup
     if log_path is None:
         log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
-    logger = _get_worker_logger(Path(log_path).stem)
+    logger = get_worker_logger(Path(log_path).stem)
     # endregion
 
     # region Required Dictionary
@@ -1185,7 +1184,7 @@ def trn_val_splitter_HDF5(
     # region Logger Setup
     if log_path is None:
         log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
-    logger = _get_worker_logger(Path(log_path).stem)
+    logger = get_worker_logger(Path(log_path).stem)
     # endregion
     
     log(logger=logger, msg=f'Loading from {h5_path.name}...')
@@ -1272,7 +1271,7 @@ def trn_val_splitter_CSV(
     # region Logger Setup
     if log_path is None:
         log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
-    logger = _get_worker_logger(Path(log_path).stem)
+    logger = get_worker_logger(Path(log_path).stem)
     # endregion
 
     # Ensure that the designated DataFrame is actually there
@@ -1325,7 +1324,7 @@ def standardize_wavelength_grid(
     
     if log_path is None:
         log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
-    logger = _get_worker_logger(Path(log_path).stem)
+    logger = get_worker_logger(Path(log_path).stem)
 
     file_path = Path(file_path).resolve()
     if not file_path.exists():
@@ -1380,7 +1379,7 @@ def combine_and_save_as_HDF5(
     # region Logger Setup
     if log_path is None:
         log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
-    logger = _get_worker_logger(Path(log_path).stem)
+    logger = get_worker_logger(Path(log_path).stem)
     # endregion
 
     if technique is None:
@@ -1495,7 +1494,7 @@ def combine_and_save_as_CSV(
     # region Logger Setup
     if log_path is None:
         log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
-    logger = _get_worker_logger(Path(log_path).stem)
+    logger = get_worker_logger(Path(log_path).stem)
     # endregion
 
     if technique is None:
@@ -1565,7 +1564,7 @@ def sanitize_path(
     # region Logger Setup
     if log_path is None:
         log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
-    logger = _get_worker_logger(Path(log_path).stem)
+    logger = get_worker_logger(Path(log_path).stem)
     # endregion
 
     sanitized_parts = []
@@ -1600,7 +1599,7 @@ def _long_path(
     if log_path is None:
         log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
 
-    logger = _get_worker_logger(Path(log_path).stem)
+    logger = get_worker_logger(Path(log_path).stem)
 
     if path is None:
         log(logger=logger, msg="No path provided")
@@ -1621,9 +1620,6 @@ def _worker_init(log_q):
         logger.addHandler(handlers.QueueHandler(log_q))
         logger.setLevel(logging.DEBUG)
         logger.propagate = False
-
-def _get_worker_logger(name):
-    return logging.getLogger(f'worker.{name}')
 
 def hf_get(
         hf: h5py.File, 

@@ -26,31 +26,38 @@ from typing import Optional, List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from logging import handlers
 # endregion
+
+# region custom
+from utils import get_worker_logger, log
+# endregion
 # endregion
 
 
 def get_file_genre(
         data_root: str | Path,
         save_root: str | Path,
-        key: str | List[str]= None,
+        key: List[str] | None = None,
         skip_key: Optional[List[str]]=None,
         allowed_extensions: Optional[List[str]]=None,
         preserve_structure: bool=True,
         processed: int=0,
         skipped: int=0,
         failed: int=0,
+        log_path: Path | None = None,
 ) -> tuple[int, int, int]:
     data_root = Path(data_root).resolve()
     save_root = Path(save_root).resolve()
     save_root.mkdir(parents=True, exist_ok=True)
 
     # region Logger Setup
-    logger = _get_worker_logger(Path(save_root).stem)
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+
+    logger = get_worker_logger(Path(log_path).stem)
     # endregion
 
 
-    if key is None:
-        key = []
+    key = key or []
     keys = [key] if isinstance(key, str) else (key if key else [])
 
     if allowed_extensions is None:
@@ -121,7 +128,7 @@ def recursive_file_extension_converter(
         save_root: str | Path,
         target_extension: str | List[str] = '.mpr',
         end_extension: str = '.csv',
-        skip_key: str = None,           # this should be taken care of in the get_file_genre, but
+        skip_key: List[str] | None = None,    # this should be taken care of in the get_file_genre, but
                                         # I didn't want to run it again at the moment, so I added
                                         # it here instead. 
         preserve_structure: bool=True,
@@ -129,18 +136,20 @@ def recursive_file_extension_converter(
         processed: int=0,
         skipped: int=0,
         failed: int=0,
+        log_path: Path | None = None,
 ) -> tuple[int, int, int]:
     data_root, save_root = Path(data_root).resolve(), Path(save_root).resolve()
     extensions = [target_extension] if isinstance(target_extension, str) else target_extension
     extensions = [ext if ext.startswith('.') else f'.{ext}' for ext in extensions]
 
     # region Logger Setup
-    logger = _get_worker_logger(Path(save_root).stem)
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+
+    logger = get_worker_logger(Path(log_path).stem)
     # endregion
 
-
-    if skip_key is None:
-        skip_key = []
+    skip_key = skip_key or []
 
     for ext in extensions:
         target = f'*{ext}'
@@ -191,13 +200,17 @@ def recursive_file_extension_converter(
 def mpr_to_csv(
         mpr_path: str | Path, 
         csv_path: str | Path,
+        log_path: Path | None = None,
 ) -> None:
     from galvani import BioLogic
     mpr_path = Path(mpr_path).resolve()
     csv_path = Path(csv_path).resolve()
 
     # region Logger Setup
-    logger = _get_worker_logger(Path(csv_path).stem)
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+
+    logger = get_worker_logger(Path(log_path).stem)
     # endregion
 
     try:
@@ -214,6 +227,7 @@ def mat_to_csv(
         mat_path: str | Path,
         csv_path: str | Path,
         libs: bool=True,
+        log_path: Path | None = None,
 ) -> None:
     import scipy.io as sio 
     import h5py
@@ -221,7 +235,10 @@ def mat_to_csv(
     csv_path = Path(csv_path).resolve()
 
     # region Logger Setup
-    logger = _get_worker_logger(Path(csv_path).stem)
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+
+    logger = get_worker_logger(Path(log_path).stem)
     # endregion
 
 
@@ -261,8 +278,9 @@ def mat_to_csv(
                 log(logger=logger, msg = f'  Warning: saving arrays separately (mismatched lengths): {lengths}')
                 for k, v in data.items():
                     array_path = csv_path.with_stem(f'{csv_path.stem}_{k}')
-                    pd.DataFrame({k: v}).to_csv(array_path, index=False)
-                    log(logger=logger, msg = f'     Saved: {array_path.name}  |  shape: {array_path.shape}')
+                    df_out = pd.DataFrame({k: v})
+                    df_out.to_csv(array_path, index=False)
+                    log(logger=logger, msg = f'     Saved: {array_path.name}  |  shape: {df_out.shape}')
             else:
                 df = pd.DataFrame(data)
                 log(logger=logger, msg = df.head())
@@ -271,7 +289,13 @@ def mat_to_csv(
     except NotImplementedError as e:
         log(logger=logger, msg = f'  Warning ({e}): h5py needed')
         with h5py.File(mat_path, 'r') as f:
-            data = {k: f[k][()].flatten() for k in f.keys() if not k.startswith('__')}
+            data = {}
+            for k in f.keys():
+                if k.startswith('__'):
+                    continue
+                item = f[k]
+                if isinstance(item, h5py.Dataset):
+                    data[k] = item[()].flatten
         # log(logger=logger, msg = f'Data extracted from {mat_path.name}')
         if libs:
             lambda_keys = sorted([k for k in data if 'lamb' in k.lower()])
@@ -289,7 +313,7 @@ def mat_to_csv(
         else:
             df = pd.DataFrame(data)
             df.to_csv(csv_path, index=False)
-            log(logger=logger, msg = f'Saved {mat_path.name}   |  shape: {mat_path.shape}')
+            log(logger=logger, msg = f'Saved {mat_path.name}   |  shape: {df.shape}')
     except Exception as e:
         log(logger=logger, msg = f'  ❌ Scipy Error: {e}')
 
@@ -297,12 +321,13 @@ def asc_to_csv(
         asc_path: str | Path, 
         csv_path: str | Path,
         libs: bool=True,
+        log_path: Path | None = None,
 ) -> None:
     asc_path = Path(asc_path).resolve()
     csv_path = Path(csv_path).resolve()
 
     # region Logger Setup
-    logger = _get_worker_logger(Path(csv_path).stem)
+    logger = get_worker_logger(Path(csv_path).stem)
     # endregion
 
 
@@ -352,12 +377,16 @@ def asc_to_csv(
 def txt_to_csv(
         txt_path: str | Path,
         csv_path: str | Path,
+        log_path: Path | None = None,
 ) -> None:
     txt_path = Path(txt_path).resolve()
     csv_path = Path(csv_path).resolve()
 
     # region Logger Setup
-    logger = _get_worker_logger(Path(csv_path).stem)
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+
+    logger = get_worker_logger(Path(log_path).stem)
     # endregion
 
 
@@ -401,10 +430,17 @@ def _copy_file(
         src_file: str | Path,
         dst_file: str | Path,
         overwrite: bool=False,
+        log_path: Path | None = None,
         ):
+    
+    src_file = Path(src_file)
+    dst_file = Path(dst_file)
 
     # region Logger Setup
-    logger = _get_worker_logger(Path(dst_file).stem)
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+
+    logger = get_worker_logger(Path(log_path).stem)
     # endregion
 
     try:
@@ -422,12 +458,16 @@ def file_segregator(
         pattern: str = '*_CV_*',
         preserve_structure: bool = True,
         overwrite: bool = False,
+        log_path: Path | None = None,
         ) -> tuple[int, int, int]:
     
     data_root, data_destination = Path(data_root).resolve(), Path(data_destination).resolve()
 
     # region Logger Setup
-    logger = _get_worker_logger(Path(data_destination).stem)
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+
+    logger = get_worker_logger(Path(log_path).stem)
     # endregion
 
     
@@ -474,15 +514,6 @@ def file_segregator(
     log(logger=logger, msg = '\n' + '='*60)
 
     return processed, skipped, failed
-
-def log(logger, msg):
-    if logger.hasHandlers():
-        logger.info(msg)
-    else:
-        print(msg)
-
-def _get_worker_logger(name):
-    return logging.getLogger(f'worker.{name}')
 
 if __name__ == '__main__':
     print('hi')
