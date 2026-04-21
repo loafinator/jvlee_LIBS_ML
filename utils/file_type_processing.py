@@ -1,5 +1,5 @@
 """
-jvlee_LIBS_ML>utils>file_type_processing.py
+jvlee_LIBS_ML > utils > file_type_processing.py
 
 Function definitions for file gathering and conversion. Current conversions defined
 are all to .csv and form one of the following: .mpr, .mat, .asc, and .txt. This is 

@@ -1,5 +1,5 @@
 """
-jvlee_LIBS_ML>utils>plotting.py
+jvlee_LIBS_ML > utils > plotting.py
 
 Function definitions for plotting prediction evaluation plots.
 
@@ -190,7 +190,7 @@ def plot_peak_error_heatmap(
     fig, ax = plt.subplots(figsize=(14, max(3, 0.5 * n)))
     im = ax.imshow(rel_errors, aspect='auto', cmap='RdBu_r',
                    vmin=-1, vmax=1,
-                   extent=[wavelengths[0], wavelengths[-1], n - 0.5, -0.5])
+                   extent=(float(wavelengths[0]), float(wavelengths[-1]), float(n - 0.5), float(-0.5)))
  
     cbar = fig.colorbar(im, ax=ax, fraction=0.02, pad=0.02)
     cbar.set_label('(actual - pred) / max(actual)')

@@ -1,5 +1,5 @@
 """
-jvlee_LIBS_ML>utils>xpu_setup.py
+jvlee_LIBS_ML > utils > xpu_setup.py
 
 Function definitions setting up the trainer for models on the GPU. Note that this
 is for an intel GPU, not NVIDIA so it is called an xpu instead of gpu in pytorch.
@@ -69,6 +69,7 @@ def init_xpu_trainer(
         verbose: bool = True,
         plot_animation: bool = True,
         save_path: Optional[str] = None,
+        log_path: Path | None = None,
         # endregion
 ) -> Tuple[nn.Module, Dict[str, Any]]:
     """
@@ -90,18 +91,28 @@ def init_xpu_trainer(
         history_dict contains: train_losses, val_losses (if val provided)
     """
     
-    logger = get_worker_logger(Path(save_path).stem)
+    if log_path is None:
+        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+    logger = get_worker_logger(Path(log_path).stem)
 
     # region Setup
-    # region Convert inputs to numpy if pandas
+    # # region Convert inputs to numpy if pandas
     if isinstance(X_train, pd.DataFrame):
-        X_train = X_train.values.astype(np.float32)
+        X_train = X_train.to_numpy(dtype=np.float32)
     if isinstance(y_train, pd.Series):
-        y_train = y_train.values.astype(np.float32)
+        y_train = y_train.to_numpy(dtype=np.float32)
     if X_val is not None and isinstance(X_val, pd.DataFrame):
-        X_val = X_val.values.astype(np.float32)
+        X_val = X_val.to_numpy(dtype=np.float32)
     if y_val is not None and isinstance(y_val, pd.Series):
-        y_val = y_val.values.astype(np.float32)
+        y_val = y_val.to_numpy(dtype=np.float32)
+
+    # Guarantee numpy arrays for Pylance
+    X_train = np.asarray(X_train, dtype=np.float32)
+    y_train = np.asarray(y_train, dtype=np.float32)
+    if X_val is not None:
+        X_val = np.asarray(X_val, dtype=np.float32)
+    if y_val is not None:
+        y_val = np.asarray(y_val, dtype=np.float32)
     # endregion
 
     # region Make sure y is 2D for regression (n_samples, 1)

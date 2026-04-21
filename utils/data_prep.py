@@ -425,7 +425,7 @@ def enrich_file_with_metadata(
     # endregion
 
     # region Save   
-    df.to_csv(_long_path(enriched_path), index=False)
+    df.to_csv(long_path(enriched_path), index=False)
     log(logger=logger, msg = f"Enriched → {enriched_path.name}  |  shape={df.shape}")
     return enriched_path
     # endregion
@@ -523,7 +523,7 @@ def enrich_with_progress(
     print(f"Starting ProcessPoolExecutor with {min(4, os.cpu_count() or 4)} workers...")
     with ProcessPoolExecutor(
         max_workers=min(4,os.cpu_count() or 4),
-        initializer=_worker_init,
+        initializer=worker_init,
         initargs=(log_q,)
     ) as executor:
         futures = {
@@ -1096,7 +1096,7 @@ def clean_single_technique_file(
 
     try:
         # region Headers Check
-        headers = pd.read_csv(_long_path(path), nrows=0).columns.tolist()
+        headers = pd.read_csv(long_path(path), nrows=0).columns.tolist()
 
         missing = [col for col in required_columns if col not in headers]
         if missing:
@@ -1106,7 +1106,7 @@ def clean_single_technique_file(
         # endregion
 
         # region Loag Data
-        df = pd.read_csv(_long_path(path), delimiter=',', header=0, skiprows=0, low_memory=False)
+        df = pd.read_csv(long_path(path), delimiter=',', header=0, skiprows=0, low_memory=False)
         log(logger=logger, msg = f"     Loaded: {path.name}  |  shape={df.shape}")
         # endregion
 
@@ -1588,7 +1588,7 @@ def sanitize_path(
 
     return current
 
-def _long_path(
+def long_path(
         path: Path,
         log_path: Path | None = None,
 ) -> str:
@@ -1610,7 +1610,7 @@ def _long_path(
             return '\\\\?\\' + s
         return s
 
-def _worker_init(log_q):
+def worker_init(log_q):
     """Called once per worker process at startup."""
     global _worker_log_q
     _worker_log_q = log_q
