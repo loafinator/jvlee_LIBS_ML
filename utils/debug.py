@@ -1,5 +1,5 @@
 """
-jvlee_LIBS_ML>utils>debug.py
+jvlee_LIBS_ML > utils > debug.py
 
 Function definitions for creating and logging to a log files. Used in most other
 scripts as the primary method of printing so that things aren't only printed in 
@@ -20,6 +20,7 @@ import time
 from logging import handlers
 from datetime import datetime 
 from pathlib import Path
+from typing import Optional, IO
 # endregion
 # endregion
 
@@ -60,26 +61,31 @@ class Logger(logging.Handler):
     def __init__(self, filepath):
         super().__init__()
         self.terminal = sys.__stdout__
-        self.log = None
+        self.log: Optional[IO[str]] = None
         try:
             self.log = safe_open_log(filepath=filepath)
+            if self.log is None:
+                raise RuntimeError(f"Failed to open log file: {filepath}")
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             separator = f'\n{"="*40}\n{timestamp}\n{"="*50}\n'
             self.log.write(separator)
             self.log.flush()
         except Exception as e:
-            self.terminal.write(f"Failed to open log file: {e}\n")
+            if self.terminal is not None:
+                self.terminal.write(f"Failed to open log file: {e}\n")
             raise
 
     def emit(self, record):
         msg = self.format(record) + '\n'
-        self.terminal.write(msg)
+        if self.terminal is not None:
+            self.terminal.write(msg)
         if self.log is not None:
             self.log.write(msg)
             self.log.flush()
 
     def write(self, message):
-        self.terminal.write(message)
+        if self.terminal is not None:
+            self.terminal.write(message)
         if self.log is not None:
             self.log.write(message)
             self.log.flush()

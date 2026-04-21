@@ -1,6 +1,6 @@
 """
 
-jvlee_LIBS_ML>utils>data_prep.py
+jvlee_LIBS_ML > utils > data_prep.py
 
 This is the labeling workhorse. Contains functions which are called in 'get_libs.py'
 to clean and label data. This is done via many re.search() statements with associated
