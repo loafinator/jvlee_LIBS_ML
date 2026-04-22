@@ -94,3 +94,37 @@ PLS Val MSE: 0.685108 | Val MAE: 0.438495
   conc_Sm_wt%                    | MAE: 0.0382
   conc_UCl3_wt%                  | MAE: 0.5113
 Total training time: 18.762 minutes
+
+========================================
+2026-04-21 12:01:16
+==================================================
+Target columns (19): ['conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'frac_KCl', 'frac_LiCl']
+wavelengths: [ 250.         250.0750075  250.150015  ...  999.849985   999.9249925
+ 1000.       ]
+first shot intensities: [-440.792  -873.4239 -659.9911 ...  349.746   349.746   349.746 ]
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+Columns surviving VarianceThreshold: ['conc_CeCl3_wt%', 'conc_GdCl3_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%']
+NaNs in X_trn: 0
+NaNs in y_trn: 0
+NaNs in X_val: 0
+NaNs in y_val: 0
+y_trn min/max: -0.8764 / 121.2555
+X_trn min/max: -1.2606 / 6.6702
+Number of features is:          10000
+Training features shape:        (147039, 1, 10000)
+Validation features shape:      (36760, 1, 10000)
+Training targets shape:         (147039, 7)
+Validation targets shape:       (36760, 7)
+Top 10 max intensities per spectrum: [87526.195 87526.195 87526.195 87526.195 87526.195 87526.195 87526.195
+ 87526.195 87526.195 87526.195]
+Spectra with extreme max values: 0 / 147039
+PLS Val MSE: 0.592105 | Val MAE: 0.409344
+  conc_CeCl3_wt%                 | MAE: 1.0315
+  conc_GdCl3_wt%                 | MAE: 0.5784
+  conc_Mg_wt%                    | MAE: 0.0001
+  conc_Nd_wt%                    | MAE: 0.3404
+  conc_SmCl3_wt%                 | MAE: 0.3803
+  conc_Sm_wt%                    | MAE: 0.0383
+  conc_UCl3_wt%                  | MAE: 0.4964
+Total training time: 32.770 minutes

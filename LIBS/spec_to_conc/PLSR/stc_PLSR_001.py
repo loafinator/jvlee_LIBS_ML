@@ -215,7 +215,7 @@ if __name__ == "__main__":
         # endregion
 
         # region PLSR
-        pls = PLSRegression(n_components=50)
+        pls = PLSRegression(n_components=100)
         pls.fit(X_trn_scaled, y_trn)
 
         y_pred_val = pls.predict(X_val_scaled)
