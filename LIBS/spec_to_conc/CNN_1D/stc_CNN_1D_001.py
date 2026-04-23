@@ -5,6 +5,9 @@ NOTE: update all paths before running from new location(machine).
 
 Full definition and implimentation of stc_CNN_1D_001().
 
+TODO: Try out AdamW instead of Adam for the optimizer. The weight decay implementation
+        on regular Adam is not right it sounds like and the AdamW fixes it.
+
 """
 
 
@@ -286,16 +289,16 @@ if __name__ == "__main__":
             num_workers= 4,
             persistent_workers=True,
             pin_memory= False,
-            learning_rate= 1e-3,
+            learning_rate= 1e-4,
             criterion= nn.MSELoss(),
             clip_grads= True,
-            optimizer_cls= optim.Adam,
+            optimizer_cls= optim.AdamW,  # TODO: try AdamW
             weight_decay= 1e-4,
             verbose= True,
             plot_animation= True,
             save_path= str(eval_dir),
             log_path= Path(logger_path),
-            ReduceLROnPlateau=False,
+            ReduceLROnPlateau=True,
         )
 
         end_time_b = time.perf_counter()

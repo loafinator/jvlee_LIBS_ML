@@ -186,7 +186,7 @@ def init_xpu_trainer(
 
     best_val_loss = float('inf')
     patience_counter = 0
-    early_stop_patience = 30
+    early_stop_patience = 40
     # endregion
 
     # region Track losses
@@ -213,7 +213,6 @@ def init_xpu_trainer(
         model.train()
         train_loss = 0.0
         n_batches = 0
-        batch_idx = 0
 
         # region Training Loop
         for batch_x, batch_y in train_loader:
@@ -227,12 +226,7 @@ def init_xpu_trainer(
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             train_loss += loss.item()
-            n_batches += 1
-            batch_idx += 1
-            scheduler.step(epoch + batch_idx / len(train_loader))   # type: ignore[arg-type]
-                                                            # This ignore is actually correct, not just a
-                                                            # lazy workaround. Docs explicitly support floats
-                                                            # for fractional epochs. 
+            n_batches += 1 
         # endregion
 
         # region Training Losses
@@ -276,6 +270,16 @@ def init_xpu_trainer(
             per_wl_std = all_residuals.std(axis=0)
             history['val_residuals_mean'].append(float(per_wl_mean.mean()))
             history['val_residuals_std'].append(float(per_wl_std.mean()))
+            # endregion
+
+            # region ReduceROnPlateau Scheduler
+            if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                scheduler.step(val_loss)   # type: ignore[arg-type]
+                                                            # This ignore is actually correct, not just a
+                                                            # lazy workaround. Docs explicitly support floats
+                                                            # for fractional epochs.
+            else:
+                pass
             # endregion
 
             # region Schedule / Save / Early stop
