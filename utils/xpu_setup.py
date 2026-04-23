@@ -60,6 +60,7 @@ def init_xpu_trainer(
         batch_size: int = 64,
         shuffle: bool = True,
         num_workers: int = 4,
+        persistent_workers: bool = True,
         pin_memory: bool = False,
         learning_rate: float = 0.001,
         criterion: nn.Module = nn.MSELoss(),
@@ -133,7 +134,8 @@ def init_xpu_trainer(
         batch_size=batch_size,
         shuffle=shuffle,
         num_workers=num_workers,
-        pin_memory=pin_memory
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers
     )
     val_loader = None
     if X_val is not None and y_val is not None:
@@ -146,7 +148,8 @@ def init_xpu_trainer(
             batch_size=batch_size,
             shuffle=False,
             num_workers=num_workers,
-            pin_memory=pin_memory
+            pin_memory=pin_memory,
+            persistent_workers=persistent_workers
         )
     # endregion
 
@@ -226,7 +229,7 @@ def init_xpu_trainer(
             train_loss += loss.item()
             n_batches += 1
             batch_idx += 1
-            scheduler.step(epoch + batch_idx / n_batches)   # type: ignore[arg-type]
+            scheduler.step(epoch + batch_idx / len(train_loader))   # type: ignore[arg-type]
                                                             # This ignore is actually correct, not just a
                                                             # lazy workaround. Docs explicitly support floats
                                                             # for fractional epochs. 
@@ -280,8 +283,10 @@ def init_xpu_trainer(
                 best_val_loss = val_loss
                 patience_counter = 0
                 torch.save(model.state_dict(), best_model_path)
-                joblib.dump(X_scaler, save_dir / f'X_scaler_{time_stamp}.pk1')
-                joblib.dump(y_scaler, save_dir / f'y_scaler_{time_stamp}.pk1')
+                if X_scaler is not None:
+                    joblib.dump(X_scaler, save_dir / f'X_scaler_{time_stamp}.pk1')
+                if y_scaler is not None:
+                    joblib.dump(y_scaler, save_dir / f'y_scaler_{time_stamp}.pk1')
             else:
                 patience_counter += 1
                 if patience_counter >= early_stop_patience:

@@ -12,7 +12,6 @@ Full definition and implimentation of stc_CNN_1D_001().
 # region imports
 import time
 import torch
-import h5py
 import logging
 import sys
 import multiprocessing
@@ -28,31 +27,11 @@ import numpy as np
 from datetime import datetime
 from torch import optim
 from pathlib import Path
-from h5py import Group
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import VarianceThreshold
 from logging.handlers import QueueListener
 # endregion
 
-# region custom
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
-from setup import add_project_root_to_path
-add_project_root_to_path(parent_generation=1)
-from utils import (
-    Logger, 
-    gen_speak,
-    get_worker_logger,
-    log,
-    init_xpu_trainer,
-    plot_residual_history,
-    plot_peak_error_heatmap,
-    plot_predicted_vs_actual,
-    run_spectral_inference,
-    hf_get,
-    load_h5_split_dataset
-)
-
-# endregion
 # endregion
 
 # region Paths
@@ -61,23 +40,21 @@ h5_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\trn_val_split
 eval_dir = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\spec_to_conc\eval_CNN_1D_001")
 # endregion
 
-class LIBS_1D_CNN_003(nn.Module):
+class STC_1D_CNN_001(nn.Module):
     def __init__(
             self, 
             input_channels: int = 1, 
-            layer_1_out: int = 32, 
-            layer_2_out: int = 128,
-            layer_3_out: int = 512,
+            layer_1_out: int = 128, 
+            layer_2_out: int = 64,
+            layer_3_out: int = 32,
+            adaptive_pool_out: int = 64,
+            fc_hidden: int = 256,
             kernel_size: int = 3,
             padding: int = 1,
-            n_features: int = 21, 
             dropout: float = 0.3,
-            n_targets: int = 451):
+            n_targets: int = 21):
         super().__init__()
         self.conv = nn.Sequential(
-            # TODO: add in another layer (currently very shallow for 10000 input features (wavelength intensities))
-            # TODO: Replace final pool with AdaptiveAvgPool1d(256) This will give ~16000 instad of 40000 for inputs
-            #       into the FC 
             nn.Conv1d(input_channels, layer_1_out, kernel_size=kernel_size, padding=padding),
             nn.BatchNorm1d(layer_1_out),
             nn.ReLU(),
@@ -86,25 +63,46 @@ class LIBS_1D_CNN_003(nn.Module):
             nn.BatchNorm1d(layer_2_out),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=4),
+            nn.Conv1d(layer_2_out, layer_3_out, kernel_size=kernel_size, padding=padding),
+            nn.BatchNorm1d(layer_3_out),
+            nn.ReLU(),
+            nn.AdaptiveAvgPool1d(adaptive_pool_out),
             nn.Flatten()
         )
 
-        conv_out_size = layer_2_out * (n_features // 16)
+        conv_out_size = layer_3_out * adaptive_pool_out
         self.fc = nn.Sequential(
-            nn.Linear(conv_out_size,layer_3_out),
-            nn.BatchNorm1d(layer_3_out),
+            nn.Linear(conv_out_size,fc_hidden),
+            nn.BatchNorm1d(fc_hidden),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(layer_3_out, n_targets)
+            nn.Linear(fc_hidden, n_targets)
         )
 
     def forward(self, x):
         return self.fc(self.conv(x))
-    
-
-    
 
 if __name__ == "__main__":
+    # region custom imports
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+    from setup import add_project_root_to_path
+    add_project_root_to_path(parent_generation=1)
+    from utils import (
+        Logger, 
+        gen_speak,
+        get_worker_logger,
+        log,
+        init_xpu_trainer,
+        plot_residual_history,
+        # plot_peak_error_heatmap,
+        # plot_predicted_vs_actual,
+        # run_spectral_inference,
+        # hf_get,
+        load_h5_split_dataset
+    )
+
+    # endregion
+
     # region Timing Setup
     start_time = time.perf_counter()
     start_time_a = time.perf_counter()
@@ -133,15 +131,6 @@ if __name__ == "__main__":
         'conc_La_wt%', 'conc_LaCl3_wt%',
         'conc_Mg_wt%', 'conc_MgCl2_wt%',
         'conc_H2o_wt%', 'conc_Nd_wt%',
-        # 'temperature_C', 'state_aerosol', 'state_molten', 'state_solid',
-        # 'delay_study', 'delay', 
-        # 'width_study', 'width', 
-        # 'energy_study', 'energy',
-        # 'qdelay_study', 'qdelay',
-        # 'shot_study', 'shots',
-        # 'flow_study', 'flow',
-        # 'pressure_study', 'pressure', 
-        # 'repetition', 'blank', 'kinetic', 'static_',
     }
 
     try:  
@@ -184,7 +173,9 @@ if __name__ == "__main__":
         bad_rows_val = nan_frac_val > 0.1
         log(logger=logger, msg= f'Dropping {bad_rows_trn.sum()} training rows and {bad_rows_val.sum()} validation rows with >10% NaN values in Spectrum')
     
-        # Drop designated y rows
+        # Drop designated rows
+        X_trn_raw = X_trn_raw[~bad_rows_trn]
+        X_val_raw = X_val_raw[~bad_rows_val]
         y_trn_raw = y_trn_raw[~bad_rows_trn]
         y_val_raw = y_val_raw[~bad_rows_val]
         # endregion
@@ -216,12 +207,14 @@ if __name__ == "__main__":
         # endregion
         
         # region Scale the X data
-        X_trn_raw = X_trn_raw[~bad_rows_trn]
-        X_val_raw = X_val_raw[~bad_rows_val]
-        X_trn_scaled = X_scaler.fit_transform(X_trn_raw)
-        X_val_scaled = X_scaler.transform(X_val_raw)
         X_trn_scaled = np.nan_to_num(X_scaler.fit_transform(X_trn_raw), nan=0.0, posinf=0.0, neginf=0.0)
         X_val_scaled = np.nan_to_num(X_scaler.transform(X_val_raw), nan=0.0, posinf=0.0, neginf=0.0)
+        # endregion
+
+        # region Downsample
+        downsample_factor = 4
+        X_trn_scaled = X_trn_scaled[:, ::downsample_factor]
+        X_val_scaled = X_val_scaled[:, ::downsample_factor]
         # endregion
 
         # region Expand X data
@@ -235,43 +228,41 @@ if __name__ == "__main__":
         # endregion
 
         # region Align metadata df to surviving bad-row mask
-        meta_val_df = meta_val_df.iloc[np.where(~bad_rows_val)[0]].reset_index(drop=True)
+        meta_val_df = meta_val_df.reset_index(drop=True)
         # endregion
 
         # region Report
+        n_features = X_trn.shape[2]
+        n_targets = y_trn.shape[1]
+        row_maxes = X_trn_raw.max(axis=1)
+        outlier_mask = row_maxes > np.percentile(row_maxes, 99)
         log(logger=logger, msg= f"Columns surviving VarianceThreshold: {y_trn_filtered.columns.tolist()}")
-
         log(logger=logger, msg= f"NaNs in X_trn: {np.isnan(X_trn).sum()}")
         log(logger=logger, msg= f"NaNs in y_trn: {np.isnan(y_trn).sum()}")
         log(logger=logger, msg= f"NaNs in X_val: {np.isnan(X_val).sum()}")
         log(logger=logger, msg= f"NaNs in y_val: {np.isnan(y_val).sum()}")
         log(logger=logger, msg= f"y_trn min/max: {y_trn.min():.4f} / {y_trn.max():.4f}")
         log(logger=logger, msg= f"X_trn min/max: {X_trn.min():.4f} / {X_trn.max():.4f}")
-
-        n_features = X_trn.shape[2]
-        n_targets = y_trn.shape[1]
         log(logger=logger, msg= f'Number of features is:          {n_features}')
         log(logger=logger, msg= f'Training features shape:        {X_trn.shape}')
         log(logger=logger, msg= f'Validation features shape:      {X_val.shape}')
         log(logger=logger, msg= f'Training targets shape:         {y_trn.shape}')
         log(logger=logger, msg= f'Validation targets shape:       {y_val.shape}')
-
-        row_maxes = X_trn_raw.max(axis=1)
-        outlier_mask = row_maxes > np.percentile(row_maxes, 99)
         log(logger=logger, msg= f'Top 10 max intensities per spectrum: {np.sort(row_maxes)[-10:]}')
         log(logger=logger, msg= f'Spectra with extreme max values: {outlier_mask.sum()} / {len(y_trn_raw)}')
         # endregion
         # endregion
 
         # region Training
-        model = LIBS_1D_CNN_003(
+        model = STC_1D_CNN_001(
             input_channels=1,
-            layer_1_out= 16, 
+            layer_1_out= 128, 
             layer_2_out = 64,
-            layer_3_out = 256,
+            layer_3_out = 32,
+            adaptive_pool_out=64,
+            fc_hidden=256,
             kernel_size=3,
             padding=1,
-            n_features=n_features,
             dropout = 0.5,
             n_targets=n_targets
         )
@@ -286,21 +277,25 @@ if __name__ == "__main__":
             y_train=y_trn,
             X_val=X_val,
             y_val=y_val,
+            X_scaler= None,
+            y_scaler= None,
             max_epochs=500,
-            batch_size=128,
             device= torch.device('xpu'),
+            batch_size=256,
             shuffle= True,
-            num_workers= 0,
+            num_workers= 4,
+            persistent_workers=True,
             pin_memory= False,
-            learning_rate= 0.00001,
+            learning_rate= 1e-3,
             criterion= nn.MSELoss(),
             clip_grads= True,
             optimizer_cls= optim.Adam,
-            # scheduler_cls= torch.optim.lr_scheduler.ReduceLROnPlateau,
-            # scheduler_kwargs= None,
+            weight_decay= 1e-4,
             verbose= True,
             plot_animation= True,
-            ReduceLROnPlateau=False
+            save_path= str(eval_dir),
+            log_path= Path(logger_path),
+            ReduceLROnPlateau=False,
         )
 
         end_time_b = time.perf_counter()
@@ -316,6 +311,21 @@ if __name__ == "__main__":
             show=False
         )
         # endregion 
+
+
+        end_time = time.perf_counter()
+        log(logger=logger, msg= f'Total training time: {((end_time - start_time) / 60):.3f} minutes')
+    finally:
+        gen_speak('Training complete!')
+        listener.stop()
+        sys.stdout = sys.__stdout__
+        my_logger.close()
+
+
+# region Imporvements
+    # - Update xpu_setup.py to log instead of print
+# endregion
+
 
         # region Sample Plots
         # region plot prep
@@ -403,16 +413,3 @@ if __name__ == "__main__":
         #         ))
             # endregion
         # endregion
-
-        end_time = time.perf_counter()
-        log(logger=logger, msg= f'Total training time: {((end_time - start_time) / 60):.3f} minutes')
-    finally:
-        gen_speak('Training complete!')
-        listener.stop()
-        sys.stdout = sys.__stdout__
-        my_logger.close()
-
-
-# region Imporvements
-    # - Update xpu_setup.py to log instead of print
-# endregion
