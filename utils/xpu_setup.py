@@ -49,10 +49,10 @@ def init_cnn(module):
 def init_xpu_trainer(
         # region Arguments
         model: nn.Module,
-        X_train: np.ndarray | pd.DataFrame,
-        y_train: np.ndarray | pd.DataFrame,
-        X_val: Optional[np.ndarray | pd.DataFrame] = None,
-        y_val: Optional[np.ndarray | pd.DataFrame] = None,
+        X_train: np.ndarray | pd.DataFrame | torch.Tensor,
+        y_train: np.ndarray | pd.DataFrame | torch.Tensor,
+        X_val: Optional[np.ndarray | pd.DataFrame | torch.Tensor] = None,
+        y_val: Optional[np.ndarray | pd.DataFrame | torch.Tensor] = None,
         X_scaler: Optional[Any] = None,
         y_scaler: Optional[Any] = None,
         max_epochs: int = 10,
@@ -109,12 +109,24 @@ def init_xpu_trainer(
         y_val = y_val.to_numpy(dtype=np.float32)
 
     # Guarantee numpy arrays for Pylance
-    X_train = np.asarray(X_train, dtype=np.float32)
-    y_train = np.asarray(y_train, dtype=np.float32)
+    if isinstance(X_train, torch.Tensor):
+        X_train = X_train.float()
+    else:
+        X_train = np.asarray(X_train, dtype=np.float32)
+    if isinstance(y_train, torch.Tensor):
+        y_train = y_train.float()
+    else:
+        y_train = np.asarray(y_train, dtype=np.float32)
     if X_val is not None:
-        X_val = np.asarray(X_val, dtype=np.float32)
+        if isinstance(X_val, torch.Tensor):
+            X_val = X_val.float()
+        else:
+            X_val = np.asarray(X_val, dtype=np.float32)
     if y_val is not None:
-        y_val = np.asarray(y_val, dtype=np.float32)
+        if isinstance(y_val, torch.Tensor):
+            y_val = y_val.float()
+        else:
+            y_val = np.asarray(y_val, dtype=np.float32)
     # endregion
 
     # region Make sure y is 2D for regression (n_samples, 1)
@@ -126,8 +138,8 @@ def init_xpu_trainer(
 
     # region Create datasets
     train_dataset = TensorDataset(
-        torch.from_numpy(X_train),
-        torch.from_numpy(y_train)
+        X_train if isinstance(X_train, torch.Tensor) else torch.from_numpy(X_train),
+        y_train if isinstance(y_train, torch.Tensor) else torch.from_numpy(y_train)
     )
     train_loader = DataLoader(
         train_dataset,
@@ -140,8 +152,8 @@ def init_xpu_trainer(
     val_loader = None
     if X_val is not None and y_val is not None:
         val_dataset = TensorDataset(
-            torch.from_numpy(X_val),
-            torch.from_numpy(y_val)
+            X_val if isinstance(X_val, torch.Tensor) else torch.from_numpy(X_val),
+            y_val if isinstance(y_val, torch.Tensor) else torch.from_numpy(y_val)
         )
         val_loader = DataLoader(
             val_dataset,
@@ -216,8 +228,9 @@ def init_xpu_trainer(
 
         # region Training Loop
         for batch_x, batch_y in train_loader:
-            batch_x = batch_x.to(device)
-            batch_y = batch_y.to(device)
+            if batch_x.device.type != device.type:
+                batch_x = batch_x.to(device)
+                batch_y = batch_y.to(device)
             optimizer.zero_grad()
             outputs = model(batch_x)
             loss = criterion(outputs, batch_y)
@@ -247,8 +260,9 @@ def init_xpu_trainer(
             # region Validation
             with torch.no_grad():
                 for batch_x, batch_y in val_loader:
-                    batch_x = batch_x.to(device)
-                    batch_y = batch_y.to(device)
+                    if batch_x.device.type != device.type:
+                        batch_x = batch_x.to(device)
+                        batch_y = batch_y.to(device)
                     outputs = model(batch_x)
                     val_loss_sum += criterion(outputs, batch_y).item()
                     val_mae_sum += mae(outputs, batch_y)

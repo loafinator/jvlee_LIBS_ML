@@ -305,6 +305,15 @@ if __name__ == "__main__":
         n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         log(logger=logger, msg=f'Model parameters: {n_params:,}')
 
+        log(logger=logger, msg='Start transfer data to xpu')
+        time_t1 = time.perf_counter()
+        X_trn_t = torch.from_numpy(X_trn).to('xpu')
+        y_trn_t = torch.from_numpy(y_trn).to('xpu')
+        X_val_t = torch.from_numpy(X_val).to('xpu')
+        y_val_t = torch.from_numpy(y_val).to('xpu')
+        time_t2 = time.perf_counter()
+        log(logger=logger, msg=f'Data transfer to xpu took {(time_t2 - time_t1)} sec')
+
 
         start_time_b = time.perf_counter()
         training_model, history = init_xpu_trainer(
@@ -317,10 +326,10 @@ if __name__ == "__main__":
             y_scaler= None,
             max_epochs=500,
             device= torch.device('xpu'),
-            batch_size=64,
+            batch_size=256,
             shuffle= True,
-            num_workers= 4,
-            persistent_workers=True,
+            num_workers= 0,
+            persistent_workers=False,
             pin_memory= False,
             learning_rate= 3e-5,
             criterion= nn.MSELoss(),
