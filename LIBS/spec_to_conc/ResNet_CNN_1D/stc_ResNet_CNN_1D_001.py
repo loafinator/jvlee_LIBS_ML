@@ -1,5 +1,5 @@
 """
-jvlee_LIBS_ML > LIBS > spec_to_conc > CNN_1D > stc_CNN_1D_001.py
+jvlee_LIBS_ML > LIBS > spec_to_conc > ResNet_CNN_1D > stc_ResNet_CNN_1D_001.py
 
 NOTE: update all paths before running from new location(machine).
 
@@ -38,52 +38,84 @@ from logging.handlers import QueueListener
 # endregion
 
 # region Paths
-logger_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\spec_to_conc\CNN_1D\stc_CNN_1D_001_log.txt"
+logger_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\spec_to_conc\ResNet_CNN_1D\stc_ResNet_CNN_1D_001_log.txt"
 h5_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\trn_val_split_LIBS.h5"
-eval_dir = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\spec_to_conc\CNN_1D\eval_CNN_1D_001")
+eval_dir = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\spec_to_conc\ResNet_CNN_1D\eval_ResNet_CNN_1D_001")
 # endregion
 
-class STC_1D_CNN_001(nn.Module):
+class ResBlock1D(nn.Module):
+    """ 
+    Singe residual block for 1D spectral data. 
+    """
+    def __init__(
+            self,
+            channels: int,
+            kernel_size: int = 3,
+            dropout: float = 0.2,
+    ):
+        super().__init__()
+        padding = kernel_size // 2
+        self.block = nn.Sequential(
+            nn.Conv1d(channels, channels, kernel_size=kernel_size, padding=padding),
+            nn.BatchNorm1d(channels),
+            nn.ReLU(),
+            # nn.Dropout(dropout),
+            nn.Conv1d(channels, channels, kernel_size=kernel_size, padding=padding),
+            nn.BatchNorm1d(channels)
+        )
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        return self.relu(x + self.block(x))         # This is the skip connection
+
+class STC_ResNet_1D_CNN_001(nn.Module):
     def __init__(
             self, 
             input_channels: int = 1, 
-            layer_1_out: int = 128, 
-            layer_2_out: int = 64,
-            layer_3_out: int = 32,
+            base_channels: int = 64,
+            n_res_blocks: int = 4,
             adaptive_pool_out: int = 64,
             fc_hidden: int = 256,
-            kernel_size: int = 3,
-            padding: int = 1,
+            kernel_size: int = 7,
             dropout: float = 0.3,
-            n_targets: int = 21):
+            n_targets: int = 7):
         super().__init__()
-        self.conv = nn.Sequential(
-            nn.Conv1d(input_channels, layer_1_out, kernel_size=kernel_size, padding=padding),
-            nn.BatchNorm1d(layer_1_out),
+
+        self.stem = nn.Sequential(
+            nn.Conv1d(input_channels, base_channels, kernel_size=kernel_size, padding=(kernel_size//2)),
+            nn.BatchNorm1d(base_channels),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=4),
-            nn.Conv1d(layer_1_out, layer_2_out, kernel_size=kernel_size, padding=padding),
-            nn.BatchNorm1d(layer_2_out),
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=4),
-            nn.Conv1d(layer_2_out, layer_3_out, kernel_size=kernel_size, padding=padding),
-            nn.BatchNorm1d(layer_3_out),
-            nn.ReLU(),
-            nn.AdaptiveAvgPool1d(adaptive_pool_out),
-            nn.Flatten()
+            nn.MaxPool1d(kernel_size=2)
         )
 
-        conv_out_size = layer_3_out * adaptive_pool_out
+        self.res_blocks = nn.Sequential(
+            *[ResBlock1D(base_channels, kernel_size=kernel_size)#, dropout=dropout)
+              for _ in range(n_res_blocks)]
+        )
+
+        self.downsample = nn.Sequential(
+            nn.MaxPool1d(kernel_size=2),
+            nn.AdaptiveAvgPool1d(adaptive_pool_out),
+            nn.Flatten(),
+        )
+
+        fc_in = base_channels * adaptive_pool_out
         self.fc = nn.Sequential(
-            nn.Linear(conv_out_size,fc_hidden),
+            nn.Linear(fc_in, fc_hidden),
             nn.BatchNorm1d(fc_hidden),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(fc_hidden, n_targets)
+            nn.Linear(fc_hidden, (fc_hidden // 2)),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear((fc_hidden // 2), n_targets),
         )
 
     def forward(self, x):
-        return self.fc(self.conv(x))
+        x1 = self.stem(x)
+        x2 = self.res_blocks(x1)
+        x3 = self.downsample(x2)
+        return self.fc(x3)
 
 if __name__ == "__main__":
     # region custom imports
@@ -257,20 +289,21 @@ if __name__ == "__main__":
         # endregion
 
         # region Training
-        model = STC_1D_CNN_001(
+        model = STC_ResNet_1D_CNN_001(
             input_channels=1,
-            layer_1_out= 128, 
-            layer_2_out = 64,
-            layer_3_out = 32,
+            base_channels=64,
+            n_res_blocks=4,
             adaptive_pool_out=64,
             fc_hidden=256,
-            kernel_size=3,
-            padding=1,
+            kernel_size=7,
             dropout = 0.2,
             n_targets=n_targets
         )
         end_time_a = time.perf_counter()
         log(logger=logger, msg= f'Training setup time: {(end_time_a - start_time_a):.3f} seconds')
+
+        n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        log(logger=logger, msg=f'Model parameters: {n_params:,}')
 
 
         start_time_b = time.perf_counter()
