@@ -1,0 +1,130 @@
+
+========================================
+2026-04-21 10:25:59
+==================================================
+Target columns (41): ['blank', 'conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'frac_KCl', 'frac_LiCl', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_molten', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+wavelengths: [ 250.         250.0750075  250.150015  ...  999.849985   999.9249925
+ 1000.       ]
+first shot intensities: [-440.792  -873.4239 -659.9911 ...  349.746   349.746   349.746 ]
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+Columns surviving VarianceThreshold: ['blank', 'conc_CeCl3_wt%', 'conc_GdCl3_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+NaNs in X_trn: 0
+NaNs in y_trn: 0
+NaNs in X_val: 0
+NaNs in y_val: 0
+y_trn min/max: -50.3404 / 121.2555
+X_trn min/max: -1.2606 / 6.6702
+Number of features is:          10000
+Training features shape:        (147039, 1, 10000)
+Validation features shape:      (36760, 1, 10000)
+Training targets shape:         (147039, 28)
+Validation targets shape:       (36760, 28)
+Top 10 max intensities per spectrum: [87526.195 87526.195 87526.195 87526.195 87526.195 87526.195 87526.195
+ 87526.195 87526.195 87526.195]
+Spectra with extreme max values: 0 / 147039
+PLS Val MSE: 0.719368 | Val MAE: 4.248218
+Total training time: 9.799 minutes
+
+========================================
+2026-04-21 10:44:20
+==================================================
+Target columns (20): ['conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'frac_KCl', 'frac_LiCl', 'temperature_C']
+wavelengths: [ 250.         250.0750075  250.150015  ...  999.849985   999.9249925
+ 1000.       ]
+first shot intensities: [-440.792  -873.4239 -659.9911 ...  349.746   349.746   349.746 ]
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+Columns surviving VarianceThreshold: ['conc_CeCl3_wt%', 'conc_GdCl3_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'temperature_C']
+NaNs in X_trn: 0
+NaNs in y_trn: 0
+NaNs in X_val: 0
+NaNs in y_val: 0
+y_trn min/max: -1.2323 / 121.2555
+X_trn min/max: -1.2606 / 6.6702
+Number of features is:          10000
+Training features shape:        (147039, 1, 10000)
+Validation features shape:      (36760, 1, 10000)
+Training targets shape:         (147039, 8)
+Validation targets shape:       (36760, 8)
+Top 10 max intensities per spectrum: [87526.195 87526.195 87526.195 87526.195 87526.195 87526.195 87526.195
+ 87526.195 87526.195 87526.195]
+Spectra with extreme max values: 0 / 147039
+PLS Val MSE: 0.620418 | Val MAE: 7.485548
+  conc_CeCl3_wt%                 | MAE: 1.1743
+  conc_GdCl3_wt%                 | MAE: 0.6037
+  conc_Mg_wt%                    | MAE: 0.0001
+  conc_Nd_wt%                    | MAE: 0.3592
+  conc_SmCl3_wt%                 | MAE: 0.3839
+  conc_Sm_wt%                    | MAE: 0.0382
+  conc_UCl3_wt%                  | MAE: 0.5109
+  temperature_C                  | MAE: 56.8141
+Total training time: 17.815 minutes
+
+========================================
+2026-04-21 11:04:29
+==================================================
+Target columns (19): ['conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'frac_KCl', 'frac_LiCl']
+wavelengths: [ 250.         250.0750075  250.150015  ...  999.849985   999.9249925
+ 1000.       ]
+first shot intensities: [-440.792  -873.4239 -659.9911 ...  349.746   349.746   349.746 ]
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+Columns surviving VarianceThreshold: ['conc_CeCl3_wt%', 'conc_GdCl3_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%']
+NaNs in X_trn: 0
+NaNs in y_trn: 0
+NaNs in X_val: 0
+NaNs in y_val: 0
+y_trn min/max: -0.8764 / 121.2555
+X_trn min/max: -1.2606 / 6.6702
+Number of features is:          10000
+Training features shape:        (147039, 1, 10000)
+Validation features shape:      (36760, 1, 10000)
+Training targets shape:         (147039, 7)
+Validation targets shape:       (36760, 7)
+Top 10 max intensities per spectrum: [87526.195 87526.195 87526.195 87526.195 87526.195 87526.195 87526.195
+ 87526.195 87526.195 87526.195]
+Spectra with extreme max values: 0 / 147039
+PLS Val MSE: 0.685108 | Val MAE: 0.438495
+  conc_CeCl3_wt%                 | MAE: 1.1743
+  conc_GdCl3_wt%                 | MAE: 0.5999
+  conc_Mg_wt%                    | MAE: 0.0001
+  conc_Nd_wt%                    | MAE: 0.3599
+  conc_SmCl3_wt%                 | MAE: 0.3857
+  conc_Sm_wt%                    | MAE: 0.0382
+  conc_UCl3_wt%                  | MAE: 0.5113
+Total training time: 18.762 minutes
+
+========================================
+2026-04-21 12:01:16
+==================================================
+Target columns (19): ['conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'frac_KCl', 'frac_LiCl']
+wavelengths: [ 250.         250.0750075  250.150015  ...  999.849985   999.9249925
+ 1000.       ]
+first shot intensities: [-440.792  -873.4239 -659.9911 ...  349.746   349.746   349.746 ]
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+Columns surviving VarianceThreshold: ['conc_CeCl3_wt%', 'conc_GdCl3_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%']
+NaNs in X_trn: 0
+NaNs in y_trn: 0
+NaNs in X_val: 0
+NaNs in y_val: 0
+y_trn min/max: -0.8764 / 121.2555
+X_trn min/max: -1.2606 / 6.6702
+Number of features is:          10000
+Training features shape:        (147039, 1, 10000)
+Validation features shape:      (36760, 1, 10000)
+Training targets shape:         (147039, 7)
+Validation targets shape:       (36760, 7)
+Top 10 max intensities per spectrum: [87526.195 87526.195 87526.195 87526.195 87526.195 87526.195 87526.195
+ 87526.195 87526.195 87526.195]
+Spectra with extreme max values: 0 / 147039
+PLS Val MSE: 0.592105 | Val MAE: 0.409344
+  conc_CeCl3_wt%                 | MAE: 1.0315
+  conc_GdCl3_wt%                 | MAE: 0.5784
+  conc_Mg_wt%                    | MAE: 0.0001
+  conc_Nd_wt%                    | MAE: 0.3404
+  conc_SmCl3_wt%                 | MAE: 0.3803
+  conc_Sm_wt%                    | MAE: 0.0383
+  conc_UCl3_wt%                  | MAE: 0.4964
+Total training time: 32.770 minutes

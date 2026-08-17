@@ -1,0 +1,1039 @@
+
+========================================
+2026-04-04 14:36:20
+==================================================
+Feature columns (203): ['310.958.1', '456.968.1', '457.699.1', '458.429.1', '460.938.1', '461.987.1', '464.4.1', '466.083.1', '590.513.1', '686.537.1', '880.74.1', '?', 'Accumulate Cycle Time (secs): 0.50141', 'Acquisition Mode:             Accumulate', 'Clock Amplitude:              Normal', 'Data Averaging Filter Mode:   No Filter', 'Data Type:                    Counts', 'Date and Time:                Fri Feb 14 14:25:00 2014', 'Date and Time:                Fri Feb 14 14:27:01 2014', 'Date and Time:                Fri Feb 14 14:28:19 2014', 'Date and Time:                Fri Feb 14 14:29:38 2014', 'Date and Time:                Mon Feb 24 14:43:35 2014', 'Date and Time:                Mon Feb 24 14:55:56 2014', 'Date and Time:                Mon Feb 24 15:05:08 2014', 'Date and Time:                Mon Feb 24 15:11:57 2014', 'Date and Time:                Mon Feb 24 15:18:06 2014', 'Date and Time:                Mon Feb 24 15:23:18 2014', 'Date and Time:                Mon Feb 24 15:28:25 2014', 'Date and Time:                Mon Feb 24 15:34:04 2014', 'Date and Time:                Mon Feb 24 15:41:16 2014', 'Date and Time:                Mon Mar 10 13:40:11 2014', 'Date and Time:                Mon Mar 10 13:44:00 2014', 'Date and Time:                Mon Mar 10 13:46:47 2014', 'Date and Time:                Mon Mar 10 13:49:45 2014', 'Date and Time:                Mon Mar 10 13:52:22 2014', 'Date and Time:                Mon Mar 10 13:54:54 2014', 'Date and Time:                Mon Mar 10 13:57:28 2014', 'Date and Time:                Mon Mar 10 14:00:00 2014', 'Date and Time:                Mon Mar 10 14:02:30 2014', 'Date and Time:                Mon Mar 10 14:05:18 2014', 'Date and Time:                Mon Mar 10 14:08:06 2014', 'Date and Time:                Mon Mar 10 14:11:11 2014', 'Date and Time:                Mon Mar 10 14:13:54 2014', 'Date and Time:                Mon Mar 10 14:16:31 2014', 'Date and Time:                Mon Mar 10 14:19:30 2014', 'Date and Time:                Mon Mar 10 14:22:02 2014', 'Date and Time:                Mon Mar 10 14:24:55 2014', 'Date and Time:                Mon Mar 10 14:28:06 2014', 'Date and Time:                Mon Mar 10 14:30:53 2014', 'Date and Time:                Mon Mar 10 14:35:22 2014', 'Date and Time:                Mon Mar 10 14:38:15 2014', 'Date and Time:                Mon Mar 10 14:41:15 2014', 'Date and Time:                Mon Mar 10 14:43:59 2014', 'Date and Time:                Mon Mar 10 14:47:09 2014', 'Date and Time:                Mon Mar 10 14:49:43 2014', 'Date and Time:                Mon Mar 10 14:52:26 2014', 'Date and Time:                Mon Mar 10 14:55:19 2014', 'Date and Time:                Mon Mar 10 15:02:35 2014', 'Date and Time:                Mon Mar 10 15:07:02 2014', 'Date and Time:                Mon Mar 10 15:12:17 2014', 'Date and Time:                Mon Mar 10 15:15:18 2014', 'Date and Time:                Mon Mar 10 15:20:36 2014', 'Date and Time:                Mon Mar 10 15:23:34 2014', 'Date and Time:                Mon Mar 10 15:27:43 2014', 'Date and Time:                Mon Mar 10 15:31:01 2014', 'Date and Time:                Mon Mar 10 15:34:24 2014', 'Date and Time:                Mon Mar 10 15:37:33 2014', 'Date and Time:                Mon Mar 10 15:41:21 2014', 'Date and Time:                Mon Mar 10 15:44:48 2014', 'Date and Time:                Mon Mar 10 15:48:57 2014', 'Date and Time:                Mon Mar 10 15:51:53 2014', 'Date and Time:                Mon Mar 10 15:54:54 2014', 'Date and Time:                Mon Mar 10 15:59:16 2014', 'Date and Time:                Mon Mar 10 16:02:34 2014', 'Date and Time:                Mon Mar 10 16:05:33 2014', 'Date and Time:                Thu Feb 13 10:52:56 2014', 'Date and Time:                Thu Feb 13 10:53:39 2014', 'Date and Time:                Thu Feb 13 10:54:04 2014', 'Date and Time:                Thu Feb 13 10:54:34 2014', 'Date and Time:                Tue Mar 11 10:56:30 2014', 'Date and Time:                Tue Mar 11 11:00:54 2014', 'Date and Time:                Tue Mar 11 11:05:07 2014', 'Date and Time:                Tue Mar 11 11:07:40 2014', 'Date and Time:                Tue Mar 11 11:12:26 2014', 'Date and Time:                Tue Mar 11 11:15:35 2014', 'Date and Time:                Tue Mar 11 11:18:45 2014', 'Date and Time:                Tue Mar 11 11:21:41 2014', 'Date and Time:                Tue Mar 11 11:24:18 2014', 'Date and Time:                Tue Mar 11 16:01:59 2014', 'Date and Time:                Tue Mar 11 16:05:07 2014', 'Date and Time:                Tue Mar 11 16:09:32 2014', 'Date and Time:                Tue Mar 11 16:12:16 2014', 'Date and Time:                Tue Mar 11 16:14:45 2014', 'Date and Time:                Tue Mar 11 16:17:39 2014', 'Date and Time:                Tue Mar 11 16:20:23 2014', 'Date and Time:                Tue Mar 11 16:23:09 2014', 'Date and Time:                Tue Mar 11 16:25:33 2014', 'Date and Time:                Wed Mar 12 11:11:21 2014', 'Date and Time:                Wed Mar 12 11:14:18 2014', 'Date and Time:                Wed Mar 12 11:17:41 2014', 'Date and Time:                Wed Mar 12 11:20:28 2014', 'Date and Time:                Wed Mar 12 11:23:06 2014', 'Date and Time:                Wed Mar 12 11:25:44 2014', 'Date and Time:                Wed Mar 12 11:28:28 2014', 'Date and Time:                Wed Mar 12 11:31:05 2014', 'Date and Time:                Wed Mar 12 11:33:42 2014', 'Date and Time:                Wed Mar 12 11:39:41 2014', 'Date and Time:                Wed Mar 12 11:42:30 2014', 'Date and Time:                Wed Mar 12 11:45:10 2014', 'Date and Time:                Wed Mar 12 11:47:40 2014', 'Date and Time:                Wed Mar 12 11:50:07 2014', 'Date and Time:                Wed Mar 12 11:52:36 2014', 'Date and Time:                Wed Mar 12 11:55:09 2014', 'Date and Time:                Wed Mar 12 11:57:51 2014', 'Date and Time:                Wed Mar 12 12:00:31 2014', 'Date and Time:                Wed Mar 12 12:03:17 2014', 'Date and Time:                Wed Mar 12 12:06:11 2014', 'Date and Time:                Wed Mar 12 12:08:44 2014', 'Date and Time:                Wed Mar 12 12:11:38 2014', 'Date and Time:                Wed Mar 12 12:14:57 2014', 'Date and Time:                Wed Mar 12 12:17:27 2014', 'Date and Time:                Wed Mar 12 12:20:18 2014', 'Date and Time:                Wed Mar 12 12:22:55 2014', 'Date and Time:                Wed Mar 12 12:25:39 2014', 'Exposure Time (secs):         0.0004', 'Exposure Time (secs):         0.00042', 'Frequency (Hz):               1.9944', 'Gain level:                   3000', 'Gate Delay (nsecs):           1500', 'Gate Delay (nsecs):           409950', 'Gate Delay (nsecs):           410450', 'Gate Mode:                    DDG on', 'Gate Width (nsecs):           2000', 'Insertion delay:              normal', 'Integrate on chip:            off', 'Intelligate:                  off', 'Inverted:                     false', 'Model:                        DH334t_FI_18mm', 'Number of Accumulations:      10', 'Number of Accumulations:      100', 'Number of Accumulations:      200', 'Number of Accumulations:      500', 'Output A Delay (nsecs):       0', 'Output A Polarity:            Positive', 'Output A Width (nsecs):       20000', 'Photon counted:               false', 'Pixel Readout Rate (MHz):     3', 'Readout Mode:                 Full Vertical Binning', 'Software Version:             4.21.30007.0', 'Spurious Noise Filter Mode:   No Filter', 'Temperature (C):              -25', 'Termination:                  hi-Z', 'Trigger Mode:                 External', 'Trigger Mode:                 Internal', 'Trigger level (V):            1.5', 'Unnamed: 0', 'Vertical Shift Speed (usecs): 16', 'blank', 'conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'frac_KCl', 'frac_LiCl', 'kinetic', 'lamba', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'scan_rate_mVs', 'shot', 'shot_study', 'shots', 'state_aerosol', 'state_molten', 'state_solid', 'static_', 'temperature_C', 'test_snr', 'test_snr_study', 'width', 'width_study']
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+
+========================================
+2026-04-04 14:42:21
+==================================================
+Feature columns (34): ['blank', 'conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'delay', 'energy', 'flow', 'frac_KCl', 'frac_LiCl', 'kinetic', 'pressure', 'qdelay', 'repetition', 'shots', 'state_aerosol', 'state_molten', 'state_solid', 'static_', 'temperature_C', 'width']
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+
+========================================
+2026-04-04 14:49:06
+==================================================
+Feature columns (41): ['blank', 'conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'frac_KCl', 'frac_LiCl', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_molten', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+
+========================================
+2026-04-04 14:54:29
+==================================================
+Feature columns (41): ['blank', 'conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'frac_KCl', 'frac_LiCl', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_molten', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+Columns surviving VarianceThreshold: ['blank', 'conc_CeCl3_wt%', 'conc_GdCl3_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+NaNs in trn_X: 0
+NaNs in trn_y: 0
+NaNs in val_X: 0
+NaNs in val_y: 0
+trn_y min/max: -1.2606 / 6.6702
+trn_X min/max: -50.3436 / 121.2634
+number of features is:          28
+Training features shape:        (147039, 1, 28)
+Validation features shape:      (36760, 1, 28)
+Training targets shape:         (147039, 10000)
+Validation targets shape:       (36760, 10000)
+Top 10 max intensities per spectrum: [87526.195 87526.195 87526.195 87526.195 87526.195 87526.195 87526.195
+ 87526.195 87526.195 87526.195]
+Spectra with extreme max values: 0 / 147039
+Training setup time: 92.12893220000115 seconds
+Training on xpu | Epochs: 350 | Batch size: 256
+Train samples: 147039
+Epoch 1/350 | Train Loss: 0.651440 | Val Loss: 0.239881 | Val MAE: 25.7524 | 0.317 min
+Epoch 2/350 | Train Loss: 0.289911 | Val Loss: 0.180110 | Val MAE: 17.8240 | 0.250 min
+
+========================================
+2026-04-04 14:57:04
+==================================================
+Feature columns (41): ['blank', 'conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'frac_KCl', 'frac_LiCl', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_molten', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+Columns surviving VarianceThreshold: ['blank', 'conc_CeCl3_wt%', 'conc_GdCl3_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+NaNs in trn_X: 0
+NaNs in trn_y: 0
+NaNs in val_X: 0
+NaNs in val_y: 0
+trn_y min/max: -1.2606 / 6.6702
+trn_X min/max: -50.3436 / 121.2634
+number of features is:          28
+Training features shape:        (147039, 1, 28)
+Validation features shape:      (36760, 1, 28)
+Training targets shape:         (147039, 10000)
+Validation targets shape:       (36760, 10000)
+Top 10 max intensities per spectrum: [87526.195 87526.195 87526.195 87526.195 87526.195 87526.195 87526.195
+ 87526.195 87526.195 87526.195]
+Spectra with extreme max values: 0 / 147039
+Training setup time: 95.9669642000008 seconds
+Training on xpu | Epochs: 3 | Batch size: 256
+Train samples: 147039
+Epoch 1/3 | Train Loss: 0.645902 | Val Loss: 0.248067 | Val MAE: 25.8862 | 0.305 min
+Epoch 2/3 | Train Loss: 0.290125 | Val Loss: 0.174785 | Val MAE: 18.0710 | 0.248 min
+Epoch 3/3 | Train Loss: 0.235447 | Val Loss: 0.155607 | Val MAE: 16.5351 | 0.241 min
+train_losses: [0.6459024250507355, 0.2901245769469634, 0.2354473195127819]
+val_losses:   [0.24806717444314724, 0.17478492467812934, 0.15560698463620307]
+Training plot saved to training_history_20260404_145928.png
+Training time: 0.817179041666653 minutes
+Total training time: 2.4166746000000177 minutes
+
+========================================
+2026-04-04 15:00:50
+==================================================
+Feature columns (41): ['blank', 'conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'frac_KCl', 'frac_LiCl', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_molten', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+Columns surviving VarianceThreshold: ['blank', 'conc_CeCl3_wt%', 'conc_GdCl3_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+NaNs in trn_X: 0
+NaNs in trn_y: 0
+NaNs in val_X: 0
+NaNs in val_y: 0
+trn_y min/max: -1.2606 / 6.6702
+trn_X min/max: -50.3436 / 121.2634
+number of features is:          28
+Training features shape:        (147039, 1, 28)
+Validation features shape:      (36760, 1, 28)
+Training targets shape:         (147039, 10000)
+Validation targets shape:       (36760, 10000)
+Top 10 max intensities per spectrum: [87526.195 87526.195 87526.195 87526.195 87526.195 87526.195 87526.195
+ 87526.195 87526.195 87526.195]
+Spectra with extreme max values: 0 / 147039
+Training setup time: 85.95730390000244 seconds
+Training on xpu | Epochs: 150 | Batch size: 256
+Train samples: 147039
+Epoch 1/150 | Train Loss: 0.655062 | Val Loss: 0.237200 | Val MAE: 25.0421 | 0.283 min
+Epoch 2/150 | Train Loss: 0.289696 | Val Loss: 0.175558 | Val MAE: 17.6881 | 0.228 min
+Epoch 3/150 | Train Loss: 0.233775 | Val Loss: 0.155980 | Val MAE: 16.3563 | 0.225 min
+Epoch 4/150 | Train Loss: 0.210006 | Val Loss: 0.149325 | Val MAE: 15.2844 | 0.226 min
+Epoch 5/150 | Train Loss: 0.197997 | Val Loss: 0.147310 | Val MAE: 15.7064 | 0.228 min
+Epoch 6/150 | Train Loss: 0.189824 | Val Loss: 0.144291 | Val MAE: 14.2783 | 0.226 min
+Epoch 7/150 | Train Loss: 0.184050 | Val Loss: 0.143164 | Val MAE: 13.8316 | 0.226 min
+Epoch 8/150 | Train Loss: 0.177682 | Val Loss: 0.135421 | Val MAE: 14.3714 | 0.230 min
+Epoch 9/150 | Train Loss: 0.173216 | Val Loss: 0.134533 | Val MAE: 14.4276 | 0.225 min
+Epoch 10/150 | Train Loss: 0.167778 | Val Loss: 0.130800 | Val MAE: 13.9884 | 0.227 min
+Epoch 11/150 | Train Loss: 0.164354 | Val Loss: 0.130341 | Val MAE: 13.8896 | 0.234 min
+Epoch 12/150 | Train Loss: 0.160740 | Val Loss: 0.129900 | Val MAE: 13.4439 | 0.229 min
+Epoch 13/150 | Train Loss: 0.159288 | Val Loss: 0.127315 | Val MAE: 13.2313 | 0.227 min
+Epoch 14/150 | Train Loss: 0.156497 | Val Loss: 0.128162 | Val MAE: 13.2192 | 0.227 min
+Epoch 15/150 | Train Loss: 0.153733 | Val Loss: 0.126851 | Val MAE: 13.3722 | 0.227 min
+Epoch 16/150 | Train Loss: 0.151970 | Val Loss: 0.124778 | Val MAE: 12.5292 | 0.227 min
+Epoch 17/150 | Train Loss: 0.150089 | Val Loss: 0.123825 | Val MAE: 13.0349 | 0.226 min
+Epoch 18/150 | Train Loss: 0.147667 | Val Loss: 0.124200 | Val MAE: 13.4286 | 0.223 min
+Epoch 19/150 | Train Loss: 0.147245 | Val Loss: 0.123280 | Val MAE: 12.9557 | 0.226 min
+Epoch 20/150 | Train Loss: 0.144585 | Val Loss: 0.122258 | Val MAE: 12.8826 | 0.224 min
+Epoch 21/150 | Train Loss: 0.144791 | Val Loss: 0.122445 | Val MAE: 12.5690 | 0.225 min
+Epoch 22/150 | Train Loss: 0.141779 | Val Loss: 0.122613 | Val MAE: 12.3729 | 0.227 min
+Epoch 23/150 | Train Loss: 0.141000 | Val Loss: 0.120866 | Val MAE: 12.9417 | 0.226 min
+Epoch 24/150 | Train Loss: 0.140967 | Val Loss: 0.121599 | Val MAE: 13.0453 | 0.228 min
+Epoch 25/150 | Train Loss: 0.139552 | Val Loss: 0.120584 | Val MAE: 12.1698 | 0.226 min
+Epoch 26/150 | Train Loss: 0.138509 | Val Loss: 0.126492 | Val MAE: 13.2777 | 0.228 min
+Epoch 27/150 | Train Loss: 0.136946 | Val Loss: 0.121544 | Val MAE: 12.6588 | 0.226 min
+Epoch 28/150 | Train Loss: 0.137143 | Val Loss: 0.120111 | Val MAE: 13.4305 | 0.225 min
+Epoch 29/150 | Train Loss: 0.136492 | Val Loss: 0.120620 | Val MAE: 12.2139 | 0.225 min
+Epoch 30/150 | Train Loss: 0.135074 | Val Loss: 0.119789 | Val MAE: 12.1794 | 0.225 min
+Epoch 31/150 | Train Loss: 0.134517 | Val Loss: 0.120607 | Val MAE: 12.2332 | 0.226 min
+Epoch 32/150 | Train Loss: 0.134070 | Val Loss: 0.118469 | Val MAE: 12.0755 | 0.226 min
+Epoch 33/150 | Train Loss: 0.132976 | Val Loss: 0.120094 | Val MAE: 12.0086 | 0.228 min
+Epoch 34/150 | Train Loss: 0.132626 | Val Loss: 0.121301 | Val MAE: 12.3038 | 0.226 min
+Epoch 35/150 | Train Loss: 0.131303 | Val Loss: 0.118609 | Val MAE: 11.8632 | 0.227 min
+Epoch 36/150 | Train Loss: 0.131204 | Val Loss: 0.118789 | Val MAE: 11.7548 | 0.226 min
+Epoch 37/150 | Train Loss: 0.131452 | Val Loss: 0.117870 | Val MAE: 12.2432 | 0.226 min
+Epoch 38/150 | Train Loss: 0.129877 | Val Loss: 0.117556 | Val MAE: 11.9096 | 0.225 min
+Epoch 39/150 | Train Loss: 0.130317 | Val Loss: 0.117833 | Val MAE: 11.8937 | 0.226 min
+Epoch 40/150 | Train Loss: 0.129594 | Val Loss: 0.118954 | Val MAE: 12.0718 | 0.225 min
+Epoch 41/150 | Train Loss: 0.128479 | Val Loss: 0.117067 | Val MAE: 11.8505 | 0.225 min
+Epoch 42/150 | Train Loss: 0.128513 | Val Loss: 0.120991 | Val MAE: 12.8832 | 0.227 min
+Epoch 43/150 | Train Loss: 0.127457 | Val Loss: 0.119796 | Val MAE: 11.6739 | 0.227 min
+Epoch 44/150 | Train Loss: 0.127705 | Val Loss: 0.118273 | Val MAE: 11.8761 | 0.226 min
+Epoch 45/150 | Train Loss: 0.127254 | Val Loss: 0.117300 | Val MAE: 11.9012 | 0.227 min
+Epoch 46/150 | Train Loss: 0.126937 | Val Loss: 0.118723 | Val MAE: 11.5710 | 0.227 min
+Epoch 47/150 | Train Loss: 0.126365 | Val Loss: 0.119474 | Val MAE: 12.1044 | 0.228 min
+Epoch 48/150 | Train Loss: 0.126440 | Val Loss: 0.115899 | Val MAE: 11.2068 | 0.230 min
+Epoch 49/150 | Train Loss: 0.126144 | Val Loss: 0.116825 | Val MAE: 11.9405 | 0.226 min
+Epoch 50/150 | Train Loss: 0.125823 | Val Loss: 0.118343 | Val MAE: 11.4784 | 0.227 min
+Epoch 51/150 | Train Loss: 0.125290 | Val Loss: 0.116392 | Val MAE: 12.0497 | 0.228 min
+Epoch 52/150 | Train Loss: 0.124488 | Val Loss: 0.116262 | Val MAE: 11.2918 | 0.226 min
+Epoch 53/150 | Train Loss: 0.124973 | Val Loss: 0.116703 | Val MAE: 11.0080 | 0.226 min
+Epoch 54/150 | Train Loss: 0.124524 | Val Loss: 0.116864 | Val MAE: 12.0326 | 0.226 min
+Epoch 55/150 | Train Loss: 0.124215 | Val Loss: 0.116653 | Val MAE: 11.6594 | 0.229 min
+Epoch 56/150 | Train Loss: 0.124240 | Val Loss: 0.115178 | Val MAE: 11.7894 | 0.227 min
+Epoch 57/150 | Train Loss: 0.124053 | Val Loss: 0.116034 | Val MAE: 12.3645 | 0.225 min
+Epoch 58/150 | Train Loss: 0.122558 | Val Loss: 0.115769 | Val MAE: 11.2269 | 0.226 min
+Epoch 59/150 | Train Loss: 0.122922 | Val Loss: 0.115630 | Val MAE: 11.8063 | 0.226 min
+Epoch 60/150 | Train Loss: 0.122571 | Val Loss: 0.116712 | Val MAE: 11.5613 | 0.228 min
+Epoch 61/150 | Train Loss: 0.123006 | Val Loss: 0.118424 | Val MAE: 11.8248 | 0.227 min
+Epoch 62/150 | Train Loss: 0.122274 | Val Loss: 0.116564 | Val MAE: 11.1866 | 0.226 min
+Epoch 63/150 | Train Loss: 0.122359 | Val Loss: 0.117165 | Val MAE: 12.4374 | 0.227 min
+Epoch 64/150 | Train Loss: 0.121908 | Val Loss: 0.114576 | Val MAE: 11.1795 | 0.228 min
+Epoch 65/150 | Train Loss: 0.122367 | Val Loss: 0.115182 | Val MAE: 11.7914 | 0.227 min
+Epoch 66/150 | Train Loss: 0.121647 | Val Loss: 0.115406 | Val MAE: 11.4691 | 0.227 min
+Epoch 67/150 | Train Loss: 0.121491 | Val Loss: 0.114139 | Val MAE: 11.5064 | 0.228 min
+Epoch 68/150 | Train Loss: 0.122300 | Val Loss: 0.114790 | Val MAE: 11.5315 | 0.226 min
+Epoch 69/150 | Train Loss: 0.121893 | Val Loss: 0.115539 | Val MAE: 12.0518 | 0.228 min
+Epoch 70/150 | Train Loss: 0.121477 | Val Loss: 0.113946 | Val MAE: 11.3449 | 0.229 min
+Epoch 71/150 | Train Loss: 0.121253 | Val Loss: 0.114606 | Val MAE: 10.8246 | 0.227 min
+Epoch 72/150 | Train Loss: 0.121413 | Val Loss: 0.115227 | Val MAE: 11.5912 | 0.229 min
+Epoch 73/150 | Train Loss: 0.121169 | Val Loss: 0.114887 | Val MAE: 11.9604 | 0.228 min
+Epoch 74/150 | Train Loss: 0.120743 | Val Loss: 0.114877 | Val MAE: 12.1166 | 0.227 min
+Epoch 75/150 | Train Loss: 0.120790 | Val Loss: 0.114033 | Val MAE: 11.2123 | 0.227 min
+Epoch 76/150 | Train Loss: 0.120400 | Val Loss: 0.114244 | Val MAE: 11.5952 | 0.227 min
+Epoch 77/150 | Train Loss: 0.120544 | Val Loss: 0.114102 | Val MAE: 11.5475 | 0.229 min
+Epoch 78/150 | Train Loss: 0.120551 | Val Loss: 0.114816 | Val MAE: 11.9437 | 0.226 min
+Epoch 79/150 | Train Loss: 0.120877 | Val Loss: 0.113490 | Val MAE: 10.9790 | 0.227 min
+Epoch 80/150 | Train Loss: 0.120504 | Val Loss: 0.113418 | Val MAE: 11.6265 | 0.225 min
+Epoch 81/150 | Train Loss: 0.119715 | Val Loss: 0.113986 | Val MAE: 11.6083 | 0.225 min
+Epoch 82/150 | Train Loss: 0.119778 | Val Loss: 0.114784 | Val MAE: 11.4538 | 0.226 min
+Epoch 83/150 | Train Loss: 0.119912 | Val Loss: 0.113740 | Val MAE: 10.7921 | 0.227 min
+Epoch 84/150 | Train Loss: 0.119419 | Val Loss: 0.113366 | Val MAE: 11.1397 | 0.225 min
+Epoch 85/150 | Train Loss: 0.119708 | Val Loss: 0.113963 | Val MAE: 11.5811 | 0.226 min
+Epoch 86/150 | Train Loss: 0.119300 | Val Loss: 0.112967 | Val MAE: 11.1315 | 0.227 min
+Epoch 87/150 | Train Loss: 0.119520 | Val Loss: 0.113545 | Val MAE: 11.0364 | 0.225 min
+Epoch 88/150 | Train Loss: 0.118744 | Val Loss: 0.113689 | Val MAE: 12.3174 | 0.228 min
+Epoch 89/150 | Train Loss: 0.119228 | Val Loss: 0.115322 | Val MAE: 11.5283 | 0.227 min
+Epoch 90/150 | Train Loss: 0.119483 | Val Loss: 0.113129 | Val MAE: 11.1986 | 0.228 min
+Epoch 91/150 | Train Loss: 0.119656 | Val Loss: 0.113246 | Val MAE: 11.7767 | 0.228 min
+Epoch 92/150 | Train Loss: 0.119042 | Val Loss: 0.113509 | Val MAE: 12.1853 | 0.229 min
+Epoch 93/150 | Train Loss: 0.118824 | Val Loss: 0.114180 | Val MAE: 11.5461 | 0.226 min
+Epoch 94/150 | Train Loss: 0.118564 | Val Loss: 0.114752 | Val MAE: 12.1864 | 0.229 min
+Epoch 95/150 | Train Loss: 0.118703 | Val Loss: 0.113281 | Val MAE: 11.7798 | 0.228 min
+Epoch 96/150 | Train Loss: 0.117660 | Val Loss: 0.112758 | Val MAE: 12.3581 | 0.224 min
+Epoch 97/150 | Train Loss: 0.117928 | Val Loss: 0.112209 | Val MAE: 11.3149 | 0.226 min
+Epoch 98/150 | Train Loss: 0.117244 | Val Loss: 0.111829 | Val MAE: 11.2632 | 0.226 min
+Epoch 99/150 | Train Loss: 0.117043 | Val Loss: 0.112483 | Val MAE: 11.4949 | 0.225 min
+Epoch 100/150 | Train Loss: 0.117044 | Val Loss: 0.111922 | Val MAE: 11.1785 | 0.227 min
+Epoch 101/150 | Train Loss: 0.117077 | Val Loss: 0.111954 | Val MAE: 10.9468 | 0.227 min
+Epoch 102/150 | Train Loss: 0.117253 | Val Loss: 0.112030 | Val MAE: 11.3217 | 0.225 min
+Epoch 103/150 | Train Loss: 0.116836 | Val Loss: 0.112635 | Val MAE: 11.8306 | 0.225 min
+Epoch 104/150 | Train Loss: 0.117454 | Val Loss: 0.111742 | Val MAE: 10.7458 | 0.226 min
+Epoch 105/150 | Train Loss: 0.117162 | Val Loss: 0.112147 | Val MAE: 12.0437 | 0.226 min
+Epoch 106/150 | Train Loss: 0.117262 | Val Loss: 0.112544 | Val MAE: 11.3902 | 0.224 min
+Epoch 107/150 | Train Loss: 0.116504 | Val Loss: 0.111809 | Val MAE: 10.8195 | 0.224 min
+Epoch 108/150 | Train Loss: 0.116919 | Val Loss: 0.119048 | Val MAE: 15.6809 | 0.225 min
+Epoch 109/150 | Train Loss: 0.116500 | Val Loss: 0.112483 | Val MAE: 11.3005 | 0.225 min
+Epoch 110/150 | Train Loss: 0.116963 | Val Loss: 0.112883 | Val MAE: 12.7046 | 0.226 min
+Epoch 111/150 | Train Loss: 0.116575 | Val Loss: 0.111355 | Val MAE: 11.8838 | 0.225 min
+Epoch 112/150 | Train Loss: 0.116748 | Val Loss: 0.111179 | Val MAE: 11.7679 | 0.226 min
+Epoch 113/150 | Train Loss: 0.116273 | Val Loss: 0.111258 | Val MAE: 11.6148 | 0.228 min
+Epoch 114/150 | Train Loss: 0.116518 | Val Loss: 0.111072 | Val MAE: 11.0435 | 0.228 min
+Epoch 115/150 | Train Loss: 0.116570 | Val Loss: 0.113527 | Val MAE: 12.7773 | 0.226 min
+Epoch 116/150 | Train Loss: 0.116806 | Val Loss: 0.111281 | Val MAE: 11.5247 | 0.225 min
+Epoch 117/150 | Train Loss: 0.116547 | Val Loss: 0.112420 | Val MAE: 11.8018 | 0.226 min
+Epoch 118/150 | Train Loss: 0.116935 | Val Loss: 0.110945 | Val MAE: 11.2684 | 0.227 min
+Epoch 119/150 | Train Loss: 0.116923 | Val Loss: 0.110783 | Val MAE: 11.0794 | 0.227 min
+Epoch 120/150 | Train Loss: 0.116134 | Val Loss: 0.111044 | Val MAE: 10.8667 | 0.226 min
+Epoch 121/150 | Train Loss: 0.116268 | Val Loss: 0.112041 | Val MAE: 12.1338 | 0.226 min
+Epoch 122/150 | Train Loss: 0.116020 | Val Loss: 0.110510 | Val MAE: 11.2899 | 0.229 min
+Epoch 123/150 | Train Loss: 0.116511 | Val Loss: 0.111622 | Val MAE: 12.3071 | 0.227 min
+Epoch 124/150 | Train Loss: 0.116010 | Val Loss: 0.111231 | Val MAE: 12.0588 | 0.226 min
+Epoch 125/150 | Train Loss: 0.116265 | Val Loss: 0.110792 | Val MAE: 11.1795 | 0.226 min
+Epoch 126/150 | Train Loss: 0.115918 | Val Loss: 0.110454 | Val MAE: 10.9083 | 0.249 min
+Epoch 127/150 | Train Loss: 0.116062 | Val Loss: 0.112938 | Val MAE: 12.9486 | 0.229 min
+Epoch 128/150 | Train Loss: 0.116247 | Val Loss: 0.110811 | Val MAE: 11.5693 | 0.243 min
+Epoch 129/150 | Train Loss: 0.116329 | Val Loss: 0.110505 | Val MAE: 11.1449 | 0.225 min
+Epoch 130/150 | Train Loss: 0.116261 | Val Loss: 0.110934 | Val MAE: 11.6339 | 0.225 min
+Epoch 131/150 | Train Loss: 0.115701 | Val Loss: 0.110717 | Val MAE: 11.2650 | 0.225 min
+Epoch 132/150 | Train Loss: 0.115996 | Val Loss: 0.110269 | Val MAE: 11.4141 | 0.226 min
+Epoch 133/150 | Train Loss: 0.115885 | Val Loss: 0.111411 | Val MAE: 11.6142 | 0.224 min
+Epoch 134/150 | Train Loss: 0.115885 | Val Loss: 0.111179 | Val MAE: 12.3298 | 0.224 min
+Epoch 135/150 | Train Loss: 0.116180 | Val Loss: 0.112372 | Val MAE: 12.2043 | 0.227 min
+Epoch 136/150 | Train Loss: 0.115831 | Val Loss: 0.110856 | Val MAE: 11.2438 | 0.228 min
+Epoch 137/150 | Train Loss: 0.115682 | Val Loss: 0.110080 | Val MAE: 11.1514 | 0.230 min
+Epoch 138/150 | Train Loss: 0.115613 | Val Loss: 0.110935 | Val MAE: 11.0770 | 0.225 min
+Epoch 139/150 | Train Loss: 0.115584 | Val Loss: 0.110095 | Val MAE: 11.2305 | 0.227 min
+Epoch 140/150 | Train Loss: 0.115895 | Val Loss: 0.111038 | Val MAE: 12.2108 | 0.226 min
+Epoch 141/150 | Train Loss: 0.116007 | Val Loss: 0.113147 | Val MAE: 12.8909 | 0.235 min
+Epoch 142/150 | Train Loss: 0.115677 | Val Loss: 0.110224 | Val MAE: 11.2852 | 0.268 min
+Epoch 143/150 | Train Loss: 0.115537 | Val Loss: 0.110700 | Val MAE: 11.2794 | 0.233 min
+Epoch 144/150 | Train Loss: 0.115464 | Val Loss: 0.111520 | Val MAE: 12.1237 | 0.225 min
+Epoch 145/150 | Train Loss: 0.115153 | Val Loss: 0.109524 | Val MAE: 11.1147 | 0.226 min
+Epoch 146/150 | Train Loss: 0.115588 | Val Loss: 0.120740 | Val MAE: 16.4643 | 0.225 min
+Epoch 147/150 | Train Loss: 0.115404 | Val Loss: 0.110380 | Val MAE: 11.1436 | 0.224 min
+Epoch 148/150 | Train Loss: 0.115238 | Val Loss: 0.110132 | Val MAE: 11.5247 | 0.226 min
+Epoch 149/150 | Train Loss: 0.115422 | Val Loss: 0.110470 | Val MAE: 11.7777 | 0.224 min
+Epoch 150/150 | Train Loss: 0.115388 | Val Loss: 0.110539 | Val MAE: 11.9266 | 0.222 min
+train_losses: [0.655061664218488, 0.2896956946797993, 0.23377489942571392, 0.21000622288040494, 0.19799699529357578, 0.18982418537139892, 0.18404951858779658, 0.17768217041440632, 0.17321604701487914, 0.16777845590010934, 0.16435419565957526, 0.16074015748241674, 0.15928811051275418, 0.15649701387985893, 0.1537334151889967, 0.1519698936783749, 0.15008949382149656, 0.14766731032858724, 0.1472451722362767, 0.14458512338607207, 0.14479095807541972, 0.14177893971619399, 0.14099972060193186, 0.14096673156904138, 0.13955209115277165, 0.13850926282613174, 0.136945584843988, 0.137142607971378, 0.1364917085222576, 0.13507444818382677, 0.1345170384451099, 0.13406973027664681, 0.13297634772632433, 0.13262648722399836, 0.13130309493645378, 0.1312038287649984, 0.13145218095053798, 0.12987674481842829, 0.1303171518056289, 0.1295944527439449, 0.12847873195357945, 0.1285127248129119, 0.12745656781870385, 0.1277052171074826, 0.12725437737029532, 0.1269367204282595, 0.1263652342039606, 0.1264399042725563, 0.12614444899170296, 0.12582306827539982, 0.1252903697996036, 0.12448788491280183, 0.1249726581832637, 0.12452429987166239, 0.12421540649040885, 0.12424043348302012, 0.12405301718608193, 0.12255823868772257, 0.12292196111834568, 0.12257065511915995, 0.12300628480056058, 0.1222737759027792, 0.12235944182976433, 0.12190811345110769, 0.12236671714679055, 0.1216473186728747, 0.12149059948066007, 0.12229960918426513, 0.12189339406464411, 0.12147741399381472, 0.12125335118044978, 0.12141306910825812, 0.12116931374306264, 0.12074339470785597, 0.12079028033691903, 0.12039968279392822, 0.12054400525015334, 0.12055147971795953, 0.12087742780213771, 0.12050354439279308, 0.1197149568213069, 0.1197781918424627, 0.11991157173462536, 0.11941936402217201, 0.11970800750929377, 0.11930007530943207, 0.11952003460863363, 0.11874368987653566, 0.11922801706454028, 0.11948270152444425, 0.11965561401584875, 0.11904212388007537, 0.11882374733686447, 0.11856366355781969, 0.11870298835894336, 0.11766034160619197, 0.11792751029781673, 0.11724379751345386, 0.11704322730717452, 0.11704435801376467, 0.11707672711299813, 0.11725293147175209, 0.11683588015644447, 0.11745372876524925, 0.11716173924181772, 0.11726222509923188, 0.11650391314340675, 0.11691937728420548, 0.11650014151049697, 0.11696347837862761, 0.11657506647317306, 0.11674814916175345, 0.11627270525564318, 0.11651773417125577, 0.11657028778091721, 0.11680604569289996, 0.11654727978550869, 0.11693512332828149, 0.11692307557100835, 0.11613407441455385, 0.11626843433665193, 0.11601967246636101, 0.11651073157139447, 0.11600960257260695, 0.11626524922640427, 0.11591814142206441, 0.11606222958020541, 0.11624713178562081, 0.11632905470288318, 0.11626149374505748, 0.1157011892484582, 0.1159956879719444, 0.11588460297688194, 0.11588532997214276, 0.1161798708335213, 0.11583118587732315, 0.11568212840868079, 0.11561268329620361, 0.11558449646053107, 0.11589521324504977, 0.11600696583804877, 0.11567684400988662, 0.11553734982791154, 0.11546370437611704, 0.11515274191032285, 0.11558805922451226, 0.1154042699738689, 0.1152377998051436, 0.11542233624536058, 0.11538839217761289]
+val_losses:   [0.23719955052042174, 0.17555847088968018, 0.15598044043872505, 0.14932492473760955, 0.14730985494518084, 0.14429123363677515, 0.14316389814889086, 0.13542076150689455, 0.13453348715605293, 0.13079995928961174, 0.13034060374775436, 0.12989963765802612, 0.12731480380090135, 0.12816171875803978, 0.12685050197776743, 0.12477769009557152, 0.12382510025498858, 0.12419975188095123, 0.12328014420402017, 0.12225776399140563, 0.12244499692739434, 0.12261314024767166, 0.12086556628896182, 0.12159853587965902, 0.1205841299512637, 0.12649224582734556, 0.12154382418278449, 0.12011079564823983, 0.12062004643141538, 0.1197886763347924, 0.12060737574251511, 0.11846920975019909, 0.12009355089756152, 0.12130061656898761, 0.1186086267492404, 0.11878858792018339, 0.11787015774401273, 0.11755633167053424, 0.11783263476738487, 0.11895411284017933, 0.11706696447203689, 0.12099103519883808, 0.11979606988623143, 0.11827340957340009, 0.11730047148517365, 0.11872325201794512, 0.11947391507459947, 0.11589947847500702, 0.11682531062453766, 0.11834313567992973, 0.11639161946146083, 0.11626216791976024, 0.11670330003501779, 0.11686365848800051, 0.11665348760854816, 0.11517837126939412, 0.11603414169945205, 0.11576920127077352, 0.11563027497747196, 0.11671150744182847, 0.11842435305980972, 0.11656390481493872, 0.11716547956125901, 0.11457619882336682, 0.11518160865408492, 0.11540609112449197, 0.11413882008067351, 0.11478976382386463, 0.11553922732552262, 0.11394632141380295, 0.11460625217523557, 0.11522693156403976, 0.11488715407287803, 0.11487683832900883, 0.11403260224844619, 0.11424441273417567, 0.11410210654452789, 0.11481551904489606, 0.11349009036914343, 0.11341754766671228, 0.11398634705266078, 0.11478438511848152, 0.11373974441499336, 0.11336576864510385, 0.11396334874532638, 0.11296733011406307, 0.11354525283240946, 0.11368882632470761, 0.11532241805495384, 0.11312935829442318, 0.11324607698821233, 0.11350913309817973, 0.11417966390945367, 0.1147518468654501, 0.11328059822982242, 0.11275848832378364, 0.11220858348790191, 0.11182853805677143, 0.11248302876214843, 0.11192191844894397, 0.11195362942832314, 0.11202968082059467, 0.11263455959023203, 0.11174173993072145, 0.1121474641008212, 0.11254419427809302, 0.11180861275271228, 0.11904796775787771, 0.11248295746332183, 0.11288342242955372, 0.11135473312222327, 0.1111793874113371, 0.11125804498684981, 0.11107230705667664, 0.1135265937196487, 0.11128140041788963, 0.11242011689723262, 0.11094467717723294, 0.1107834702826646, 0.11104445259858646, 0.11204083471845176, 0.11051039049794377, 0.11162235589755357, 0.11123051827760516, 0.11079234339098952, 0.11045440445466032, 0.11293803673187439, 0.11081123758069428, 0.11050544607385543, 0.11093383577068987, 0.11071695269664714, 0.11026895731624285, 0.11141071947875186, 0.1111790043236801, 0.11237228957452317, 0.11085622491059945, 0.11008038913728847, 0.1109353530582161, 0.1100945373812768, 0.11103771229601181, 0.11314706516653435, 0.1102241269217201, 0.11069964443949074, 0.1115199253326864, 0.1095241008822288, 0.12074033883982338, 0.11037955641546028, 0.11013197612656869, 0.11047037148950443, 0.1105391628021203]
+Training plot saved to training_history_20260404_153625.png
+Training time: 34.14495024333337 minutes
+Total training time: 35.577602186666745 minutes
+
+========================================
+2026-04-04 19:43:50
+==================================================
+
+========================================
+2026-04-06 15:03:47
+==================================================
+Feature columns (41): ['blank', 'conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'frac_KCl', 'frac_LiCl', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_molten', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+Columns surviving VarianceThreshold: ['blank', 'conc_CeCl3_wt%', 'conc_GdCl3_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+NaNs in X_trn: 0
+NaNs in y_trn: 0
+NaNs in X_val: 0
+NaNs in y_val: 0
+y_trn min/max: -1.2606 / 6.6702
+X_trn min/max: -50.3436 / 121.2634
+Number of features is:          28
+Training features shape:        (147039, 1, 28)
+Validation features shape:      (36760, 1, 28)
+Training targets shape:         (147039, 10000)
+Validation targets shape:       (36760, 10000)
+Top 10 max intensities per spectrum: [87526.195 87526.195 87526.195 87526.195 87526.195 87526.195 87526.195
+ 87526.195 87526.195 87526.195]
+Spectra with extreme max values: 0 / 147039
+Training setup time: 101.1625950000016 seconds
+Training on xpu | Epochs: 5 | Batch size: 256
+Train samples: 147039
+Epoch 1/5 | Train Loss: 0.649433 | Val Loss: 0.249342 | Val MAE: 26.0892 | Res μ: +0.0128  σ: 0.4841 | 0.352 min
+Epoch 2/5 | Train Loss: 0.292086 | Val Loss: 0.182937 | Val MAE: 18.9870 | Res μ: -0.0067  σ: 0.4153 | 0.287 min
+Epoch 3/5 | Train Loss: 0.236375 | Val Loss: 0.156153 | Val MAE: 16.7197 | Res μ: +0.0161  σ: 0.3803 | 0.287 min
+Epoch 4/5 | Train Loss: 0.211707 | Val Loss: 0.152714 | Val MAE: 15.7085 | Res μ: +0.0010  σ: 0.3754 | 0.287 min
+Epoch 5/5 | Train Loss: 0.199658 | Val Loss: 0.143178 | Val MAE: 13.9596 | Res μ: -0.0112  σ: 0.3614 | 0.279 min
+train_losses: [0.6494334253020908, 0.29208610780861066, 0.23637486675511235, 0.21170704004557236, 0.19965834976538369]
+val_losses:   [0.24934249063436356, 0.18293693543980932, 0.15615309004917638, 0.15271409803083064, 0.14317757232250491]
+Training plot saved to training_history_20260406_150658.png
+Training time: 1.519769221666987 minutes
+
+========================================
+2026-04-06 15:09:19
+==================================================
+Feature columns (41): ['blank', 'conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'frac_KCl', 'frac_LiCl', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_molten', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+Columns surviving VarianceThreshold: ['blank', 'conc_CeCl3_wt%', 'conc_GdCl3_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+NaNs in X_trn: 0
+NaNs in y_trn: 0
+NaNs in X_val: 0
+NaNs in y_val: 0
+y_trn min/max: -1.2606 / 6.6702
+X_trn min/max: -50.3436 / 121.2634
+Number of features is:          28
+Training features shape:        (147039, 1, 28)
+Validation features shape:      (36760, 1, 28)
+Training targets shape:         (147039, 10000)
+Validation targets shape:       (36760, 10000)
+Top 10 max intensities per spectrum: [87526.195 87526.195 87526.195 87526.195 87526.195 87526.195 87526.195
+ 87526.195 87526.195 87526.195]
+Spectra with extreme max values: 0 / 147039
+Training setup time: 99.50375420000637 seconds
+Training on xpu | Epochs: 5 | Batch size: 256
+Train samples: 147039
+Epoch 1/5 | Train Loss: 0.654446 | Val Loss: 0.257676 | Val MAE: 27.0835 | Res μ: +0.0105  σ: 0.4932 | 0.348 min
+Epoch 2/5 | Train Loss: 0.289623 | Val Loss: 0.185935 | Val MAE: 19.2624 | Res μ: -0.0163  σ: 0.4183 | 0.287 min
+Epoch 3/5 | Train Loss: 0.234164 | Val Loss: 0.163126 | Val MAE: 15.9106 | Res μ: -0.0370  σ: 0.3874 | 0.275 min
+Epoch 4/5 | Train Loss: 0.210849 | Val Loss: 0.149394 | Val MAE: 14.5581 | Res μ: -0.0244  σ: 0.3704 | 0.280 min
+Epoch 5/5 | Train Loss: 0.197903 | Val Loss: 0.145751 | Val MAE: 15.0762 | Res μ: +0.0034  σ: 0.3655 | 0.274 min
+train_losses: [0.6544463096235109, 0.2896230903915737, 0.2341636302937632, 0.21084862525048464, 0.1979034789748814]
+val_losses:   [0.257676401705895, 0.18593545223605665, 0.16312640264449227, 0.14939364416447157, 0.1457513125222047]
+Training plot saved to training_history_20260406_151228.png
+Training time: 1.490087563333024 minutes
+Starting post-training spectral evaluation...
+
+========================================
+2026-04-06 15:15:57
+==================================================
+Feature columns (41): ['blank', 'conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'frac_KCl', 'frac_LiCl', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_molten', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+Columns surviving VarianceThreshold: ['blank', 'conc_CeCl3_wt%', 'conc_GdCl3_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+NaNs in X_trn: 0
+NaNs in y_trn: 0
+NaNs in X_val: 0
+NaNs in y_val: 0
+y_trn min/max: -1.2606 / 6.6702
+X_trn min/max: -50.3436 / 121.2634
+Number of features is:          28
+Training features shape:        (147039, 1, 28)
+Validation features shape:      (36760, 1, 28)
+Training targets shape:         (147039, 10000)
+Validation targets shape:       (36760, 10000)
+Top 10 max intensities per spectrum: [87526.195 87526.195 87526.195 87526.195 87526.195 87526.195 87526.195
+ 87526.195 87526.195 87526.195]
+Spectra with extreme max values: 0 / 147039
+Training setup time: 93.36819930002093 seconds
+Training on xpu | Epochs: 3 | Batch size: 256
+Train samples: 147039
+Epoch 1/3 | Train Loss: 0.655037 | Val Loss: 0.240879 | Val MAE: 25.7968 | Res μ: +0.0427  σ: 0.4733 | 0.337 min
+Epoch 2/3 | Train Loss: 0.288910 | Val Loss: 0.192504 | Val MAE: 19.2391 | Res μ: -0.0385  σ: 0.4246 | 0.273 min
+Epoch 3/3 | Train Loss: 0.232985 | Val Loss: 0.157730 | Val MAE: 16.0109 | Res μ: -0.0090  σ: 0.3825 | 0.273 min
+train_losses: [0.6550365773491238, 0.2889096443808597, 0.2329848321106123]
+val_losses:   [0.24087908642185438, 0.19250384251871663, 0.15773018258106378]
+Training plot saved to training_history_20260406_151824.png
+Training time: 0.9081489716666208 minutes
+Starting post-training spectral evaluation...
+Residual history plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\residual_history_20260406_151824.png
+
+========================================
+2026-04-06 15:23:34
+==================================================
+Feature columns (41): ['blank', 'conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'frac_KCl', 'frac_LiCl', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_molten', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+Columns surviving VarianceThreshold: ['blank', 'conc_CeCl3_wt%', 'conc_GdCl3_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+NaNs in X_trn: 0
+NaNs in y_trn: 0
+NaNs in X_val: 0
+NaNs in y_val: 0
+y_trn min/max: -1.2606 / 6.6702
+X_trn min/max: -50.3436 / 121.2634
+Number of features is:          28
+Training features shape:        (147039, 1, 28)
+Validation features shape:      (36760, 1, 28)
+Training targets shape:         (147039, 10000)
+Validation targets shape:       (36760, 10000)
+Top 10 max intensities per spectrum: [87526.195 87526.195 87526.195 87526.195 87526.195 87526.195 87526.195
+ 87526.195 87526.195 87526.195]
+Spectra with extreme max values: 0 / 147039
+Training setup time: 94.79759000000195 seconds
+Training on xpu | Epochs: 3 | Batch size: 256
+Train samples: 147039
+Epoch 1/3 | Train Loss: 0.651449 | Val Loss: 0.245346 | Val MAE: 25.4809 | Res μ: +0.0201  σ: 0.4797 | 0.319 min
+Epoch 2/3 | Train Loss: 0.292197 | Val Loss: 0.207381 | Val MAE: 20.6243 | Res μ: -0.0440  σ: 0.4421 | 0.272 min
+Epoch 3/3 | Train Loss: 0.235542 | Val Loss: 0.161703 | Val MAE: 16.9548 | Res μ: +0.0007  σ: 0.3884 | 0.275 min
+train_losses: [0.6514485366448112, 0.292197188216707, 0.23554154517857925]
+val_losses:   [0.24534648586349148, 0.20738103983684494, 0.16170346271570046]
+Training plot saved to training_history_20260406_152602.png
+Training time: 0.8896522250002211 minutes
+Starting post-training spectral evaluation...
+Residual history plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\residual_history_20260406_152602.png
+Composition-range sampling column: conc_CeCl3_wt%
+Evaluation sample indices: [0]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\spectral_overlay_20260406_152602.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_003\error_heatmap_20260406_152602.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_003
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=34070.60 | MaxErr=66670.03 @ 863.3 nm
+Evaluation sample indices: [0]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\spectral_overlay_20260406_152602.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_003\error_heatmap_20260406_152602.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_003
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=34070.60 | MaxErr=66670.03 @ 863.3 nm
+Evaluation sample indices: [0]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\spectral_overlay_20260406_152602.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_003\error_heatmap_20260406_152602.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_003
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=34070.60 | MaxErr=66670.03 @ 863.3 nm
+Evaluation sample indices: [0, 7127]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)', 'conc_CeCl3_wt% = 1.0000 (p15)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\spectral_overlay_20260406_152602.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_003\error_heatmap_20260406_152602.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_003
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=34070.60 | MaxErr=66670.03 @ 863.3 nm
+  conc_CeCl3_wt% = 1.0000 (p15)                      | MAE=  999.49 | MaxErr=27500.67 @ 610.4 nm
+Evaluation sample indices: [0, 7127, 16392]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)', 'conc_CeCl3_wt% = 1.0000 (p15)', 'conc_CeCl3_wt% = 2.8960 (p30)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\spectral_overlay_20260406_152602.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_003\error_heatmap_20260406_152602.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_003
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=34070.60 | MaxErr=66670.03 @ 863.3 nm
+  conc_CeCl3_wt% = 1.0000 (p15)                      | MAE=  999.49 | MaxErr=27500.67 @ 610.4 nm
+  conc_CeCl3_wt% = 2.8960 (p30)                      | MAE= 1515.13 | MaxErr=59137.73 @ 611.1 nm
+Evaluation sample indices: [0, 7127, 16392, 3008]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)', 'conc_CeCl3_wt% = 1.0000 (p15)', 'conc_CeCl3_wt% = 2.8960 (p30)', 'conc_CeCl3_wt% = 5.0000 (p50)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\spectral_overlay_20260406_152602.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_003\error_heatmap_20260406_152602.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_003
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=34070.60 | MaxErr=66670.03 @ 863.3 nm
+  conc_CeCl3_wt% = 1.0000 (p15)                      | MAE=  999.49 | MaxErr=27500.67 @ 610.4 nm
+  conc_CeCl3_wt% = 2.8960 (p30)                      | MAE= 1515.13 | MaxErr=59137.73 @ 611.1 nm
+  conc_CeCl3_wt% = 5.0000 (p50)                      | MAE= 2722.29 | MaxErr=31136.87 @ 610.4 nm
+Evaluation sample indices: [0, 7127, 16392, 3008]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)', 'conc_CeCl3_wt% = 1.0000 (p15)', 'conc_CeCl3_wt% = 2.8960 (p30)', 'conc_CeCl3_wt% = 5.0000 (p50)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\spectral_overlay_20260406_152602.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_003\error_heatmap_20260406_152602.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_003
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=34070.60 | MaxErr=66670.03 @ 863.3 nm
+  conc_CeCl3_wt% = 1.0000 (p15)                      | MAE=  999.49 | MaxErr=27500.67 @ 610.4 nm
+  conc_CeCl3_wt% = 2.8960 (p30)                      | MAE= 1515.13 | MaxErr=59137.73 @ 611.1 nm
+  conc_CeCl3_wt% = 5.0000 (p50)                      | MAE= 2722.29 | MaxErr=31136.87 @ 610.4 nm
+Total training time: 2.592621255000025 minutes
+
+========================================
+2026-04-06 15:32:24
+==================================================
+Feature columns (41): ['blank', 'conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'frac_KCl', 'frac_LiCl', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_molten', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+Columns surviving VarianceThreshold: ['blank', 'conc_CeCl3_wt%', 'conc_GdCl3_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'delay', 'delay_study', 'energy', 'energy_study', 'flow', 'flow_study', 'kinetic', 'pressure', 'pressure_study', 'qdelay', 'qdelay_study', 'repetition', 'shot_study', 'shots', 'state_aerosol', 'state_solid', 'static_', 'temperature_C', 'width', 'width_study']
+NaNs in X_trn: 0
+NaNs in y_trn: 0
+NaNs in X_val: 0
+NaNs in y_val: 0
+y_trn min/max: -1.2606 / 6.6702
+X_trn min/max: -50.3436 / 121.2634
+Number of features is:          28
+Training features shape:        (147039, 1, 28)
+Validation features shape:      (36760, 1, 28)
+Training targets shape:         (147039, 10000)
+Validation targets shape:       (36760, 10000)
+Top 10 max intensities per spectrum: [87526.195 87526.195 87526.195 87526.195 87526.195 87526.195 87526.195
+ 87526.195 87526.195 87526.195]
+Spectra with extreme max values: 0 / 147039
+Training setup time: 97.589 seconds
+Training on xpu | Epochs: 500 | Batch size: 256
+Train samples: 147039
+Epoch 1/500 | Train Loss: 0.651329 | Val Loss: 0.243916 | Val MAE: 25.0295 | Res μ: +0.0062  σ: 0.4782 | 0.341 min
+Epoch 2/500 | Train Loss: 0.289615 | Val Loss: 0.176642 | Val MAE: 19.0096 | Res μ: +0.0109  σ: 0.4082 | 0.284 min
+Epoch 3/500 | Train Loss: 0.232501 | Val Loss: 0.155727 | Val MAE: 15.8794 | Res μ: -0.0008  σ: 0.3804 | 0.275 min
+Epoch 4/500 | Train Loss: 0.209065 | Val Loss: 0.149984 | Val MAE: 16.8249 | Res μ: +0.0356  σ: 0.3702 | 0.272 min
+Epoch 5/500 | Train Loss: 0.197097 | Val Loss: 0.144028 | Val MAE: 14.0894 | Res μ: -0.0093  σ: 0.3627 | 0.262 min
+Epoch 6/500 | Train Loss: 0.189460 | Val Loss: 0.147637 | Val MAE: 15.7303 | Res μ: +0.0052  σ: 0.3678 | 0.285 min
+Epoch 7/500 | Train Loss: 0.182069 | Val Loss: 0.138410 | Val MAE: 14.5807 | Res μ: +0.0099  σ: 0.3540 | 0.284 min
+Epoch 8/500 | Train Loss: 0.176895 | Val Loss: 0.135453 | Val MAE: 13.8752 | Res μ: -0.0042  σ: 0.3496 | 0.273 min
+Epoch 9/500 | Train Loss: 0.171573 | Val Loss: 0.134544 | Val MAE: 15.7073 | Res μ: +0.0404  σ: 0.3453 | 0.262 min
+Epoch 10/500 | Train Loss: 0.167825 | Val Loss: 0.131552 | Val MAE: 13.8120 | Res μ: +0.0072  σ: 0.3435 | 0.265 min
+Epoch 11/500 | Train Loss: 0.163519 | Val Loss: 0.130784 | Val MAE: 13.6482 | Res μ: +0.0069  σ: 0.3414 | 0.270 min
+Epoch 12/500 | Train Loss: 0.160698 | Val Loss: 0.129812 | Val MAE: 14.2817 | Res μ: +0.0203  σ: 0.3394 | 0.281 min
+Epoch 13/500 | Train Loss: 0.158344 | Val Loss: 0.128101 | Val MAE: 14.1034 | Res μ: +0.0185  σ: 0.3371 | 0.274 min
+Epoch 14/500 | Train Loss: 0.157184 | Val Loss: 0.127350 | Val MAE: 14.2918 | Res μ: +0.0210  σ: 0.3356 | 0.269 min
+Epoch 15/500 | Train Loss: 0.153620 | Val Loss: 0.130579 | Val MAE: 16.5503 | Res μ: +0.0602  σ: 0.3359 | 0.267 min
+Epoch 16/500 | Train Loss: 0.152052 | Val Loss: 0.125158 | Val MAE: 12.9087 | Res μ: +0.0052  σ: 0.3327 | 0.269 min
+Epoch 17/500 | Train Loss: 0.149524 | Val Loss: 0.123873 | Val MAE: 12.3400 | Res μ: -0.0020  σ: 0.3307 | 0.263 min
+Epoch 18/500 | Train Loss: 0.148749 | Val Loss: 0.125529 | Val MAE: 13.7490 | Res μ: +0.0054  σ: 0.3338 | 0.278 min
+Epoch 19/500 | Train Loss: 0.145752 | Val Loss: 0.124189 | Val MAE: 12.7797 | Res μ: +0.0003  σ: 0.3308 | 0.295 min
+Epoch 20/500 | Train Loss: 0.145445 | Val Loss: 0.123139 | Val MAE: 12.4032 | Res μ: -0.0003  σ: 0.3297 | 0.299 min
+Epoch 21/500 | Train Loss: 0.143592 | Val Loss: 0.123456 | Val MAE: 12.7595 | Res μ: +0.0091  σ: 0.3295 | 0.302 min
+Epoch 22/500 | Train Loss: 0.142807 | Val Loss: 0.123786 | Val MAE: 12.6588 | Res μ: -0.0036  σ: 0.3303 | 0.286 min
+Epoch 23/500 | Train Loss: 0.141576 | Val Loss: 0.121574 | Val MAE: 11.8773 | Res μ: -0.0043  σ: 0.3269 | 0.268 min
+Epoch 24/500 | Train Loss: 0.139979 | Val Loss: 0.121596 | Val MAE: 12.1540 | Res μ: +0.0004  σ: 0.3269 | 0.287 min
+Epoch 25/500 | Train Loss: 0.139806 | Val Loss: 0.123946 | Val MAE: 14.4933 | Res μ: +0.0270  σ: 0.3296 | 0.297 min
+Epoch 26/500 | Train Loss: 0.139749 | Val Loss: 0.120579 | Val MAE: 12.7221 | Res μ: +0.0197  σ: 0.3246 | 0.325 min
+Epoch 27/500 | Train Loss: 0.137977 | Val Loss: 0.121000 | Val MAE: 12.4986 | Res μ: +0.0003  σ: 0.3258 | 0.310 min
+Epoch 28/500 | Train Loss: 0.137260 | Val Loss: 0.121000 | Val MAE: 12.4405 | Res μ: +0.0009  σ: 0.3259 | 0.259 min
+Epoch 29/500 | Train Loss: 0.137053 | Val Loss: 0.119919 | Val MAE: 13.0667 | Res μ: +0.0008  σ: 0.3246 | 0.261 min
+Epoch 30/500 | Train Loss: 0.134989 | Val Loss: 0.119319 | Val MAE: 12.1345 | Res μ: +0.0092  σ: 0.3232 | 0.254 min
+Epoch 31/500 | Train Loss: 0.134998 | Val Loss: 0.122387 | Val MAE: 14.6429 | Res μ: +0.0421  σ: 0.3257 | 0.252 min
+Epoch 32/500 | Train Loss: 0.133023 | Val Loss: 0.118743 | Val MAE: 11.7390 | Res μ: +0.0015  σ: 0.3225 | 0.254 min
+Epoch 33/500 | Train Loss: 0.133237 | Val Loss: 0.122115 | Val MAE: 13.8828 | Res μ: +0.0262  σ: 0.3270 | 0.266 min
+Epoch 34/500 | Train Loss: 0.132509 | Val Loss: 0.119724 | Val MAE: 11.5266 | Res μ: -0.0117  σ: 0.3237 | 0.274 min
+Epoch 35/500 | Train Loss: 0.131087 | Val Loss: 0.117705 | Val MAE: 12.0837 | Res μ: +0.0142  σ: 0.3203 | 0.262 min
+Epoch 36/500 | Train Loss: 0.131389 | Val Loss: 0.118857 | Val MAE: 12.1073 | Res μ: -0.0017  σ: 0.3227 | 0.269 min
+Epoch 37/500 | Train Loss: 0.131662 | Val Loss: 0.118429 | Val MAE: 11.7195 | Res μ: -0.0107  σ: 0.3217 | 0.260 min
+Epoch 38/500 | Train Loss: 0.130635 | Val Loss: 0.120561 | Val MAE: 13.8399 | Res μ: +0.0304  σ: 0.3231 | 0.261 min
+Epoch 39/500 | Train Loss: 0.129395 | Val Loss: 0.119059 | Val MAE: 12.4522 | Res μ: +0.0117  σ: 0.3229 | 0.261 min
+Epoch 40/500 | Train Loss: 0.129025 | Val Loss: 0.118346 | Val MAE: 12.5605 | Res μ: +0.0160  σ: 0.3213 | 0.261 min
+Epoch 41/500 | Train Loss: 0.129157 | Val Loss: 0.118172 | Val MAE: 12.0267 | Res μ: +0.0072  σ: 0.3217 | 0.259 min
+Epoch 42/500 | Train Loss: 0.128316 | Val Loss: 0.119054 | Val MAE: 13.0530 | Res μ: +0.0117  σ: 0.3222 | 0.260 min
+Epoch 43/500 | Train Loss: 0.127913 | Val Loss: 0.116940 | Val MAE: 12.2617 | Res μ: +0.0145  σ: 0.3192 | 0.260 min
+Epoch 44/500 | Train Loss: 0.128536 | Val Loss: 0.118264 | Val MAE: 11.4446 | Res μ: -0.0181  σ: 0.3209 | 0.261 min
+Epoch 45/500 | Train Loss: 0.127251 | Val Loss: 0.119173 | Val MAE: 12.1369 | Res μ: -0.0094  σ: 0.3232 | 0.266 min
+Epoch 46/500 | Train Loss: 0.127953 | Val Loss: 0.119380 | Val MAE: 12.6536 | Res μ: +0.0120  σ: 0.3231 | 0.265 min
+Epoch 47/500 | Train Loss: 0.125881 | Val Loss: 0.117618 | Val MAE: 11.9122 | Res μ: +0.0082  σ: 0.3207 | 0.261 min
+Epoch 48/500 | Train Loss: 0.126551 | Val Loss: 0.116701 | Val MAE: 11.4872 | Res μ: -0.0040  σ: 0.3192 | 0.265 min
+Epoch 49/500 | Train Loss: 0.125768 | Val Loss: 0.117849 | Val MAE: 11.4945 | Res μ: -0.0021  σ: 0.3211 | 0.261 min
+Epoch 50/500 | Train Loss: 0.125535 | Val Loss: 0.118430 | Val MAE: 12.6068 | Res μ: +0.0116  σ: 0.3210 | 0.263 min
+Epoch 51/500 | Train Loss: 0.125615 | Val Loss: 0.116812 | Val MAE: 11.7142 | Res μ: +0.0048  σ: 0.3193 | 0.268 min
+Epoch 52/500 | Train Loss: 0.125263 | Val Loss: 0.118272 | Val MAE: 12.7038 | Res μ: +0.0190  σ: 0.3212 | 0.269 min
+Epoch 53/500 | Train Loss: 0.124979 | Val Loss: 0.120627 | Val MAE: 14.5170 | Res μ: +0.0360  σ: 0.3239 | 0.267 min
+Epoch 54/500 | Train Loss: 0.125394 | Val Loss: 0.116566 | Val MAE: 12.2038 | Res μ: +0.0166  σ: 0.3184 | 0.267 min
+Epoch 55/500 | Train Loss: 0.125120 | Val Loss: 0.116157 | Val MAE: 12.0348 | Res μ: +0.0204  σ: 0.3178 | 0.268 min
+Epoch 56/500 | Train Loss: 0.124727 | Val Loss: 0.131998 | Val MAE: 17.8725 | Res μ: +0.0568  σ: 0.3344 | 0.266 min
+Epoch 57/500 | Train Loss: 0.123644 | Val Loss: 0.115855 | Val MAE: 12.1395 | Res μ: +0.0208  σ: 0.3171 | 0.266 min
+Epoch 58/500 | Train Loss: 0.124082 | Val Loss: 0.115676 | Val MAE: 11.9931 | Res μ: +0.0159  σ: 0.3175 | 0.273 min
+Epoch 59/500 | Train Loss: 0.123430 | Val Loss: 0.115815 | Val MAE: 11.8436 | Res μ: +0.0074  σ: 0.3181 | 0.269 min
+Epoch 60/500 | Train Loss: 0.123467 | Val Loss: 0.139637 | Val MAE: 19.9655 | Res μ: +0.0730  σ: 0.3396 | 0.272 min
+Epoch 61/500 | Train Loss: 0.123495 | Val Loss: 0.115283 | Val MAE: 11.7527 | Res μ: +0.0126  σ: 0.3169 | 0.272 min
+Epoch 62/500 | Train Loss: 0.123278 | Val Loss: 0.114636 | Val MAE: 11.3736 | Res μ: +0.0022  σ: 0.3158 | 0.271 min
+Epoch 63/500 | Train Loss: 0.123116 | Val Loss: 0.115655 | Val MAE: 12.2461 | Res μ: +0.0193  σ: 0.3170 | 0.269 min
+Epoch 64/500 | Train Loss: 0.122494 | Val Loss: 0.114916 | Val MAE: 11.4077 | Res μ: +0.0049  σ: 0.3163 | 0.270 min
+Epoch 65/500 | Train Loss: 0.122227 | Val Loss: 0.114904 | Val MAE: 11.8551 | Res μ: +0.0159  σ: 0.3163 | 0.266 min
+Epoch 66/500 | Train Loss: 0.122391 | Val Loss: 0.115293 | Val MAE: 11.5537 | Res μ: +0.0013  σ: 0.3167 | 0.264 min
+Epoch 67/500 | Train Loss: 0.121864 | Val Loss: 0.114807 | Val MAE: 12.3921 | Res μ: +0.0093  σ: 0.3158 | 0.270 min
+Epoch 68/500 | Train Loss: 0.122260 | Val Loss: 0.114830 | Val MAE: 11.5491 | Res μ: -0.0005  σ: 0.3163 | 0.273 min
+Epoch 69/500 | Train Loss: 0.121926 | Val Loss: 0.116852 | Val MAE: 11.4413 | Res μ: -0.0306  σ: 0.3179 | 0.268 min
+Epoch 70/500 | Train Loss: 0.121923 | Val Loss: 0.114974 | Val MAE: 12.4527 | Res μ: +0.0178  σ: 0.3161 | 0.282 min
+Epoch 71/500 | Train Loss: 0.121018 | Val Loss: 0.114884 | Val MAE: 11.5115 | Res μ: -0.0069  σ: 0.3164 | 0.302 min
+Epoch 72/500 | Train Loss: 0.120433 | Val Loss: 0.114069 | Val MAE: 12.2222 | Res μ: +0.0229  σ: 0.3145 | 0.274 min
+Epoch 73/500 | Train Loss: 0.120338 | Val Loss: 0.113695 | Val MAE: 11.0703 | Res μ: -0.0003  σ: 0.3144 | 0.278 min
+Epoch 74/500 | Train Loss: 0.120624 | Val Loss: 0.113412 | Val MAE: 11.5611 | Res μ: +0.0110  σ: 0.3141 | 0.290 min
+Epoch 75/500 | Train Loss: 0.119717 | Val Loss: 0.114440 | Val MAE: 12.1284 | Res μ: +0.0033  σ: 0.3153 | 0.273 min
+Epoch 76/500 | Train Loss: 0.120051 | Val Loss: 0.113524 | Val MAE: 11.7787 | Res μ: +0.0084  σ: 0.3139 | 0.263 min
+Epoch 77/500 | Train Loss: 0.119972 | Val Loss: 0.113871 | Val MAE: 11.3705 | Res μ: -0.0060  σ: 0.3149 | 0.262 min
+Epoch 78/500 | Train Loss: 0.119536 | Val Loss: 0.114706 | Val MAE: 12.2404 | Res μ: +0.0185  σ: 0.3157 | 0.262 min
+Epoch 79/500 | Train Loss: 0.120127 | Val Loss: 0.113811 | Val MAE: 11.7190 | Res μ: -0.0013  σ: 0.3149 | 0.259 min
+Epoch 80/500 | Train Loss: 0.120218 | Val Loss: 0.113234 | Val MAE: 11.4653 | Res μ: +0.0012  σ: 0.3139 | 0.259 min
+Epoch 81/500 | Train Loss: 0.119693 | Val Loss: 0.114637 | Val MAE: 12.7069 | Res μ: +0.0195  σ: 0.3155 | 0.260 min
+Epoch 82/500 | Train Loss: 0.119592 | Val Loss: 0.113611 | Val MAE: 11.1510 | Res μ: +0.0040  σ: 0.3142 | 0.258 min
+Epoch 83/500 | Train Loss: 0.119898 | Val Loss: 0.114853 | Val MAE: 12.1533 | Res μ: +0.0104  σ: 0.3160 | 0.266 min
+Epoch 84/500 | Train Loss: 0.119614 | Val Loss: 0.113235 | Val MAE: 12.0551 | Res μ: +0.0060  σ: 0.3136 | 0.271 min
+Epoch 85/500 | Train Loss: 0.119160 | Val Loss: 0.114555 | Val MAE: 12.2895 | Res μ: +0.0139  σ: 0.3156 | 0.268 min
+Epoch 86/500 | Train Loss: 0.119298 | Val Loss: 0.113051 | Val MAE: 11.4179 | Res μ: +0.0053  σ: 0.3135 | 0.264 min
+Epoch 87/500 | Train Loss: 0.119765 | Val Loss: 0.114349 | Val MAE: 12.5635 | Res μ: +0.0251  σ: 0.3149 | 0.263 min
+Epoch 88/500 | Train Loss: 0.119420 | Val Loss: 0.112732 | Val MAE: 11.9455 | Res μ: +0.0160  σ: 0.3126 | 0.266 min
+Epoch 89/500 | Train Loss: 0.119115 | Val Loss: 0.115533 | Val MAE: 13.1459 | Res μ: +0.0157  σ: 0.3174 | 0.265 min
+Epoch 90/500 | Train Loss: 0.118705 | Val Loss: 0.112608 | Val MAE: 11.6746 | Res μ: +0.0091  σ: 0.3126 | 0.269 min
+Epoch 91/500 | Train Loss: 0.119275 | Val Loss: 0.112930 | Val MAE: 11.7519 | Res μ: -0.0016  σ: 0.3135 | 0.266 min
+Epoch 92/500 | Train Loss: 0.118760 | Val Loss: 0.112828 | Val MAE: 10.9438 | Res μ: -0.0113  σ: 0.3129 | 0.265 min
+Epoch 93/500 | Train Loss: 0.118916 | Val Loss: 0.112590 | Val MAE: 11.6669 | Res μ: +0.0156  σ: 0.3124 | 0.264 min
+Epoch 94/500 | Train Loss: 0.119088 | Val Loss: 0.121008 | Val MAE: 15.6620 | Res μ: +0.0577  σ: 0.3208 | 0.263 min
+Epoch 95/500 | Train Loss: 0.118517 | Val Loss: 0.127045 | Val MAE: 17.6923 | Res μ: +0.0764  σ: 0.3247 | 0.264 min
+Epoch 96/500 | Train Loss: 0.118721 | Val Loss: 0.112086 | Val MAE: 11.5255 | Res μ: +0.0109  σ: 0.3119 | 0.266 min
+Epoch 97/500 | Train Loss: 0.118506 | Val Loss: 0.114619 | Val MAE: 12.4600 | Res μ: +0.0078  σ: 0.3161 | 0.264 min
+Epoch 98/500 | Train Loss: 0.118710 | Val Loss: 0.113134 | Val MAE: 12.1492 | Res μ: +0.0076  σ: 0.3137 | 0.265 min
+Epoch 99/500 | Train Loss: 0.119107 | Val Loss: 0.114927 | Val MAE: 13.0415 | Res μ: +0.0297  σ: 0.3153 | 0.271 min
+Epoch 100/500 | Train Loss: 0.118700 | Val Loss: 0.113147 | Val MAE: 12.3076 | Res μ: +0.0127  σ: 0.3137 | 0.266 min
+Epoch 101/500 | Train Loss: 0.118515 | Val Loss: 0.120314 | Val MAE: 15.7567 | Res μ: +0.0496  σ: 0.3200 | 0.265 min
+Epoch 102/500 | Train Loss: 0.118261 | Val Loss: 0.112748 | Val MAE: 12.0652 | Res μ: +0.0069  σ: 0.3133 | 0.262 min
+Epoch 103/500 | Train Loss: 0.118280 | Val Loss: 0.112407 | Val MAE: 11.3611 | Res μ: +0.0018  σ: 0.3127 | 0.263 min
+Epoch 104/500 | Train Loss: 0.118270 | Val Loss: 0.112509 | Val MAE: 11.9587 | Res μ: +0.0177  σ: 0.3125 | 0.264 min
+Epoch 105/500 | Train Loss: 0.118256 | Val Loss: 0.112555 | Val MAE: 11.5841 | Res μ: +0.0095  σ: 0.3128 | 0.263 min
+Epoch 106/500 | Train Loss: 0.118522 | Val Loss: 0.112251 | Val MAE: 11.3898 | Res μ: +0.0043  σ: 0.3124 | 0.263 min
+Epoch 107/500 | Train Loss: 0.117665 | Val Loss: 0.112140 | Val MAE: 11.6761 | Res μ: +0.0138  σ: 0.3120 | 0.279 min
+Epoch 108/500 | Train Loss: 0.117290 | Val Loss: 0.111914 | Val MAE: 11.4344 | Res μ: -0.0018  σ: 0.3117 | 0.268 min
+Epoch 109/500 | Train Loss: 0.117742 | Val Loss: 0.112003 | Val MAE: 11.0888 | Res μ: -0.0054  σ: 0.3118 | 0.263 min
+Epoch 110/500 | Train Loss: 0.117699 | Val Loss: 0.112851 | Val MAE: 11.7490 | Res μ: +0.0040  σ: 0.3134 | 0.263 min
+Epoch 111/500 | Train Loss: 0.117245 | Val Loss: 0.114101 | Val MAE: 12.9610 | Res μ: +0.0284  σ: 0.3140 | 0.265 min
+Epoch 112/500 | Train Loss: 0.117277 | Val Loss: 0.111835 | Val MAE: 11.3976 | Res μ: +0.0082  σ: 0.3117 | 0.261 min
+Epoch 113/500 | Train Loss: 0.117283 | Val Loss: 0.111941 | Val MAE: 10.8364 | Res μ: -0.0037  σ: 0.3120 | 0.262 min
+Epoch 114/500 | Train Loss: 0.117044 | Val Loss: 0.111935 | Val MAE: 11.2425 | Res μ: +0.0065  σ: 0.3119 | 0.262 min
+Epoch 115/500 | Train Loss: 0.117322 | Val Loss: 0.113232 | Val MAE: 12.5774 | Res μ: +0.0247  σ: 0.3130 | 0.264 min
+Epoch 116/500 | Train Loss: 0.117153 | Val Loss: 0.112492 | Val MAE: 12.0396 | Res μ: +0.0190  σ: 0.3122 | 0.262 min
+Epoch 117/500 | Train Loss: 0.117155 | Val Loss: 0.114413 | Val MAE: 13.2702 | Res μ: +0.0335  σ: 0.3141 | 0.262 min
+Epoch 118/500 | Train Loss: 0.117588 | Val Loss: 0.111890 | Val MAE: 11.5572 | Res μ: +0.0065  σ: 0.3118 | 0.263 min
+Epoch 119/500 | Train Loss: 0.117492 | Val Loss: 0.113733 | Val MAE: 12.3649 | Res μ: +0.0242  σ: 0.3139 | 0.263 min
+Epoch 120/500 | Train Loss: 0.116877 | Val Loss: 0.112592 | Val MAE: 12.1035 | Res μ: +0.0173  σ: 0.3124 | 0.262 min
+Epoch 121/500 | Train Loss: 0.117026 | Val Loss: 0.115661 | Val MAE: 13.9303 | Res μ: +0.0290  σ: 0.3164 | 0.262 min
+Epoch 122/500 | Train Loss: 0.117134 | Val Loss: 0.111801 | Val MAE: 10.9649 | Res μ: -0.0108  σ: 0.3114 | 0.262 min
+Epoch 123/500 | Train Loss: 0.116617 | Val Loss: 0.123549 | Val MAE: 16.2455 | Res μ: +0.0653  σ: 0.3235 | 0.263 min
+Epoch 124/500 | Train Loss: 0.117135 | Val Loss: 0.119844 | Val MAE: 15.3505 | Res μ: +0.0576  σ: 0.3195 | 0.262 min
+Epoch 125/500 | Train Loss: 0.117580 | Val Loss: 0.112588 | Val MAE: 12.2280 | Res μ: +0.0224  σ: 0.3123 | 0.262 min
+Epoch 126/500 | Train Loss: 0.116728 | Val Loss: 0.113680 | Val MAE: 12.9838 | Res μ: +0.0089  σ: 0.3143 | 0.262 min
+Epoch 127/500 | Train Loss: 0.116782 | Val Loss: 0.112456 | Val MAE: 12.2208 | Res μ: +0.0244  σ: 0.3117 | 0.266 min
+Epoch 128/500 | Train Loss: 0.116938 | Val Loss: 0.111542 | Val MAE: 11.6088 | Res μ: +0.0016  σ: 0.3113 | 0.259 min
+Epoch 129/500 | Train Loss: 0.117331 | Val Loss: 0.111349 | Val MAE: 11.2305 | Res μ: +0.0061  σ: 0.3110 | 0.259 min
+Epoch 130/500 | Train Loss: 0.116700 | Val Loss: 0.112296 | Val MAE: 12.0472 | Res μ: +0.0075  σ: 0.3124 | 0.256 min
+Epoch 131/500 | Train Loss: 0.117986 | Val Loss: 0.111950 | Val MAE: 11.2448 | Res μ: -0.0036  σ: 0.3117 | 0.258 min
+Epoch 132/500 | Train Loss: 0.116007 | Val Loss: 0.113686 | Val MAE: 12.8152 | Res μ: +0.0264  σ: 0.3138 | 0.256 min
+Epoch 133/500 | Train Loss: 0.116694 | Val Loss: 0.117846 | Val MAE: 14.8847 | Res μ: +0.0346  σ: 0.3186 | 0.259 min
+Epoch 134/500 | Train Loss: 0.116831 | Val Loss: 0.111252 | Val MAE: 10.7943 | Res μ: -0.0026  σ: 0.3107 | 0.256 min
+Epoch 135/500 | Train Loss: 0.116806 | Val Loss: 0.111585 | Val MAE: 11.4077 | Res μ: +0.0084  σ: 0.3114 | 0.257 min
+Epoch 136/500 | Train Loss: 0.117166 | Val Loss: 0.112262 | Val MAE: 11.9644 | Res μ: +0.0050  σ: 0.3126 | 0.258 min
+Epoch 137/500 | Train Loss: 0.116330 | Val Loss: 0.113419 | Val MAE: 12.4790 | Res μ: +0.0231  σ: 0.3139 | 0.257 min
+Epoch 138/500 | Train Loss: 0.116828 | Val Loss: 0.111061 | Val MAE: 11.2239 | Res μ: +0.0043  σ: 0.3104 | 0.260 min
+Epoch 139/500 | Train Loss: 0.116845 | Val Loss: 0.119005 | Val MAE: 15.3493 | Res μ: +0.0560  σ: 0.3179 | 0.263 min
+Epoch 140/500 | Train Loss: 0.116645 | Val Loss: 0.112806 | Val MAE: 12.7001 | Res μ: +0.0303  σ: 0.3122 | 0.260 min
+Epoch 141/500 | Train Loss: 0.116054 | Val Loss: 0.113004 | Val MAE: 12.7312 | Res μ: +0.0154  σ: 0.3138 | 0.262 min
+Epoch 142/500 | Train Loss: 0.116697 | Val Loss: 0.112769 | Val MAE: 11.8657 | Res μ: +0.0030  σ: 0.3133 | 0.266 min
+Epoch 143/500 | Train Loss: 0.116399 | Val Loss: 0.118626 | Val MAE: 15.0319 | Res μ: +0.0487  σ: 0.3188 | 0.267 min
+Epoch 144/500 | Train Loss: 0.116486 | Val Loss: 0.111120 | Val MAE: 11.2380 | Res μ: -0.0041  σ: 0.3105 | 0.266 min
+Epoch 145/500 | Train Loss: 0.116515 | Val Loss: 0.115738 | Val MAE: 13.8639 | Res μ: +0.0409  σ: 0.3155 | 0.267 min
+Epoch 146/500 | Train Loss: 0.116144 | Val Loss: 0.113309 | Val MAE: 12.8533 | Res μ: +0.0296  σ: 0.3130 | 0.264 min
+Epoch 147/500 | Train Loss: 0.116619 | Val Loss: 0.112469 | Val MAE: 12.2243 | Res μ: +0.0206  σ: 0.3123 | 0.267 min
+Epoch 148/500 | Train Loss: 0.116576 | Val Loss: 0.111541 | Val MAE: 11.9117 | Res μ: -0.0026  σ: 0.3113 | 0.265 min
+Epoch 149/500 | Train Loss: 0.116207 | Val Loss: 0.111176 | Val MAE: 11.4105 | Res μ: -0.0091  σ: 0.3104 | 0.261 min
+Epoch 150/500 | Train Loss: 0.116394 | Val Loss: 0.114613 | Val MAE: 13.4785 | Res μ: +0.0318  σ: 0.3148 | 0.261 min
+Epoch 151/500 | Train Loss: 0.116695 | Val Loss: 0.112355 | Val MAE: 12.0843 | Res μ: -0.0038  σ: 0.3123 | 0.263 min
+Epoch 152/500 | Train Loss: 0.116676 | Val Loss: 0.111225 | Val MAE: 11.3200 | Res μ: +0.0093  σ: 0.3107 | 0.261 min
+Epoch 153/500 | Train Loss: 0.116367 | Val Loss: 0.111442 | Val MAE: 11.6135 | Res μ: +0.0092  σ: 0.3111 | 0.270 min
+Epoch 154/500 | Train Loss: 0.116192 | Val Loss: 0.112034 | Val MAE: 12.0297 | Res μ: +0.0119  σ: 0.3120 | 0.285 min
+Epoch 155/500 | Train Loss: 0.116397 | Val Loss: 0.111952 | Val MAE: 11.9904 | Res μ: +0.0104  σ: 0.3117 | 0.285 min
+Epoch 156/500 | Train Loss: 0.116201 | Val Loss: 0.112618 | Val MAE: 12.5453 | Res μ: +0.0264  σ: 0.3121 | 0.273 min
+Epoch 157/500 | Train Loss: 0.117016 | Val Loss: 0.116522 | Val MAE: 14.3783 | Res μ: +0.0336  σ: 0.3171 | 0.259 min
+Epoch 158/500 | Train Loss: 0.116500 | Val Loss: 0.112198 | Val MAE: 11.8947 | Res μ: -0.0021  σ: 0.3122 | 0.265 min
+Epoch 159/500 | Train Loss: 0.116147 | Val Loss: 0.111241 | Val MAE: 11.1145 | Res μ: -0.0033  σ: 0.3107 | 0.282 min
+Epoch 160/500 | Train Loss: 0.116615 | Val Loss: 0.113299 | Val MAE: 12.8153 | Res μ: +0.0188  σ: 0.3135 | 0.262 min
+Epoch 161/500 | Train Loss: 0.115574 | Val Loss: 0.111575 | Val MAE: 11.8173 | Res μ: +0.0186  σ: 0.3108 | 0.260 min
+Epoch 162/500 | Train Loss: 0.116135 | Val Loss: 0.111869 | Val MAE: 12.0002 | Res μ: +0.0203  σ: 0.3113 | 0.263 min
+Epoch 163/500 | Train Loss: 0.116219 | Val Loss: 0.111504 | Val MAE: 11.7802 | Res μ: +0.0120  σ: 0.3112 | 0.262 min
+Epoch 164/500 | Train Loss: 0.116704 | Val Loss: 0.111400 | Val MAE: 11.4288 | Res μ: +0.0141  σ: 0.3107 | 0.260 min
+Epoch 165/500 | Train Loss: 0.116419 | Val Loss: 0.111044 | Val MAE: 11.2494 | Res μ: +0.0090  σ: 0.3104 | 0.262 min
+Epoch 166/500 | Train Loss: 0.115959 | Val Loss: 0.117482 | Val MAE: 14.8853 | Res μ: +0.0484  σ: 0.3166 | 0.257 min
+Epoch 167/500 | Train Loss: 0.116222 | Val Loss: 0.113835 | Val MAE: 12.8178 | Res μ: +0.0268  σ: 0.3140 | 0.255 min
+Epoch 168/500 | Train Loss: 0.115751 | Val Loss: 0.123136 | Val MAE: 16.4501 | Res μ: +0.0664  σ: 0.3224 | 0.256 min
+Epoch 169/500 | Train Loss: 0.116351 | Val Loss: 0.112482 | Val MAE: 12.2447 | Res μ: +0.0218  σ: 0.3121 | 0.256 min
+Epoch 170/500 | Train Loss: 0.116393 | Val Loss: 0.113309 | Val MAE: 12.6289 | Res μ: +0.0262  σ: 0.3130 | 0.257 min
+Epoch 171/500 | Train Loss: 0.115982 | Val Loss: 0.111436 | Val MAE: 11.6778 | Res μ: +0.0171  σ: 0.3108 | 0.256 min
+Epoch 172/500 | Train Loss: 0.115924 | Val Loss: 0.111226 | Val MAE: 11.6365 | Res μ: +0.0005  σ: 0.3108 | 0.258 min
+Epoch 173/500 | Train Loss: 0.116393 | Val Loss: 0.111517 | Val MAE: 11.6370 | Res μ: -0.0092  σ: 0.3110 | 0.257 min
+Epoch 174/500 | Train Loss: 0.116661 | Val Loss: 0.112719 | Val MAE: 12.6280 | Res μ: +0.0140  σ: 0.3126 | 0.255 min
+Epoch 175/500 | Train Loss: 0.115900 | Val Loss: 0.127089 | Val MAE: 17.7842 | Res μ: +0.0787  σ: 0.3256 | 0.256 min
+Epoch 176/500 | Train Loss: 0.115757 | Val Loss: 0.112689 | Val MAE: 12.5524 | Res μ: +0.0277  σ: 0.3120 | 0.256 min
+Epoch 177/500 | Train Loss: 0.115855 | Val Loss: 0.111054 | Val MAE: 11.4251 | Res μ: +0.0131  σ: 0.3103 | 0.255 min
+Epoch 178/500 | Train Loss: 0.116088 | Val Loss: 0.111020 | Val MAE: 10.9913 | Res μ: +0.0041  σ: 0.3104 | 0.256 min
+Epoch 179/500 | Train Loss: 0.115822 | Val Loss: 0.115352 | Val MAE: 13.7320 | Res μ: +0.0356  σ: 0.3158 | 0.258 min
+Epoch 180/500 | Train Loss: 0.116484 | Val Loss: 0.120384 | Val MAE: 15.4258 | Res μ: +0.0572  σ: 0.3209 | 0.259 min
+Epoch 181/500 | Train Loss: 0.116142 | Val Loss: 0.113359 | Val MAE: 12.8042 | Res μ: +0.0271  σ: 0.3134 | 0.259 min
+Epoch 182/500 | Train Loss: 0.116774 | Val Loss: 0.168779 | Val MAE: 26.0197 | Res μ: +0.1536  σ: 0.3498 | 0.255 min
+Epoch 183/500 | Train Loss: 0.115945 | Val Loss: 0.113447 | Val MAE: 12.8400 | Res μ: +0.0262  σ: 0.3133 | 0.257 min
+Epoch 184/500 | Train Loss: 0.116298 | Val Loss: 0.111449 | Val MAE: 11.6030 | Res μ: +0.0139  σ: 0.3108 | 0.256 min
+Epoch 185/500 | Train Loss: 0.115821 | Val Loss: 0.112113 | Val MAE: 11.7615 | Res μ: +0.0065  σ: 0.3122 | 0.258 min
+Epoch 186/500 | Train Loss: 0.115713 | Val Loss: 0.111618 | Val MAE: 11.6907 | Res μ: +0.0080  σ: 0.3115 | 0.261 min
+Epoch 187/500 | Train Loss: 0.115935 | Val Loss: 0.111134 | Val MAE: 11.1951 | Res μ: -0.0130  σ: 0.3103 | 0.258 min
+Epoch 188/500 | Train Loss: 0.115961 | Val Loss: 0.111462 | Val MAE: 11.5552 | Res μ: +0.0124  σ: 0.3109 | 0.262 min
+Epoch 189/500 | Train Loss: 0.116450 | Val Loss: 0.110886 | Val MAE: 11.1709 | Res μ: +0.0028  σ: 0.3101 | 0.265 min
+Epoch 190/500 | Train Loss: 0.116322 | Val Loss: 0.111453 | Val MAE: 12.0183 | Res μ: +0.0174  σ: 0.3107 | 0.253 min
+Epoch 191/500 | Train Loss: 0.116574 | Val Loss: 0.111241 | Val MAE: 11.5874 | Res μ: -0.0021  σ: 0.3107 | 0.271 min
+Epoch 192/500 | Train Loss: 0.116485 | Val Loss: 0.112761 | Val MAE: 12.5951 | Res μ: +0.0239  σ: 0.3123 | 0.262 min
+Epoch 193/500 | Train Loss: 0.116242 | Val Loss: 0.111074 | Val MAE: 11.5359 | Res μ: +0.0161  σ: 0.3103 | 0.256 min
+Epoch 194/500 | Train Loss: 0.116093 | Val Loss: 0.110847 | Val MAE: 10.8668 | Res μ: -0.0017  σ: 0.3101 | 0.257 min
+Epoch 195/500 | Train Loss: 0.116241 | Val Loss: 0.110732 | Val MAE: 11.1084 | Res μ: +0.0013  σ: 0.3101 | 0.266 min
+Epoch 196/500 | Train Loss: 0.115618 | Val Loss: 0.111462 | Val MAE: 11.6222 | Res μ: +0.0116  σ: 0.3111 | 0.265 min
+Epoch 197/500 | Train Loss: 0.115571 | Val Loss: 0.111230 | Val MAE: 11.4659 | Res μ: +0.0036  σ: 0.3109 | 0.256 min
+Epoch 198/500 | Train Loss: 0.116181 | Val Loss: 0.166722 | Val MAE: 25.6666 | Res μ: +0.1435  σ: 0.3489 | 0.260 min
+Epoch 199/500 | Train Loss: 0.116201 | Val Loss: 0.112604 | Val MAE: 12.1459 | Res μ: +0.0202  σ: 0.3125 | 0.272 min
+Epoch 200/500 | Train Loss: 0.115511 | Val Loss: 0.111131 | Val MAE: 11.5171 | Res μ: +0.0099  σ: 0.3105 | 0.260 min
+Epoch 201/500 | Train Loss: 0.115882 | Val Loss: 0.111458 | Val MAE: 11.3813 | Res μ: +0.0031  σ: 0.3111 | 0.257 min
+Epoch 202/500 | Train Loss: 0.116262 | Val Loss: 0.112228 | Val MAE: 11.9840 | Res μ: +0.0152  σ: 0.3122 | 0.257 min
+Epoch 203/500 | Train Loss: 0.115987 | Val Loss: 0.111219 | Val MAE: 11.1705 | Res μ: -0.0001  σ: 0.3107 | 0.266 min
+Epoch 204/500 | Train Loss: 0.115811 | Val Loss: 0.114012 | Val MAE: 13.3691 | Res μ: +0.0335  σ: 0.3134 | 0.269 min
+Epoch 205/500 | Train Loss: 0.116304 | Val Loss: 0.111418 | Val MAE: 11.6417 | Res μ: +0.0037  σ: 0.3112 | 0.266 min
+Epoch 206/500 | Train Loss: 0.116067 | Val Loss: 0.111633 | Val MAE: 11.7305 | Res μ: +0.0135  σ: 0.3111 | 0.270 min
+Epoch 207/500 | Train Loss: 0.116032 | Val Loss: 0.111549 | Val MAE: 11.7284 | Res μ: +0.0163  σ: 0.3110 | 0.276 min
+Epoch 208/500 | Train Loss: 0.115872 | Val Loss: 0.111659 | Val MAE: 12.2472 | Res μ: +0.0262  σ: 0.3104 | 0.280 min
+Epoch 209/500 | Train Loss: 0.116221 | Val Loss: 0.111217 | Val MAE: 11.5182 | Res μ: +0.0062  σ: 0.3107 | 0.270 min
+Epoch 210/500 | Train Loss: 0.115772 | Val Loss: 0.110753 | Val MAE: 11.0230 | Res μ: +0.0051  σ: 0.3100 | 0.263 min
+Epoch 211/500 | Train Loss: 0.115786 | Val Loss: 0.111084 | Val MAE: 10.9809 | Res μ: -0.0099  σ: 0.3103 | 0.260 min
+Epoch 212/500 | Train Loss: 0.116050 | Val Loss: 0.113068 | Val MAE: 12.5185 | Res μ: +0.0188  σ: 0.3131 | 0.270 min
+Epoch 213/500 | Train Loss: 0.115868 | Val Loss: 0.111663 | Val MAE: 11.6621 | Res μ: +0.0002  σ: 0.3114 | 0.263 min
+Epoch 214/500 | Train Loss: 0.116273 | Val Loss: 0.112644 | Val MAE: 12.2047 | Res μ: +0.0159  σ: 0.3129 | 0.259 min
+Epoch 215/500 | Train Loss: 0.115801 | Val Loss: 0.111791 | Val MAE: 11.7579 | Res μ: +0.0164  σ: 0.3113 | 0.257 min
+Epoch 216/500 | Train Loss: 0.116250 | Val Loss: 0.113030 | Val MAE: 12.7260 | Res μ: +0.0143  σ: 0.3131 | 0.261 min
+Epoch 217/500 | Train Loss: 0.116091 | Val Loss: 0.113737 | Val MAE: 13.2251 | Res μ: +0.0278  σ: 0.3134 | 0.257 min
+Epoch 218/500 | Train Loss: 0.116530 | Val Loss: 0.113448 | Val MAE: 13.0274 | Res μ: +0.0264  σ: 0.3134 | 0.272 min
+Epoch 219/500 | Train Loss: 0.116016 | Val Loss: 0.126658 | Val MAE: 17.5499 | Res μ: +0.0770  σ: 0.3252 | 0.277 min
+Epoch 220/500 | Train Loss: 0.116109 | Val Loss: 0.110967 | Val MAE: 11.0850 | Res μ: +0.0011  σ: 0.3103 | 0.262 min
+Epoch 221/500 | Train Loss: 0.116115 | Val Loss: 0.112458 | Val MAE: 12.1038 | Res μ: +0.0090  σ: 0.3125 | 0.267 min
+Epoch 222/500 | Train Loss: 0.116207 | Val Loss: 0.113228 | Val MAE: 12.4708 | Res μ: +0.0227  σ: 0.3133 | 0.268 min
+Epoch 223/500 | Train Loss: 0.116419 | Val Loss: 0.112425 | Val MAE: 12.3718 | Res μ: +0.0175  σ: 0.3122 | 0.290 min
+Epoch 224/500 | Train Loss: 0.115850 | Val Loss: 0.111121 | Val MAE: 11.2273 | Res μ: -0.0156  σ: 0.3102 | 0.275 min
+Epoch 225/500 | Train Loss: 0.116086 | Val Loss: 0.112161 | Val MAE: 12.4109 | Res μ: +0.0270  σ: 0.3113 | 0.294 min
+Epoch 226/500 | Train Loss: 0.115924 | Val Loss: 0.110772 | Val MAE: 11.2747 | Res μ: +0.0038  σ: 0.3102 | 0.257 min
+Epoch 227/500 | Train Loss: 0.116717 | Val Loss: 0.116161 | Val MAE: 13.9770 | Res μ: +0.0482  σ: 0.3157 | 0.279 min
+Epoch 228/500 | Train Loss: 0.115750 | Val Loss: 0.112692 | Val MAE: 12.4956 | Res μ: +0.0171  σ: 0.3127 | 0.269 min
+Epoch 229/500 | Train Loss: 0.116351 | Val Loss: 0.111363 | Val MAE: 11.3599 | Res μ: -0.0032  σ: 0.3109 | 0.278 min
+Epoch 230/500 | Train Loss: 0.116484 | Val Loss: 0.111981 | Val MAE: 12.2422 | Res μ: +0.0223  σ: 0.3113 | 0.292 min
+Epoch 231/500 | Train Loss: 0.115874 | Val Loss: 0.110818 | Val MAE: 11.3061 | Res μ: +0.0116  σ: 0.3100 | 0.283 min
+Epoch 232/500 | Train Loss: 0.115920 | Val Loss: 0.114298 | Val MAE: 13.5313 | Res μ: +0.0312  σ: 0.3140 | 0.267 min
+Epoch 233/500 | Train Loss: 0.116054 | Val Loss: 0.115593 | Val MAE: 13.9015 | Res μ: +0.0347  σ: 0.3155 | 0.271 min
+Epoch 234/500 | Train Loss: 0.116481 | Val Loss: 0.125267 | Val MAE: 17.1882 | Res μ: +0.0836  σ: 0.3225 | 0.265 min
+Epoch 235/500 | Train Loss: 0.116099 | Val Loss: 0.111078 | Val MAE: 11.1756 | Res μ: -0.0028  σ: 0.3105 | 0.278 min
+Epoch 236/500 | Train Loss: 0.116310 | Val Loss: 0.111183 | Val MAE: 11.3744 | Res μ: +0.0022  σ: 0.3107 | 0.301 min
+Epoch 237/500 | Train Loss: 0.116124 | Val Loss: 0.111331 | Val MAE: 11.6452 | Res μ: +0.0059  σ: 0.3109 | 0.280 min
+Epoch 238/500 | Train Loss: 0.115832 | Val Loss: 0.110886 | Val MAE: 11.0539 | Res μ: +0.0040  σ: 0.3102 | 0.261 min
+Epoch 239/500 | Train Loss: 0.115865 | Val Loss: 0.112175 | Val MAE: 12.2708 | Res μ: +0.0134  σ: 0.3121 | 0.281 min
+Epoch 240/500 | Train Loss: 0.115713 | Val Loss: 0.111396 | Val MAE: 11.5718 | Res μ: +0.0129  σ: 0.3109 | 0.264 min
+Epoch 241/500 | Train Loss: 0.115944 | Val Loss: 0.119263 | Val MAE: 15.4065 | Res μ: +0.0556  σ: 0.3185 | 0.265 min
+Epoch 242/500 | Train Loss: 0.115781 | Val Loss: 0.115346 | Val MAE: 13.9445 | Res μ: +0.0357  σ: 0.3154 | 0.274 min
+Epoch 243/500 | Train Loss: 0.115894 | Val Loss: 0.114419 | Val MAE: 13.4693 | Res μ: +0.0356  σ: 0.3140 | 0.272 min
+Epoch 244/500 | Train Loss: 0.115876 | Val Loss: 0.111244 | Val MAE: 11.4401 | Res μ: +0.0024  σ: 0.3109 | 0.262 min
+Epoch 245/500 | Train Loss: 0.116788 | Val Loss: 0.114410 | Val MAE: 13.5107 | Res μ: +0.0351  σ: 0.3139 | 0.269 min
+Epoch 246/500 | Train Loss: 0.116279 | Val Loss: 0.112956 | Val MAE: 12.2905 | Res μ: +0.0134  σ: 0.3130 | 0.261 min
+Epoch 247/500 | Train Loss: 0.115784 | Val Loss: 0.111043 | Val MAE: 11.5976 | Res μ: +0.0129  σ: 0.3102 | 0.270 min
+Epoch 248/500 | Train Loss: 0.115480 | Val Loss: 0.119274 | Val MAE: 15.2280 | Res μ: +0.0527  σ: 0.3193 | 0.295 min
+Epoch 249/500 | Train Loss: 0.115975 | Val Loss: 0.112100 | Val MAE: 12.0186 | Res μ: +0.0143  σ: 0.3120 | 0.289 min
+Epoch 250/500 | Train Loss: 0.115863 | Val Loss: 0.113918 | Val MAE: 12.8028 | Res μ: +0.0232  σ: 0.3144 | 0.283 min
+Epoch 251/500 | Train Loss: 0.116382 | Val Loss: 0.110971 | Val MAE: 11.1428 | Res μ: +0.0059  σ: 0.3103 | 0.273 min
+Epoch 252/500 | Train Loss: 0.116031 | Val Loss: 0.112321 | Val MAE: 12.5281 | Res μ: +0.0282  σ: 0.3114 | 0.282 min
+Epoch 253/500 | Train Loss: 0.116009 | Val Loss: 0.112596 | Val MAE: 12.4672 | Res μ: +0.0195  σ: 0.3125 | 0.292 min
+Epoch 254/500 | Train Loss: 0.116006 | Val Loss: 0.111346 | Val MAE: 11.6543 | Res μ: +0.0039  σ: 0.3110 | 0.293 min
+Epoch 255/500 | Train Loss: 0.116537 | Val Loss: 0.113739 | Val MAE: 13.0182 | Res μ: +0.0208  σ: 0.3145 | 0.284 min
+Epoch 256/500 | Train Loss: 0.115843 | Val Loss: 0.113193 | Val MAE: 12.6550 | Res μ: +0.0263  σ: 0.3132 | 0.277 min
+Epoch 257/500 | Train Loss: 0.116148 | Val Loss: 0.113101 | Val MAE: 12.8850 | Res μ: +0.0301  σ: 0.3125 | 0.286 min
+Epoch 258/500 | Train Loss: 0.115832 | Val Loss: 0.111138 | Val MAE: 11.4332 | Res μ: +0.0006  σ: 0.3106 | 0.290 min
+Epoch 259/500 | Train Loss: 0.116157 | Val Loss: 0.114483 | Val MAE: 13.7337 | Res μ: +0.0306  σ: 0.3141 | 0.274 min
+Epoch 260/500 | Train Loss: 0.115735 | Val Loss: 0.124458 | Val MAE: 17.0205 | Res μ: +0.0720  σ: 0.3231 | 0.262 min
+Epoch 261/500 | Train Loss: 0.115879 | Val Loss: 0.123856 | Val MAE: 17.0594 | Res μ: +0.0745  σ: 0.3218 | 0.267 min
+Epoch 262/500 | Train Loss: 0.116618 | Val Loss: 0.128583 | Val MAE: 18.2603 | Res μ: +0.0810  σ: 0.3258 | 0.269 min
+Epoch 263/500 | Train Loss: 0.116181 | Val Loss: 0.111327 | Val MAE: 11.3701 | Res μ: -0.0035  σ: 0.3107 | 0.297 min
+Epoch 264/500 | Train Loss: 0.115989 | Val Loss: 0.113320 | Val MAE: 13.0247 | Res μ: +0.0283  σ: 0.3126 | 0.284 min
+Epoch 265/500 | Train Loss: 0.115703 | Val Loss: 0.111663 | Val MAE: 11.9199 | Res μ: +0.0167  σ: 0.3114 | 0.278 min
+Epoch 266/500 | Train Loss: 0.116098 | Val Loss: 0.115077 | Val MAE: 13.6751 | Res μ: +0.0361  σ: 0.3150 | 0.275 min
+Epoch 267/500 | Train Loss: 0.116633 | Val Loss: 0.111074 | Val MAE: 11.3422 | Res μ: +0.0049  σ: 0.3105 | 0.271 min
+Epoch 268/500 | Train Loss: 0.115790 | Val Loss: 0.111355 | Val MAE: 11.3309 | Res μ: -0.0054  σ: 0.3109 | 0.270 min
+Epoch 269/500 | Train Loss: 0.116296 | Val Loss: 0.114160 | Val MAE: 13.0770 | Res μ: +0.0189  σ: 0.3150 | 0.286 min
+Epoch 270/500 | Train Loss: 0.116012 | Val Loss: 0.120342 | Val MAE: 15.5188 | Res μ: +0.0518  σ: 0.3214 | 0.275 min
+Epoch 271/500 | Train Loss: 0.115860 | Val Loss: 0.115947 | Val MAE: 13.9583 | Res μ: +0.0380  σ: 0.3163 | 0.274 min
+Epoch 272/500 | Train Loss: 0.115948 | Val Loss: 0.118739 | Val MAE: 15.3080 | Res μ: +0.0556  σ: 0.3179 | 0.275 min
+Epoch 273/500 | Train Loss: 0.115944 | Val Loss: 0.111088 | Val MAE: 11.4093 | Res μ: +0.0099  σ: 0.3105 | 0.268 min
+Epoch 274/500 | Train Loss: 0.115935 | Val Loss: 0.111281 | Val MAE: 11.4395 | Res μ: +0.0073  σ: 0.3109 | 0.256 min
+Epoch 275/500 | Train Loss: 0.116657 | Val Loss: 0.118779 | Val MAE: 14.9514 | Res μ: +0.0459  σ: 0.3200 | 0.259 min
+Epoch 276/500 | Train Loss: 0.116025 | Val Loss: 0.111030 | Val MAE: 11.2427 | Res μ: +0.0090  σ: 0.3104 | 0.276 min
+Epoch 277/500 | Train Loss: 0.116195 | Val Loss: 0.111662 | Val MAE: 11.6105 | Res μ: -0.0026  σ: 0.3112 | 0.264 min
+Epoch 278/500 | Train Loss: 0.116272 | Val Loss: 0.127798 | Val MAE: 17.7741 | Res μ: +0.0834  σ: 0.3256 | 0.272 min
+Epoch 279/500 | Train Loss: 0.116095 | Val Loss: 0.111474 | Val MAE: 11.5906 | Res μ: +0.0052  σ: 0.3112 | 0.302 min
+Epoch 280/500 | Train Loss: 0.115887 | Val Loss: 0.111419 | Val MAE: 11.7169 | Res μ: +0.0075  σ: 0.3111 | 0.283 min
+Epoch 281/500 | Train Loss: 0.115814 | Val Loss: 0.117474 | Val MAE: 14.8732 | Res μ: +0.0438  σ: 0.3170 | 0.276 min
+Epoch 282/500 | Train Loss: 0.116096 | Val Loss: 0.117197 | Val MAE: 14.6891 | Res μ: +0.0389  σ: 0.3177 | 0.300 min
+Epoch 283/500 | Train Loss: 0.115677 | Val Loss: 0.113513 | Val MAE: 13.1931 | Res μ: +0.0375  σ: 0.3124 | 0.274 min
+Epoch 284/500 | Train Loss: 0.115808 | Val Loss: 0.111361 | Val MAE: 11.9464 | Res μ: +0.0065  σ: 0.3108 | 0.277 min
+Epoch 285/500 | Train Loss: 0.116000 | Val Loss: 0.111170 | Val MAE: 11.0599 | Res μ: +0.0044  σ: 0.3107 | 0.284 min
+Epoch 286/500 | Train Loss: 0.115876 | Val Loss: 0.113176 | Val MAE: 12.7146 | Res μ: +0.0201  σ: 0.3132 | 0.282 min
+Epoch 287/500 | Train Loss: 0.116298 | Val Loss: 0.118653 | Val MAE: 15.2753 | Res μ: +0.0424  σ: 0.3189 | 0.282 min
+Epoch 288/500 | Train Loss: 0.115984 | Val Loss: 0.111419 | Val MAE: 11.7224 | Res μ: +0.0156  σ: 0.3108 | 0.277 min
+Epoch 289/500 | Train Loss: 0.115804 | Val Loss: 0.112049 | Val MAE: 12.2658 | Res μ: +0.0182  σ: 0.3118 | 0.276 min
+Epoch 290/500 | Train Loss: 0.115954 | Val Loss: 0.113374 | Val MAE: 12.7367 | Res μ: +0.0139  σ: 0.3139 | 0.276 min
+Epoch 291/500 | Train Loss: 0.115613 | Val Loss: 0.123558 | Val MAE: 16.8714 | Res μ: +0.0668  σ: 0.3222 | 0.266 min
+Epoch 292/500 | Train Loss: 0.116017 | Val Loss: 0.127679 | Val MAE: 17.9627 | Res μ: +0.0845  σ: 0.3240 | 0.260 min
+Epoch 293/500 | Train Loss: 0.116043 | Val Loss: 0.117460 | Val MAE: 14.8126 | Res μ: +0.0384  σ: 0.3180 | 0.271 min
+Epoch 294/500 | Train Loss: 0.116349 | Val Loss: 0.111738 | Val MAE: 11.6837 | Res μ: +0.0150  σ: 0.3114 | 0.266 min
+Epoch 295/500 | Train Loss: 0.115727 | Val Loss: 0.113907 | Val MAE: 13.0548 | Res μ: +0.0260  σ: 0.3141 | 0.331 min
+Epoch 296/500 | Train Loss: 0.115777 | Val Loss: 0.111336 | Val MAE: 11.2295 | Res μ: +0.0059  σ: 0.3109 | 0.290 min
+Epoch 297/500 | Train Loss: 0.116411 | Val Loss: 0.110864 | Val MAE: 10.9942 | Res μ: -0.0024  σ: 0.3101 | 0.267 min
+Epoch 298/500 | Train Loss: 0.116155 | Val Loss: 0.110982 | Val MAE: 11.1019 | Res μ: +0.0026  σ: 0.3105 | 0.260 min
+Epoch 299/500 | Train Loss: 0.116389 | Val Loss: 0.111248 | Val MAE: 11.5313 | Res μ: +0.0028  σ: 0.3106 | 0.267 min
+Epoch 300/500 | Train Loss: 0.116162 | Val Loss: 0.112367 | Val MAE: 12.1975 | Res μ: +0.0216  σ: 0.3121 | 0.268 min
+Epoch 301/500 | Train Loss: 0.115835 | Val Loss: 0.113462 | Val MAE: 13.0817 | Res μ: +0.0370  σ: 0.3126 | 0.283 min
+Epoch 302/500 | Train Loss: 0.115905 | Val Loss: 0.110639 | Val MAE: 10.8815 | Res μ: -0.0028  σ: 0.3099 | 0.287 min
+Epoch 303/500 | Train Loss: 0.116230 | Val Loss: 0.111053 | Val MAE: 11.5466 | Res μ: +0.0039  σ: 0.3105 | 0.284 min
+Epoch 304/500 | Train Loss: 0.116085 | Val Loss: 0.111522 | Val MAE: 11.7478 | Res μ: +0.0065  σ: 0.3111 | 0.275 min
+Epoch 305/500 | Train Loss: 0.116050 | Val Loss: 0.113241 | Val MAE: 12.4714 | Res μ: +0.0218  σ: 0.3135 | 0.281 min
+Epoch 306/500 | Train Loss: 0.116031 | Val Loss: 0.110799 | Val MAE: 11.2693 | Res μ: -0.0053  σ: 0.3100 | 0.271 min
+Epoch 307/500 | Train Loss: 0.115764 | Val Loss: 0.112061 | Val MAE: 11.9700 | Res μ: +0.0179  σ: 0.3118 | 0.265 min
+Epoch 308/500 | Train Loss: 0.116611 | Val Loss: 0.112271 | Val MAE: 12.0941 | Res μ: -0.0041  σ: 0.3124 | 0.265 min
+Epoch 309/500 | Train Loss: 0.116228 | Val Loss: 0.131022 | Val MAE: 18.4740 | Res μ: +0.0838  σ: 0.3300 | 0.282 min
+Epoch 310/500 | Train Loss: 0.116423 | Val Loss: 0.113542 | Val MAE: 12.9259 | Res μ: +0.0218  σ: 0.3142 | 0.268 min
+Epoch 311/500 | Train Loss: 0.116089 | Val Loss: 0.110977 | Val MAE: 11.0456 | Res μ: -0.0085  σ: 0.3102 | 0.264 min
+Epoch 312/500 | Train Loss: 0.116112 | Val Loss: 0.111870 | Val MAE: 11.9421 | Res μ: +0.0086  σ: 0.3120 | 0.271 min
+Epoch 313/500 | Train Loss: 0.116236 | Val Loss: 0.111518 | Val MAE: 11.8034 | Res μ: +0.0123  σ: 0.3113 | 0.266 min
+Epoch 314/500 | Train Loss: 0.116743 | Val Loss: 0.111289 | Val MAE: 11.3217 | Res μ: +0.0092  σ: 0.3108 | 0.292 min
+Epoch 315/500 | Train Loss: 0.115841 | Val Loss: 0.116006 | Val MAE: 14.2112 | Res μ: +0.0435  σ: 0.3153 | 0.277 min
+Epoch 316/500 | Train Loss: 0.116400 | Val Loss: 0.111408 | Val MAE: 12.0058 | Res μ: +0.0228  σ: 0.3105 | 0.305 min
+Epoch 317/500 | Train Loss: 0.116077 | Val Loss: 0.111131 | Val MAE: 11.3938 | Res μ: +0.0103  σ: 0.3107 | 0.285 min
+Epoch 318/500 | Train Loss: 0.116541 | Val Loss: 0.111635 | Val MAE: 11.8188 | Res μ: +0.0060  σ: 0.3113 | 0.269 min
+Epoch 319/500 | Train Loss: 0.116144 | Val Loss: 0.111477 | Val MAE: 11.8516 | Res μ: +0.0058  σ: 0.3114 | 0.261 min
+Epoch 320/500 | Train Loss: 0.115786 | Val Loss: 0.111945 | Val MAE: 11.8758 | Res μ: +0.0183  σ: 0.3117 | 0.263 min
+Epoch 321/500 | Train Loss: 0.116400 | Val Loss: 0.112227 | Val MAE: 12.4129 | Res μ: +0.0119  σ: 0.3123 | 0.276 min
+Epoch 322/500 | Train Loss: 0.116088 | Val Loss: 0.112063 | Val MAE: 12.4263 | Res μ: +0.0256  σ: 0.3111 | 0.294 min
+Epoch 323/500 | Train Loss: 0.116509 | Val Loss: 0.112672 | Val MAE: 12.6120 | Res μ: +0.0229  σ: 0.3123 | 0.295 min
+Epoch 324/500 | Train Loss: 0.116170 | Val Loss: 0.111337 | Val MAE: 11.5269 | Res μ: +0.0093  σ: 0.3108 | 0.288 min
+Epoch 325/500 | Train Loss: 0.115898 | Val Loss: 0.120196 | Val MAE: 15.8161 | Res μ: +0.0605  σ: 0.3188 | 0.266 min
+Epoch 326/500 | Train Loss: 0.116451 | Val Loss: 0.112527 | Val MAE: 12.5352 | Res μ: +0.0140  σ: 0.3127 | 0.270 min
+Epoch 327/500 | Train Loss: 0.116326 | Val Loss: 0.113858 | Val MAE: 13.3364 | Res μ: +0.0303  σ: 0.3136 | 0.292 min
+Epoch 328/500 | Train Loss: 0.115813 | Val Loss: 0.111010 | Val MAE: 11.2306 | Res μ: +0.0010  σ: 0.3105 | 0.269 min
+Epoch 329/500 | Train Loss: 0.116030 | Val Loss: 0.111595 | Val MAE: 11.4997 | Res μ: +0.0108  σ: 0.3112 | 0.265 min
+Epoch 330/500 | Train Loss: 0.116369 | Val Loss: 0.111007 | Val MAE: 11.4614 | Res μ: +0.0113  σ: 0.3103 | 0.265 min
+Epoch 331/500 | Train Loss: 0.116781 | Val Loss: 0.111725 | Val MAE: 12.1446 | Res μ: +0.0149  σ: 0.3113 | 0.260 min
+Epoch 332/500 | Train Loss: 0.116215 | Val Loss: 0.121786 | Val MAE: 16.3588 | Res μ: +0.0706  σ: 0.3193 | 0.272 min
+Epoch 333/500 | Train Loss: 0.116114 | Val Loss: 0.112974 | Val MAE: 12.1033 | Res μ: +0.0146  σ: 0.3134 | 0.276 min
+Epoch 334/500 | Train Loss: 0.116630 | Val Loss: 0.111062 | Val MAE: 11.5873 | Res μ: +0.0144  σ: 0.3103 | 0.288 min
+Epoch 335/500 | Train Loss: 0.116014 | Val Loss: 0.111311 | Val MAE: 11.7498 | Res μ: +0.0094  σ: 0.3107 | 0.278 min
+Epoch 336/500 | Train Loss: 0.115510 | Val Loss: 0.119323 | Val MAE: 15.4309 | Res μ: +0.0526  σ: 0.3187 | 0.271 min
+Epoch 337/500 | Train Loss: 0.116110 | Val Loss: 0.111747 | Val MAE: 12.2322 | Res μ: +0.0081  σ: 0.3115 | 0.262 min
+Epoch 338/500 | Train Loss: 0.116241 | Val Loss: 0.112430 | Val MAE: 12.3654 | Res μ: +0.0235  σ: 0.3120 | 0.266 min
+Epoch 339/500 | Train Loss: 0.116099 | Val Loss: 0.110994 | Val MAE: 11.2779 | Res μ: -0.0006  σ: 0.3103 | 0.259 min
+Epoch 340/500 | Train Loss: 0.115859 | Val Loss: 0.111384 | Val MAE: 11.0386 | Res μ: -0.0026  σ: 0.3109 | 0.260 min
+Epoch 341/500 | Train Loss: 0.116539 | Val Loss: 0.111539 | Val MAE: 11.5346 | Res μ: +0.0064  σ: 0.3112 | 0.261 min
+Epoch 342/500 | Train Loss: 0.116153 | Val Loss: 0.112711 | Val MAE: 12.5073 | Res μ: +0.0257  σ: 0.3123 | 0.262 min
+Epoch 343/500 | Train Loss: 0.116242 | Val Loss: 0.112964 | Val MAE: 12.7309 | Res μ: +0.0258  σ: 0.3125 | 0.264 min
+Epoch 344/500 | Train Loss: 0.116157 | Val Loss: 0.110815 | Val MAE: 11.2100 | Res μ: -0.0032  σ: 0.3101 | 0.262 min
+Epoch 345/500 | Train Loss: 0.116710 | Val Loss: 0.112837 | Val MAE: 12.6900 | Res μ: +0.0201  σ: 0.3127 | 0.261 min
+Epoch 346/500 | Train Loss: 0.116575 | Val Loss: 0.111845 | Val MAE: 11.9088 | Res μ: +0.0181  σ: 0.3115 | 0.257 min
+Epoch 347/500 | Train Loss: 0.115939 | Val Loss: 0.110838 | Val MAE: 11.0814 | Res μ: -0.0001  σ: 0.3101 | 0.271 min
+Epoch 348/500 | Train Loss: 0.115422 | Val Loss: 0.114615 | Val MAE: 13.2069 | Res μ: +0.0337  σ: 0.3148 | 0.292 min
+Epoch 349/500 | Train Loss: 0.115609 | Val Loss: 0.126336 | Val MAE: 17.3594 | Res μ: +0.0670  σ: 0.3264 | 0.276 min
+Epoch 350/500 | Train Loss: 0.116135 | Val Loss: 0.118754 | Val MAE: 15.0509 | Res μ: +0.0562  σ: 0.3183 | 0.295 min
+Epoch 351/500 | Train Loss: 0.115766 | Val Loss: 0.112585 | Val MAE: 12.5310 | Res μ: +0.0301  σ: 0.3119 | 0.283 min
+Epoch 352/500 | Train Loss: 0.115957 | Val Loss: 0.111006 | Val MAE: 11.2955 | Res μ: -0.0012  σ: 0.3104 | 0.279 min
+Epoch 353/500 | Train Loss: 0.115622 | Val Loss: 0.111016 | Val MAE: 11.4535 | Res μ: +0.0127  σ: 0.3102 | 0.276 min
+Epoch 354/500 | Train Loss: 0.116019 | Val Loss: 0.111965 | Val MAE: 12.2023 | Res μ: +0.0234  σ: 0.3112 | 0.268 min
+Epoch 355/500 | Train Loss: 0.115637 | Val Loss: 0.112093 | Val MAE: 12.1137 | Res μ: +0.0097  σ: 0.3120 | 0.265 min
+Epoch 356/500 | Train Loss: 0.116200 | Val Loss: 0.117920 | Val MAE: 14.8700 | Res μ: +0.0526  σ: 0.3172 | 0.275 min
+Epoch 357/500 | Train Loss: 0.115866 | Val Loss: 0.111999 | Val MAE: 12.0619 | Res μ: +0.0220  σ: 0.3115 | 0.266 min
+Epoch 358/500 | Train Loss: 0.115994 | Val Loss: 0.111542 | Val MAE: 11.5325 | Res μ: +0.0113  σ: 0.3112 | 0.279 min
+Epoch 359/500 | Train Loss: 0.116677 | Val Loss: 0.111119 | Val MAE: 11.7920 | Res μ: -0.0043  σ: 0.3105 | 0.269 min
+Epoch 360/500 | Train Loss: 0.115815 | Val Loss: 0.111111 | Val MAE: 11.6693 | Res μ: +0.0164  σ: 0.3102 | 0.268 min
+Epoch 361/500 | Train Loss: 0.116061 | Val Loss: 0.115675 | Val MAE: 14.1106 | Res μ: +0.0415  σ: 0.3149 | 0.270 min
+Epoch 362/500 | Train Loss: 0.116121 | Val Loss: 0.117434 | Val MAE: 14.5649 | Res μ: +0.0408  σ: 0.3188 | 0.275 min
+Epoch 363/500 | Train Loss: 0.115712 | Val Loss: 0.111339 | Val MAE: 11.4623 | Res μ: +0.0092  σ: 0.3110 | 0.269 min
+Epoch 364/500 | Train Loss: 0.116255 | Val Loss: 0.110798 | Val MAE: 11.3495 | Res μ: +0.0095  σ: 0.3100 | 0.306 min
+Epoch 365/500 | Train Loss: 0.116030 | Val Loss: 0.112688 | Val MAE: 11.9518 | Res μ: +0.0079  σ: 0.3130 | 0.272 min
+Epoch 366/500 | Train Loss: 0.116035 | Val Loss: 0.111042 | Val MAE: 11.3528 | Res μ: +0.0075  σ: 0.3105 | 0.280 min
+Epoch 367/500 | Train Loss: 0.115685 | Val Loss: 0.111071 | Val MAE: 11.4238 | Res μ: +0.0131  σ: 0.3104 | 0.266 min
+Epoch 368/500 | Train Loss: 0.115533 | Val Loss: 0.110868 | Val MAE: 11.2194 | Res μ: +0.0044  σ: 0.3102 | 0.271 min
+Epoch 369/500 | Train Loss: 0.116112 | Val Loss: 0.111221 | Val MAE: 11.3315 | Res μ: +0.0012  σ: 0.3108 | 0.267 min
+Epoch 370/500 | Train Loss: 0.116096 | Val Loss: 0.113004 | Val MAE: 12.7507 | Res μ: +0.0317  σ: 0.3124 | 0.269 min
+Epoch 371/500 | Train Loss: 0.116435 | Val Loss: 0.116353 | Val MAE: 14.3679 | Res μ: +0.0328  σ: 0.3163 | 0.266 min
+Epoch 372/500 | Train Loss: 0.116364 | Val Loss: 0.113189 | Val MAE: 12.5382 | Res μ: +0.0204  σ: 0.3134 | 0.289 min
+Epoch 373/500 | Train Loss: 0.115962 | Val Loss: 0.115719 | Val MAE: 14.0793 | Res μ: +0.0449  σ: 0.3150 | 0.269 min
+Epoch 374/500 | Train Loss: 0.116159 | Val Loss: 0.112465 | Val MAE: 12.4614 | Res μ: +0.0205  σ: 0.3123 | 0.271 min
+Epoch 375/500 | Train Loss: 0.116269 | Val Loss: 0.111684 | Val MAE: 12.0642 | Res μ: +0.0183  σ: 0.3111 | 0.267 min
+Epoch 376/500 | Train Loss: 0.116233 | Val Loss: 0.111793 | Val MAE: 11.8377 | Res μ: +0.0138  σ: 0.3115 | 0.268 min
+Epoch 377/500 | Train Loss: 0.116066 | Val Loss: 0.115381 | Val MAE: 13.9943 | Res μ: +0.0464  σ: 0.3143 | 0.269 min
+Epoch 378/500 | Train Loss: 0.115946 | Val Loss: 0.111591 | Val MAE: 11.7650 | Res μ: +0.0151  σ: 0.3111 | 0.299 min
+Epoch 379/500 | Train Loss: 0.116077 | Val Loss: 0.111775 | Val MAE: 11.9914 | Res μ: +0.0222  σ: 0.3111 | 0.289 min
+Epoch 380/500 | Train Loss: 0.116081 | Val Loss: 0.114990 | Val MAE: 13.4573 | Res μ: +0.0350  σ: 0.3152 | 0.280 min
+Epoch 381/500 | Train Loss: 0.116251 | Val Loss: 0.111963 | Val MAE: 11.6459 | Res μ: +0.0135  σ: 0.3118 | 0.271 min
+Epoch 382/500 | Train Loss: 0.115840 | Val Loss: 0.111525 | Val MAE: 11.7227 | Res μ: +0.0109  σ: 0.3112 | 0.270 min
+Epoch 383/500 | Train Loss: 0.115849 | Val Loss: 0.111981 | Val MAE: 12.3455 | Res μ: +0.0172  σ: 0.3115 | 0.268 min
+Epoch 384/500 | Train Loss: 0.115991 | Val Loss: 0.111340 | Val MAE: 11.4708 | Res μ: -0.0084  σ: 0.3107 | 0.269 min
+Epoch 385/500 | Train Loss: 0.116223 | Val Loss: 0.112907 | Val MAE: 12.4892 | Res μ: +0.0253  σ: 0.3129 | 0.270 min
+Epoch 386/500 | Train Loss: 0.116350 | Val Loss: 0.111882 | Val MAE: 12.0996 | Res μ: +0.0199  σ: 0.3114 | 0.269 min
+Epoch 387/500 | Train Loss: 0.115949 | Val Loss: 0.115902 | Val MAE: 14.0871 | Res μ: +0.0388  σ: 0.3159 | 0.332 min
+Epoch 388/500 | Train Loss: 0.116049 | Val Loss: 0.111626 | Val MAE: 11.6553 | Res μ: +0.0149  σ: 0.3111 | 0.302 min
+Epoch 389/500 | Train Loss: 0.115993 | Val Loss: 0.115964 | Val MAE: 14.0769 | Res μ: +0.0399  σ: 0.3161 | 0.302 min
+Epoch 390/500 | Train Loss: 0.116490 | Val Loss: 0.111077 | Val MAE: 11.2661 | Res μ: +0.0070  σ: 0.3106 | 0.296 min
+Epoch 391/500 | Train Loss: 0.116718 | Val Loss: 0.112476 | Val MAE: 12.0190 | Res μ: +0.0155  σ: 0.3126 | 0.304 min
+Epoch 392/500 | Train Loss: 0.115974 | Val Loss: 0.140229 | Val MAE: 20.6827 | Res μ: +0.1142  σ: 0.3335 | 0.304 min
+Epoch 393/500 | Train Loss: 0.116242 | Val Loss: 0.111367 | Val MAE: 11.3790 | Res μ: -0.0017  σ: 0.3109 | 0.308 min
+Epoch 394/500 | Train Loss: 0.116396 | Val Loss: 0.110785 | Val MAE: 11.2402 | Res μ: -0.0011  σ: 0.3100 | 0.326 min
+Epoch 395/500 | Train Loss: 0.115869 | Val Loss: 0.110929 | Val MAE: 11.0715 | Res μ: +0.0044  σ: 0.3103 | 0.299 min
+Epoch 396/500 | Train Loss: 0.116117 | Val Loss: 0.113518 | Val MAE: 12.8316 | Res μ: +0.0270  σ: 0.3136 | 0.312 min
+Epoch 397/500 | Train Loss: 0.116201 | Val Loss: 0.111413 | Val MAE: 11.9054 | Res μ: +0.0153  σ: 0.3109 | 0.306 min
+Epoch 398/500 | Train Loss: 0.115738 | Val Loss: 0.112840 | Val MAE: 12.6802 | Res μ: +0.0264  σ: 0.3124 | 0.301 min
+Epoch 399/500 | Train Loss: 0.115933 | Val Loss: 0.111610 | Val MAE: 11.8627 | Res μ: +0.0148  σ: 0.3113 | 0.308 min
+Epoch 400/500 | Train Loss: 0.116291 | Val Loss: 0.112909 | Val MAE: 12.6717 | Res μ: +0.0242  σ: 0.3126 | 0.312 min
+Epoch 401/500 | Train Loss: 0.116434 | Val Loss: 0.111467 | Val MAE: 11.2642 | Res μ: +0.0034  σ: 0.3112 | 0.314 min
+Epoch 402/500 | Train Loss: 0.116481 | Val Loss: 0.117420 | Val MAE: 14.7267 | Res μ: +0.0475  σ: 0.3172 | 0.305 min
+Epoch 403/500 | Train Loss: 0.115893 | Val Loss: 0.112179 | Val MAE: 12.1988 | Res μ: +0.0145  σ: 0.3119 | 0.310 min
+Epoch 404/500 | Train Loss: 0.116008 | Val Loss: 0.119924 | Val MAE: 15.8381 | Res μ: +0.0578  σ: 0.3184 | 0.309 min
+Epoch 405/500 | Train Loss: 0.115569 | Val Loss: 0.110841 | Val MAE: 11.3184 | Res μ: +0.0081  σ: 0.3102 | 0.307 min
+Epoch 406/500 | Train Loss: 0.116102 | Val Loss: 0.111378 | Val MAE: 11.8364 | Res μ: +0.0154  σ: 0.3106 | 0.309 min
+Epoch 407/500 | Train Loss: 0.116299 | Val Loss: 0.110981 | Val MAE: 11.2953 | Res μ: +0.0097  σ: 0.3104 | 0.307 min
+Epoch 408/500 | Train Loss: 0.116186 | Val Loss: 0.111042 | Val MAE: 11.0383 | Res μ: -0.0056  σ: 0.3104 | 0.318 min
+Epoch 409/500 | Train Loss: 0.115991 | Val Loss: 0.111153 | Val MAE: 11.3181 | Res μ: +0.0097  σ: 0.3105 | 0.319 min
+Epoch 410/500 | Train Loss: 0.117066 | Val Loss: 0.129919 | Val MAE: 18.4902 | Res μ: +0.0816  σ: 0.3279 | 0.342 min
+Epoch 411/500 | Train Loss: 0.115963 | Val Loss: 0.113746 | Val MAE: 13.3061 | Res μ: +0.0355  σ: 0.3129 | 0.326 min
+Epoch 412/500 | Train Loss: 0.116218 | Val Loss: 0.111082 | Val MAE: 11.1215 | Res μ: +0.0021  σ: 0.3106 | 0.348 min
+Epoch 413/500 | Train Loss: 0.115632 | Val Loss: 0.111461 | Val MAE: 11.5929 | Res μ: +0.0100  σ: 0.3110 | 0.377 min
+Epoch 414/500 | Train Loss: 0.116382 | Val Loss: 0.111420 | Val MAE: 11.9578 | Res μ: +0.0047  σ: 0.3113 | 0.349 min
+Epoch 415/500 | Train Loss: 0.116379 | Val Loss: 0.111434 | Val MAE: 11.6925 | Res μ: +0.0078  σ: 0.3111 | 0.346 min
+Epoch 416/500 | Train Loss: 0.115992 | Val Loss: 0.111678 | Val MAE: 11.7381 | Res μ: +0.0158  σ: 0.3112 | 0.342 min
+Epoch 417/500 | Train Loss: 0.116011 | Val Loss: 0.112360 | Val MAE: 11.8273 | Res μ: +0.0111  σ: 0.3125 | 0.473 min
+Epoch 418/500 | Train Loss: 0.116359 | Val Loss: 0.119544 | Val MAE: 15.4841 | Res μ: +0.0578  σ: 0.3187 | 0.354 min
+Epoch 419/500 | Train Loss: 0.116273 | Val Loss: 0.113894 | Val MAE: 13.3671 | Res μ: +0.0385  σ: 0.3131 | 0.342 min
+Epoch 420/500 | Train Loss: 0.116121 | Val Loss: 0.110989 | Val MAE: 11.3100 | Res μ: +0.0089  σ: 0.3103 | 0.356 min
+Epoch 421/500 | Train Loss: 0.115781 | Val Loss: 0.112396 | Val MAE: 12.2696 | Res μ: +0.0116  σ: 0.3128 | 0.333 min
+Epoch 422/500 | Train Loss: 0.116496 | Val Loss: 0.111818 | Val MAE: 12.1364 | Res μ: +0.0204  σ: 0.3111 | 0.455 min
+Epoch 423/500 | Train Loss: 0.116356 | Val Loss: 0.112850 | Val MAE: 12.1265 | Res μ: +0.0126  σ: 0.3133 | 0.448 min
+Epoch 424/500 | Train Loss: 0.115843 | Val Loss: 0.111222 | Val MAE: 11.6140 | Res μ: +0.0043  σ: 0.3107 | 0.389 min
+Epoch 425/500 | Train Loss: 0.115953 | Val Loss: 0.110967 | Val MAE: 11.2164 | Res μ: +0.0072  σ: 0.3103 | 62.232 min
+Epoch 426/500 | Train Loss: 0.115795 | Val Loss: 0.111656 | Val MAE: 12.1740 | Res μ: +0.0039  σ: 0.3115 | 0.276 min
+Epoch 427/500 | Train Loss: 0.115813 | Val Loss: 0.111118 | Val MAE: 11.3374 | Res μ: -0.0021  σ: 0.3106 | 0.268 min
+Epoch 428/500 | Train Loss: 0.116042 | Val Loss: 0.112227 | Val MAE: 12.2195 | Res μ: +0.0158  σ: 0.3121 | 0.269 min
+Epoch 429/500 | Train Loss: 0.116067 | Val Loss: 0.112003 | Val MAE: 11.9436 | Res μ: +0.0013  σ: 0.3119 | 0.266 min
+Epoch 430/500 | Train Loss: 0.115891 | Val Loss: 0.113508 | Val MAE: 13.1215 | Res μ: +0.0367  σ: 0.3126 | 0.268 min
+Epoch 431/500 | Train Loss: 0.115998 | Val Loss: 0.112321 | Val MAE: 12.5462 | Res μ: +0.0231  σ: 0.3118 | 0.265 min
+Epoch 432/500 | Train Loss: 0.115312 | Val Loss: 0.115803 | Val MAE: 14.3001 | Res μ: +0.0373  σ: 0.3154 | 0.274 min
+Epoch 433/500 | Train Loss: 0.115836 | Val Loss: 0.111550 | Val MAE: 11.0579 | Res μ: -0.0094  σ: 0.3111 | 0.265 min
+Epoch 434/500 | Train Loss: 0.115977 | Val Loss: 0.110988 | Val MAE: 11.2768 | Res μ: +0.0051  σ: 0.3103 | 0.267 min
+Epoch 435/500 | Train Loss: 0.116034 | Val Loss: 0.111422 | Val MAE: 11.7075 | Res μ: +0.0155  σ: 0.3107 | 0.267 min
+Epoch 436/500 | Train Loss: 0.115830 | Val Loss: 0.112011 | Val MAE: 12.0985 | Res μ: +0.0189  σ: 0.3116 | 0.263 min
+Epoch 437/500 | Train Loss: 0.116139 | Val Loss: 0.112135 | Val MAE: 12.0547 | Res μ: +0.0196  σ: 0.3120 | 0.264 min
+Epoch 438/500 | Train Loss: 0.116006 | Val Loss: 0.111792 | Val MAE: 12.2491 | Res μ: +0.0215  σ: 0.3110 | 0.256 min
+Epoch 439/500 | Train Loss: 0.116349 | Val Loss: 0.111272 | Val MAE: 11.4911 | Res μ: +0.0066  σ: 0.3108 | 0.253 min
+Epoch 440/500 | Train Loss: 0.116218 | Val Loss: 0.111305 | Val MAE: 11.7016 | Res μ: +0.0147  σ: 0.3106 | 0.256 min
+Epoch 441/500 | Train Loss: 0.116019 | Val Loss: 0.111089 | Val MAE: 11.4606 | Res μ: +0.0125  σ: 0.3104 | 0.255 min
+Epoch 442/500 | Train Loss: 0.115719 | Val Loss: 0.110753 | Val MAE: 10.9023 | Res μ: -0.0063  σ: 0.3099 | 0.253 min
+Epoch 443/500 | Train Loss: 0.116144 | Val Loss: 0.113414 | Val MAE: 12.9669 | Res μ: +0.0262  σ: 0.3135 | 0.253 min
+Epoch 444/500 | Train Loss: 0.115680 | Val Loss: 0.119923 | Val MAE: 15.5470 | Res μ: +0.0546  σ: 0.3199 | 0.252 min
+Epoch 445/500 | Train Loss: 0.116291 | Val Loss: 0.119105 | Val MAE: 15.1411 | Res μ: +0.0528  σ: 0.3193 | 0.248 min
+Epoch 446/500 | Train Loss: 0.116333 | Val Loss: 0.111862 | Val MAE: 11.9215 | Res μ: +0.0139  σ: 0.3118 | 0.250 min
+Epoch 447/500 | Train Loss: 0.116451 | Val Loss: 0.124022 | Val MAE: 16.9173 | Res μ: +0.0771  σ: 0.3212 | 0.256 min
+Epoch 448/500 | Train Loss: 0.116026 | Val Loss: 0.111238 | Val MAE: 11.3938 | Res μ: +0.0058  σ: 0.3107 | 0.263 min
+Epoch 449/500 | Train Loss: 0.116151 | Val Loss: 0.110822 | Val MAE: 11.0940 | Res μ: -0.0010  σ: 0.3101 | 0.256 min
+Epoch 450/500 | Train Loss: 0.115982 | Val Loss: 0.113038 | Val MAE: 12.4661 | Res μ: +0.0031  σ: 0.3136 | 0.249 min
+Epoch 451/500 | Train Loss: 0.115609 | Val Loss: 0.119365 | Val MAE: 15.5021 | Res μ: +0.0514  σ: 0.3190 | 0.248 min
+Epoch 452/500 | Train Loss: 0.116479 | Val Loss: 0.114982 | Val MAE: 13.7090 | Res μ: +0.0270  σ: 0.3159 | 0.249 min
+Epoch 453/500 | Train Loss: 0.116153 | Val Loss: 0.111055 | Val MAE: 11.2906 | Res μ: -0.0009  σ: 0.3105 | 0.245 min
+Epoch 454/500 | Train Loss: 0.115873 | Val Loss: 0.111965 | Val MAE: 11.8000 | Res μ: +0.0100  σ: 0.3119 | 0.251 min
+Epoch 455/500 | Train Loss: 0.116287 | Val Loss: 0.110586 | Val MAE: 10.8551 | Res μ: +0.0003  σ: 0.3098 | 0.249 min
+Epoch 456/500 | Train Loss: 0.116462 | Val Loss: 0.111156 | Val MAE: 11.5959 | Res μ: +0.0090  σ: 0.3107 | 0.248 min
+Epoch 457/500 | Train Loss: 0.116156 | Val Loss: 0.111075 | Val MAE: 11.2582 | Res μ: +0.0013  σ: 0.3106 | 0.247 min
+Epoch 458/500 | Train Loss: 0.116150 | Val Loss: 0.113974 | Val MAE: 12.8956 | Res μ: +0.0267  σ: 0.3142 | 0.249 min
+Epoch 459/500 | Train Loss: 0.116037 | Val Loss: 0.112984 | Val MAE: 12.6037 | Res μ: +0.0184  σ: 0.3130 | 0.247 min
+Epoch 460/500 | Train Loss: 0.116420 | Val Loss: 0.111737 | Val MAE: 11.7858 | Res μ: +0.0160  σ: 0.3113 | 0.248 min
+Epoch 461/500 | Train Loss: 0.116093 | Val Loss: 0.111899 | Val MAE: 12.0752 | Res μ: +0.0144  σ: 0.3116 | 0.246 min
+Epoch 462/500 | Train Loss: 0.115951 | Val Loss: 0.112256 | Val MAE: 11.9786 | Res μ: +0.0164  σ: 0.3121 | 0.250 min
+Epoch 463/500 | Train Loss: 0.116129 | Val Loss: 0.118666 | Val MAE: 15.0825 | Res μ: +0.0607  σ: 0.3173 | 0.251 min
+Epoch 464/500 | Train Loss: 0.115542 | Val Loss: 0.111182 | Val MAE: 11.6929 | Res μ: +0.0172  σ: 0.3104 | 0.248 min
+Epoch 465/500 | Train Loss: 0.116247 | Val Loss: 0.112083 | Val MAE: 11.9798 | Res μ: +0.0103  σ: 0.3124 | 0.249 min
+Epoch 466/500 | Train Loss: 0.116262 | Val Loss: 0.111996 | Val MAE: 11.9501 | Res μ: +0.0162  σ: 0.3117 | 0.256 min
+Epoch 467/500 | Train Loss: 0.115677 | Val Loss: 0.111926 | Val MAE: 12.0783 | Res μ: +0.0228  σ: 0.3114 | 0.250 min
+Epoch 468/500 | Train Loss: 0.116147 | Val Loss: 0.114518 | Val MAE: 13.0843 | Res μ: +0.0171  σ: 0.3158 | 0.248 min
+Epoch 469/500 | Train Loss: 0.115556 | Val Loss: 0.112779 | Val MAE: 12.6224 | Res μ: +0.0256  σ: 0.3123 | 0.246 min
+Epoch 470/500 | Train Loss: 0.116045 | Val Loss: 0.111702 | Val MAE: 12.1203 | Res μ: +0.0158  σ: 0.3112 | 0.247 min
+Epoch 471/500 | Train Loss: 0.115665 | Val Loss: 0.113143 | Val MAE: 12.8616 | Res μ: +0.0296  σ: 0.3128 | 0.247 min
+Epoch 472/500 | Train Loss: 0.116512 | Val Loss: 0.112235 | Val MAE: 12.1792 | Res μ: +0.0174  σ: 0.3121 | 0.247 min
+Epoch 473/500 | Train Loss: 0.115897 | Val Loss: 0.111614 | Val MAE: 11.7521 | Res μ: +0.0090  σ: 0.3113 | 0.246 min
+Epoch 474/500 | Train Loss: 0.116146 | Val Loss: 0.111468 | Val MAE: 11.9536 | Res μ: +0.0091  σ: 0.3110 | 0.246 min
+Epoch 475/500 | Train Loss: 0.115942 | Val Loss: 0.114734 | Val MAE: 13.5293 | Res μ: +0.0254  σ: 0.3154 | 0.250 min
+Epoch 476/500 | Train Loss: 0.116118 | Val Loss: 0.112572 | Val MAE: 12.0074 | Res μ: +0.0120  σ: 0.3129 | 0.246 min
+Epoch 477/500 | Train Loss: 0.116607 | Val Loss: 0.111798 | Val MAE: 12.2190 | Res μ: +0.0137  σ: 0.3111 | 0.255 min
+Epoch 478/500 | Train Loss: 0.115871 | Val Loss: 0.111558 | Val MAE: 11.8193 | Res μ: +0.0134  σ: 0.3110 | 0.249 min
+Epoch 479/500 | Train Loss: 0.115937 | Val Loss: 0.112072 | Val MAE: 11.4095 | Res μ: +0.0042  σ: 0.3121 | 0.247 min
+Epoch 480/500 | Train Loss: 0.116094 | Val Loss: 0.112438 | Val MAE: 12.5519 | Res μ: +0.0214  σ: 0.3120 | 0.249 min
+Epoch 481/500 | Train Loss: 0.116121 | Val Loss: 0.113428 | Val MAE: 13.1213 | Res μ: +0.0269  σ: 0.3131 | 0.245 min
+Epoch 482/500 | Train Loss: 0.115870 | Val Loss: 0.114153 | Val MAE: 13.0067 | Res μ: +0.0210  σ: 0.3145 | 0.249 min
+Epoch 483/500 | Train Loss: 0.115924 | Val Loss: 0.111936 | Val MAE: 12.1239 | Res μ: +0.0204  σ: 0.3116 | 0.251 min
+Epoch 484/500 | Train Loss: 0.115998 | Val Loss: 0.114120 | Val MAE: 13.2499 | Res μ: +0.0292  σ: 0.3143 | 0.250 min
+Epoch 485/500 | Train Loss: 0.115956 | Val Loss: 0.120088 | Val MAE: 15.6982 | Res μ: +0.0494  σ: 0.3201 | 0.259 min
+Epoch 486/500 | Train Loss: 0.116112 | Val Loss: 0.112714 | Val MAE: 12.5295 | Res μ: +0.0289  σ: 0.3123 | 0.247 min
+Epoch 487/500 | Train Loss: 0.116225 | Val Loss: 0.110875 | Val MAE: 11.3331 | Res μ: +0.0045  σ: 0.3101 | 0.249 min
+Epoch 488/500 | Train Loss: 0.115780 | Val Loss: 0.112313 | Val MAE: 12.3128 | Res μ: +0.0227  σ: 0.3119 | 0.251 min
+Epoch 489/500 | Train Loss: 0.116060 | Val Loss: 0.110852 | Val MAE: 10.7424 | Res μ: -0.0095  σ: 0.3100 | 0.249 min
+Epoch 490/500 | Train Loss: 0.116210 | Val Loss: 0.117688 | Val MAE: 14.9294 | Res μ: +0.0486  σ: 0.3170 | 0.249 min
+Epoch 491/500 | Train Loss: 0.115755 | Val Loss: 0.112313 | Val MAE: 12.3974 | Res μ: +0.0164  σ: 0.3119 | 0.247 min
+Epoch 492/500 | Train Loss: 0.116031 | Val Loss: 0.112751 | Val MAE: 12.2111 | Res μ: +0.0093  σ: 0.3129 | 0.248 min
+Epoch 493/500 | Train Loss: 0.115731 | Val Loss: 0.111030 | Val MAE: 10.9904 | Res μ: -0.0008  σ: 0.3105 | 0.248 min
+Epoch 494/500 | Train Loss: 0.115860 | Val Loss: 0.111447 | Val MAE: 11.6704 | Res μ: +0.0119  σ: 0.3109 | 0.250 min
+Epoch 495/500 | Train Loss: 0.115621 | Val Loss: 0.110965 | Val MAE: 11.2983 | Res μ: +0.0023  σ: 0.3104 | 0.250 min
+Epoch 496/500 | Train Loss: 0.116222 | Val Loss: 0.113091 | Val MAE: 12.7819 | Res μ: +0.0187  σ: 0.3131 | 0.248 min
+Epoch 497/500 | Train Loss: 0.116199 | Val Loss: 0.111294 | Val MAE: 11.4145 | Res μ: +0.0082  σ: 0.3109 | 0.246 min
+Epoch 498/500 | Train Loss: 0.115983 | Val Loss: 0.112523 | Val MAE: 12.4340 | Res μ: +0.0196  σ: 0.3124 | 0.249 min
+Epoch 499/500 | Train Loss: 0.116053 | Val Loss: 0.113891 | Val MAE: 13.2522 | Res μ: +0.0191  σ: 0.3143 | 0.248 min
+Epoch 500/500 | Train Loss: 0.115508 | Val Loss: 0.117091 | Val MAE: 14.6199 | Res μ: +0.0478  σ: 0.3166 | 0.250 min
+train_losses: [0.6513293692340022, 0.2896154477285302, 0.232501183644585, 0.20906520931617073, 0.19709744239630905, 0.1894596633962963, 0.18206919226957405, 0.1768949691756912, 0.17157289831534675, 0.16782527195370717, 0.16351865852656572, 0.1606978812943334, 0.15834388521702394, 0.15718368088421614, 0.15362021634112233, 0.15205245081497276, 0.1495239865520726, 0.1487486770230791, 0.14575163062499918, 0.14544545049252716, 0.14359241157770156, 0.1428070704055869, 0.14157603648693665, 0.13997902831305628, 0.13980583503842353, 0.13974919229745864, 0.1379769447186719, 0.13725979894399643, 0.13705338336851286, 0.13498929748716562, 0.13499841332435608, 0.1330227210988169, 0.13323670019274172, 0.13250945408059203, 0.13108690762001535, 0.13138874261275582, 0.13166235063387, 0.13063528945912486, 0.12939527424133343, 0.1290248899097028, 0.12915726883255918, 0.1283160464465618, 0.12791259880299152, 0.12853566506634587, 0.12725058491463245, 0.1279532519242038, 0.1258808756781661, 0.12655103629050046, 0.12576773434877395, 0.12553517884534338, 0.125615318061217, 0.12526257448222325, 0.12497886867626853, 0.1253940244083819, 0.12511956520702527, 0.12472692380132883, 0.12364445128518602, 0.12408213202072227, 0.12342951917130014, 0.12346689392043196, 0.12349530978695206, 0.1232783741665923, 0.12311630941603495, 0.12249430567026139, 0.1222270260816035, 0.12239081593311352, 0.12186405679453974, 0.12226018832429596, 0.12192596704415654, 0.12192347001122392, 0.12101844962524332, 0.12043346759417782, 0.1203381002014098, 0.12062442479574162, 0.11971667269649713, 0.12005071511735087, 0.1199723155407802, 0.11953592540129371, 0.12012739626609761, 0.12021833274675452, 0.11969292596630428, 0.11959204111410224, 0.11989801860373953, 0.11961390095560447, 0.11915965153471283, 0.1192975055653116, 0.11976478672545889, 0.11941960569309151, 0.1191148492499538, 0.11870527559000513, 0.11927519618169122, 0.1187604704045731, 0.11891610106696253, 0.11908795890600785, 0.11851708379776582, 0.11872079540206039, 0.11850635839545208, 0.1187098811502042, 0.11910654011627902, 0.11869971152880918, 0.11851525558725648, 0.11826128212654072, 0.11827988415956497, 0.1182698854415313, 0.11825583217584569, 0.11852179687956105, 0.11766504859794741, 0.11729043363229089, 0.11774237945027974, 0.11769892209897871, 0.11724465835353602, 0.1172766062617302, 0.11728306616130083, 0.11704446524381637, 0.11732162600626116, 0.1171534106783245, 0.11715465955112292, 0.11758845990766649, 0.11749223446716434, 0.11687723983889041, 0.11702561072681261, 0.11713435498268708, 0.11661709885234418, 0.11713477954268456, 0.1175798211408698, 0.11672767518007238, 0.1167815646270047, 0.11693776490895645, 0.11733127864806549, 0.11669999442670656, 0.11798638645721518, 0.11600734900521195, 0.11669383768154228, 0.11683106971175775, 0.11680617249530295, 0.11716569336860076, 0.11633045829508616, 0.11682773877097213, 0.11684526467452878, 0.11664470438076102, 0.1160535960741665, 0.11669696400346963, 0.11639897559000098, 0.11648562184494475, 0.11651489789719167, 0.11614401667662289, 0.11661894198992978, 0.11657593959699507, 0.11620742150622865, 0.11639375482564387, 0.11669488072395325, 0.11667631076729816, 0.11636654200761215, 0.11619210289224334, 0.11639691490841948, 0.11620094842236975, 0.11701563277322313, 0.11649970532111499, 0.1161466183675372, 0.11661483719297078, 0.11557383414843808, 0.11613474599693133, 0.11621923911182777, 0.11670410887702652, 0.1164193970159344, 0.11595945838352908, 0.11622162557166556, 0.1157507736073888, 0.11635063512169797, 0.11639286904231362, 0.11598204511015311, 0.11592429578952167, 0.11639263478310212, 0.11666116505213406, 0.115900476568419, 0.11575677363768867, 0.11585459376806798, 0.11608812041256739, 0.11582246572427128, 0.11648408491974292, 0.11614170247445936, 0.11677378397920857, 0.11594530056352201, 0.11629805859664212, 0.11582068362313769, 0.11571308486487554, 0.11593460141316704, 0.1159611837177173, 0.11645012230328891, 0.11632235767400784, 0.11657404357324476, 0.11648484386179758, 0.11624209760971692, 0.1160933594211288, 0.11624135385388913, 0.11561825054495231, 0.11557081055382024, 0.1161812109662139, 0.11620061840700066, 0.11551055938653323, 0.1158815347953983, 0.116262119749318, 0.1159874178469181, 0.1158105142932871, 0.11630362375922824, 0.11606664538383483, 0.11603243592640627, 0.11587235464350037, 0.1162210706912953, 0.1157717481320319, 0.11578565538577411, 0.11604990045661512, 0.11586759858157324, 0.11627309748659963, 0.11580060112087623, 0.1162499447685221, 0.11609129752801813, 0.11653011772295703, 0.11601619149031847, 0.11610940711005874, 0.11611509772746459, 0.11620674627630607, 0.11641866862126019, 0.11585015587832617, 0.11608637470266094, 0.1159237479256547, 0.11671716442574626, 0.11575018733739853, 0.11635125647420469, 0.11648366701343785, 0.11587382374898247, 0.11592041100496832, 0.11605414220820302, 0.11648077871488488, 0.11609855575406033, 0.11630993181596631, 0.11612407120673553, 0.11583215699247693, 0.11586500828032908, 0.11571285763512487, 0.1159443531865659, 0.11578122462267461, 0.11589355290583943, 0.11587577905343927, 0.11678750951652941, 0.11627895738767541, 0.11578373773590378, 0.11548040224158246, 0.11597505117888036, 0.11586342465618382, 0.11638176353729289, 0.11603081942252491, 0.11600934791176215, 0.11600616365023281, 0.11653683031382768, 0.11584285488595134, 0.1161475628549638, 0.11583170658220415, 0.11615657897747081, 0.11573490304791409, 0.11587854673681051, 0.11661849631563477, 0.11618090485749037, 0.11598905385836311, 0.11570309829452763, 0.11609753485607065, 0.11663275940262753, 0.11578990205474522, 0.11629552302801091, 0.11601166043592535, 0.11586015588563421, 0.11594842768233755, 0.11594371934299884, 0.11593510658844658, 0.11665687939395075, 0.11602489895146827, 0.1161945009879444, 0.11627151190586713, 0.1160950377907442, 0.11588667432251185, 0.11581387648115987, 0.11609565031269323, 0.11567714289478634, 0.11580828307115514, 0.11599961480368738, 0.11587632069121237, 0.11629804628050845, 0.11598390352466832, 0.11580368016077125, 0.11595372964506565, 0.1156127606721028, 0.11601664057244425, 0.11604292491207951, 0.11634910139052765, 0.11572716015836466, 0.11577665455315424, 0.11641121894769046, 0.11615499135592709, 0.11638944631037505, 0.11616205602884293, 0.11583484902330067, 0.11590526955931083, 0.11623016958003458, 0.11608468513773836, 0.11605048616295276, 0.116030929490276, 0.11576414536522782, 0.11661133963776671, 0.11622830689601277, 0.11642275881508123, 0.11608902619584748, 0.11611242088286773, 0.1162360241037348, 0.1167430319475091, 0.11584149432571038, 0.11640005843146987, 0.11607743975260984, 0.11654071419135384, 0.11614440626424292, 0.11578552531159442, 0.11640044549237127, 0.11608823946636657, 0.11650884085375329, 0.11617041574872058, 0.11589804331893507, 0.11645121896396513, 0.11632551151773204, 0.11581253032321516, 0.11603015969628873, 0.11636938203288161, 0.11678095435318739, 0.11621468885437301, 0.11611437465833581, 0.11663023538563562, 0.11601405169004979, 0.11550976569237917, 0.11610988097994224, 0.1162405903507834, 0.11609900475844093, 0.11585897034277087, 0.11653899644380031, 0.11615302153255629, 0.11624202957619792, 0.11615671337298725, 0.11670980380281158, 0.11657544664714647, 0.11593866729218028, 0.11542204135785931, 0.11560850095489751, 0.11613549456648205, 0.1157661574171937, 0.11595730210128039, 0.11562194630503654, 0.11601875449004381, 0.11563725381441738, 0.11619989380888317, 0.1158659340829953, 0.1159941647298958, 0.11667731141266616, 0.11581479136710582, 0.11606135561414387, 0.11612091841257137, 0.11571238784686379, 0.11625515894397445, 0.11603029489517212, 0.11603542360274688, 0.11568457402612851, 0.11553327424370724, 0.11611207501395888, 0.11609641730137493, 0.11643476175873176, 0.11636373620966206, 0.11596209566878236, 0.1161589631503043, 0.11626914560794831, 0.11623270169548366, 0.11606566387026206, 0.11594646208312201, 0.11607728064060212, 0.11608051198332206, 0.11625055666203084, 0.11583994584239048, 0.11584941059350967, 0.11599076690233272, 0.11622250439680142, 0.11635019142990527, 0.11594903303229291, 0.11604866459965706, 0.11599255314987639, 0.11649011477828025, 0.1167178761375987, 0.11597426157930622, 0.1162423138903535, 0.11639585801440737, 0.11586886822529462, 0.11611683818309203, 0.11620111672774605, 0.1157382426119369, 0.11593270342635072, 0.11629086338307547, 0.11643428050953408, 0.11648061819698499, 0.11589292665538581, 0.1160076866655246, 0.11556938363158184, 0.11610190668183824, 0.11629935909224594, 0.11618571906634, 0.11599088298237842, 0.11706551196782486, 0.11596250158289205, 0.11621783875900767, 0.1156320199046446, 0.11638182205998379, 0.11637937675351682, 0.11599161437672117, 0.1160105884982192, 0.11635872447620267, 0.11627288341522217, 0.11612103530246279, 0.11578052652270898, 0.1164964446231075, 0.11635591074824334, 0.11584347206613292, 0.11595256379117136, 0.11579495302360991, 0.11581269590103108, 0.11604227396457091, 0.11606731460146281, 0.11589114862291709, 0.1159984691829785, 0.11531179112584694, 0.115835891696422, 0.11597687135572018, 0.11603362027717673, 0.11582955442692923, 0.11613898577249568, 0.11600568347003148, 0.11634852402236151, 0.11621786657234896, 0.11601947691777478, 0.11571900699449622, 0.11614419552942981, 0.11567954488422559, 0.11629101382001586, 0.116333458216294, 0.11645145026238068, 0.11602559964941896, 0.11615138199018396, 0.11598155648812004, 0.11560907271245252, 0.116478988158962, 0.11615293098532635, 0.11587348617289377, 0.11628727092043213, 0.11646165574374406, 0.11615599783218425, 0.11614976566770803, 0.1160368340689203, 0.11642028109534927, 0.11609307062366735, 0.1159508192539215, 0.1161285261032374, 0.11554153647759687, 0.11624688971301783, 0.11626154824443485, 0.11567728757210399, 0.11614748754579088, 0.11555623859814976, 0.11604476453817408, 0.11566547547345576, 0.11651196170112361, 0.11589671930541164, 0.11614551780016526, 0.11594196550872014, 0.1161183895105901, 0.11660664009659187, 0.11587092336105263, 0.11593698640880377, 0.11609422534056332, 0.11612108044650243, 0.11587026039543359, 0.11592409743562988, 0.11599772087905717, 0.11595563716214637, 0.11611173323315123, 0.11622475023502889, 0.11577983643697656, 0.11606013217697973, 0.116209871697685, 0.11575509247572525, 0.11603068325182667, 0.11573052679067072, 0.11585997738915942, 0.11562076579617417, 0.11622189473198807, 0.11619897982996442, 0.11598340594250223, 0.11605284396073093, 0.1155083989319594]
+val_losses:   [0.24391598840399334, 0.17664213900732445, 0.1557266386460267, 0.1499842251020406, 0.1440284741628501, 0.1476374329463902, 0.1384097241542703, 0.1354532891362194, 0.13454404693604577, 0.13155239732198729, 0.1307840540782005, 0.12981165681533943, 0.1281014529393158, 0.12735000846846056, 0.13057888295103717, 0.12515827442499963, 0.12387251044533008, 0.12552920906212725, 0.12418944367325618, 0.12313853324829122, 0.1234558905436845, 0.12378558226717157, 0.12157395598337138, 0.12159603080585334, 0.1239456033775544, 0.12057898036174367, 0.12099967036313804, 0.12099955949735078, 0.11991860648170889, 0.11931932023657686, 0.12238730155715732, 0.11874343649429243, 0.12211477369136345, 0.11972420957075276, 0.11770498511335366, 0.1188574263619052, 0.11842893972688115, 0.12056136711099599, 0.11905942142362215, 0.11834582823151625, 0.11817222838140475, 0.11905359141746885, 0.11694017868174139, 0.11826374008362311, 0.11917264488005862, 0.11938037137305299, 0.1176181402086311, 0.11670130605650936, 0.11784914258350909, 0.11843008019483629, 0.11681235217889076, 0.11827190889744088, 0.12062677826543222, 0.11656601695762624, 0.11615660576889139, 0.13199840879193894, 0.11585463835995648, 0.11567596197831638, 0.11581546225665483, 0.13963666313146758, 0.11528309425314849, 0.11463553244347066, 0.11565488626234179, 0.11491580407224926, 0.11490445859827661, 0.11529317348433527, 0.1148065477051811, 0.11483044792971163, 0.1168516698900122, 0.11497432537321907, 0.1148839147240829, 0.11406879802487108, 0.11369459952958197, 0.11341156701554508, 0.1144400180421346, 0.11352417427487024, 0.11387056840683524, 0.11470580842544426, 0.11381130683154576, 0.11323373216065294, 0.1146371088137433, 0.11361118929279554, 0.11485347733843002, 0.11323527783376146, 0.11455474619803378, 0.11305070488343619, 0.11434946303547298, 0.11273219397480716, 0.11553257752742259, 0.11260770918599722, 0.11293028080086111, 0.11282839935211086, 0.11258968086672717, 0.12100819508810269, 0.12704452012985712, 0.11208625676247014, 0.114618954187386, 0.11313417390576636, 0.1149273950166187, 0.11314693869341379, 0.1203139466467999, 0.11274781740818678, 0.11240678475279411, 0.11250927102001798, 0.11255535999367162, 0.11225074210000861, 0.11213985683702453, 0.1119136126197999, 0.11200270678061013, 0.11285116591120135, 0.11410146445309187, 0.1118350801733767, 0.11194071507649521, 0.11193471940330507, 0.11323205806345665, 0.11249191576371231, 0.11441286460507803, 0.1118898783821957, 0.11373301300035463, 0.11259215736562408, 0.11566148968571117, 0.11180146130436697, 0.12354926080257024, 0.11984391987102248, 0.11258750866388961, 0.11368036584078961, 0.11245619215353347, 0.11154176478753976, 0.1113490413889748, 0.11229570589865842, 0.11195028702746236, 0.11368568287202328, 0.11784637822145466, 0.11125221665027614, 0.11158499095603878, 0.11226198662623371, 0.11341918693475843, 0.11106095444746542, 0.11900529307846834, 0.11280589426921021, 0.11300383758771204, 0.11276898821183244, 0.11862605491518884, 0.11112029630455961, 0.1157375431499127, 0.1133092207684159, 0.11246875212974475, 0.11154055136396185, 0.11117588102064878, 0.11461328803074543, 0.11235476085847848, 0.1112254022281781, 0.11144189314164679, 0.11203385894714302, 0.11195244560531137, 0.11261820761673233, 0.116521717414192, 0.11219773071429194, 0.11124107201178252, 0.11329896354658962, 0.11157458061279613, 0.11186895749374849, 0.11150355567446645, 0.1113999368911512, 0.11104354434044378, 0.11748231274759746, 0.11383504095809055, 0.12313625255248756, 0.11248202586769669, 0.11330930061356209, 0.1114360290963911, 0.1112259927918381, 0.11151717123438074, 0.1127189271199111, 0.12708933901659394, 0.11268895102077497, 0.11105412477516236, 0.11101983489594305, 0.11535152259229006, 0.12038448596285889, 0.11335898605072241, 0.16877852878921354, 0.11344668190223375, 0.11144905590845156, 0.11211288209445532, 0.11161758341520706, 0.1111341242129937, 0.11146179348452279, 0.11088588994248817, 0.11145321765616245, 0.11124121012764793, 0.11276113275178229, 0.11107413961023364, 0.11084700620060378, 0.11073179263869154, 0.11146237746470433, 0.1112296365088999, 0.16672199205236715, 0.11260400383909858, 0.11113056495039725, 0.11145799125986539, 0.11222848533821485, 0.11121923606853873, 0.1140124228729999, 0.11141753424706419, 0.11163283569425807, 0.11154913705175001, 0.11165924679618103, 0.11121712087631547, 0.11075271826686933, 0.11108408533790579, 0.11306770835845883, 0.11166322494065956, 0.11264446210002967, 0.11179126444969573, 0.11302962721027951, 0.11373686019952503, 0.11344775965052475, 0.12665753664138416, 0.11096700386502158, 0.11245810357963314, 0.11322817716477908, 0.11242534909100262, 0.11112056691167203, 0.11216130801100614, 0.11077188705075969, 0.11616085853347613, 0.11269184411139577, 0.11136317229031395, 0.11198075861880676, 0.11081811847735581, 0.11429771946596803, 0.11559281549307343, 0.12526665159708095, 0.11107800441196661, 0.11118327380255424, 0.11133081073846067, 0.11088607641264996, 0.11217538111911078, 0.11139587185935954, 0.11926255662304659, 0.11534566911177535, 0.11441913982061022, 0.1112441508077811, 0.11440971966274244, 0.1129563220975898, 0.11104313843336261, 0.11927389219191456, 0.11210040763196755, 0.11391823658302908, 0.11097084351872076, 0.11232107310752326, 0.11259641323481952, 0.1113459185312422, 0.11373946212481517, 0.11319273639370901, 0.11310132349353808, 0.1111383911405331, 0.11448321398125295, 0.124457903755279, 0.1238557225676939, 0.12858329997268608, 0.11132654311434938, 0.11331967157598734, 0.11166342803365599, 0.11507703645636663, 0.11107436126030734, 0.1113548320616044, 0.11416037710609493, 0.12034183463725236, 0.11594687384159544, 0.11873872680694654, 0.11108843963524527, 0.11128118639711222, 0.11877874373547254, 0.11102970081436878, 0.11166162009036877, 0.12779775450245426, 0.11147429828623798, 0.1114187961566131, 0.1174738849905326, 0.11719713770728252, 0.11351273473135531, 0.1113608836782684, 0.1111695298887854, 0.11317604415893988, 0.11865284553479999, 0.11141879682034211, 0.11204883162397689, 0.11337411300337408, 0.12355838665543059, 0.12767869957800335, 0.11745995702080513, 0.11173764861925722, 0.11390707086431778, 0.11133605896167056, 0.11086448786348531, 0.11098176014370943, 0.1112476746872441, 0.1123671480843566, 0.11346229641539038, 0.11063916753406981, 0.11105349545565939, 0.11152247221232553, 0.11324131623263788, 0.11079882963844688, 0.11206143937634908, 0.11227127810949848, 0.1310216373086506, 0.1135419958522511, 0.11097702842895767, 0.11187016092844715, 0.11151805034761411, 0.11128923289359388, 0.11600589304746084, 0.11140758341783415, 0.11113131482978941, 0.1116345309146709, 0.11147709227371808, 0.11194491070212582, 0.11222716985179836, 0.1120630888138597, 0.11267218563231533, 0.11133736563452759, 0.12019564669228405, 0.11252683157595635, 0.1138584166419605, 0.1110100922721055, 0.11159537418492012, 0.11100725033116356, 0.11172531932152197, 0.1217856120484713, 0.11297391107331754, 0.11106217436180385, 0.11131146679437937, 0.11932257457697738, 0.11174650343956374, 0.11242952346421792, 0.11099366498688647, 0.11138385476149576, 0.11153899238171208, 0.11271096043755177, 0.11296424310472099, 0.11081537504070285, 0.11283729674677387, 0.11184510108584315, 0.11083816870344283, 0.11461493915066967, 0.1263357884086468, 0.11875421465730243, 0.11258470271645314, 0.11100649610570043, 0.1110157375952541, 0.11196505435893617, 0.1120925288514627, 0.11792033090467965, 0.11199857094410011, 0.11154172100613222, 0.11111904721615752, 0.11111120824640845, 0.11567485632622265, 0.11743425950114922, 0.11133852701151328, 0.11079768625616755, 0.11268813383564218, 0.11104213039622361, 0.11107085004939815, 0.11086784845722125, 0.11122100301938392, 0.11300366580851712, 0.1163527259700964, 0.11318865596311095, 0.11571873048160342, 0.11246540721625327, 0.11168421580360802, 0.11179262178873411, 0.11538061544706579, 0.11159051878343638, 0.11177517622642578, 0.11499025978446298, 0.1119631529593082, 0.11152549408668871, 0.11198100598044726, 0.11134010214280149, 0.11290732396704091, 0.1118817507936506, 0.11590162768758698, 0.11162561178955205, 0.11596423623571657, 0.11107730386892298, 0.11247627446452195, 0.14022900939421057, 0.11136672374307939, 0.11078541927306812, 0.11092884521202803, 0.11351758409970596, 0.11141277093702229, 0.11283988130223103, 0.11161028901440456, 0.11290937184983502, 0.11146673806640844, 0.11742004675215867, 0.11217942354374423, 0.1199239185807528, 0.11084092981056731, 0.11137751304421625, 0.11098136750509487, 0.11104234735471942, 0.11115335223697305, 0.12991889399644505, 0.1137463843622552, 0.11108206921562669, 0.11146050312077528, 0.11141959328577083, 0.11143372482173516, 0.1116778442604603, 0.11235974510853136, 0.11954375962118825, 0.1138944449085102, 0.11098886639817668, 0.11239592826506042, 0.11181827355883595, 0.11285001261815826, 0.11122189901693168, 0.11096686720146762, 0.11165635752594325, 0.1111177581178203, 0.11222727591464515, 0.11200338795606513, 0.11350774302223322, 0.11232141507611636, 0.11580322152925267, 0.11154970397920907, 0.11098822035506196, 0.11142207145207471, 0.11201141933108577, 0.11213454261183466, 0.1117920994177742, 0.11127236090785825, 0.1113045253349709, 0.11108878527857592, 0.11075338308688111, 0.11341423653114664, 0.11992315554238707, 0.1191051897144967, 0.11186225661771863, 0.12402178518742504, 0.1112379893610422, 0.11082162193482266, 0.11303769530059071, 0.11936527088942563, 0.11498179881295477, 0.1110550791759124, 0.11196495395536961, 0.11058623506121673, 0.11115634173191008, 0.11107517915151119, 0.11397352779588094, 0.11298429458090847, 0.11173739145205117, 0.11189904850693387, 0.11225561328804663, 0.11866631559476243, 0.11118178675436259, 0.11208266642703772, 0.11199644372178834, 0.11192568010513544, 0.11451799772506395, 0.11277924608041051, 0.11170195498663008, 0.11314253916690278, 0.11223487495317386, 0.11161408394819874, 0.11146814883522893, 0.11473422089875385, 0.11257229527756055, 0.11179837287777951, 0.11155813062931783, 0.11207235399049548, 0.11243837009230144, 0.1134279460596493, 0.11415337131388191, 0.1119357518855395, 0.11411953615414758, 0.12008782062144342, 0.11271448915562764, 0.1108749777623517, 0.11231279611709194, 0.11085185733802266, 0.1176884820411538, 0.11231345315870082, 0.1127507924159848, 0.11103038466707302, 0.11144699173418202, 0.1109646121470986, 0.1130914061264371, 0.11129360751566411, 0.112522990396024, 0.11389095063714194, 0.11709102181460669]
+Training plot saved to training_history_20260406_185204.png
+Training time: 198.183 minutes
+Starting post-training spectral evaluation...
+Residual history plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\residual_history_20260406_185204.png
+Composition-range sampling column: conc_CeCl3_wt%
+Evaluation sample indices: [0]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\spectral_overlay_20260406_185204.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_003\error_heatmap_20260406_185204.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_003
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=35436.27 | MaxErr=68222.83 @ 863.2 nm
+Evaluation sample indices: [0]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\spectral_overlay_20260406_185204.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_003\error_heatmap_20260406_185204.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_003
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=35436.27 | MaxErr=68222.83 @ 863.2 nm
+Evaluation sample indices: [0]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\spectral_overlay_20260406_185204.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_003\error_heatmap_20260406_185204.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_003
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=35436.27 | MaxErr=68222.83 @ 863.2 nm
+Evaluation sample indices: [0, 7127]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)', 'conc_CeCl3_wt% = 1.0000 (p15)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\spectral_overlay_20260406_185204.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_003\error_heatmap_20260406_185204.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_003
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=35436.27 | MaxErr=68222.83 @ 863.2 nm
+  conc_CeCl3_wt% = 1.0000 (p15)                      | MAE=  899.81 | MaxErr=23748.39 @ 610.4 nm
+Evaluation sample indices: [0, 7127, 16392]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)', 'conc_CeCl3_wt% = 1.0000 (p15)', 'conc_CeCl3_wt% = 2.8960 (p30)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\spectral_overlay_20260406_185204.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_003\error_heatmap_20260406_185204.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_003
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=35436.27 | MaxErr=68222.83 @ 863.2 nm
+  conc_CeCl3_wt% = 1.0000 (p15)                      | MAE=  899.81 | MaxErr=23748.39 @ 610.4 nm
+  conc_CeCl3_wt% = 2.8960 (p30)                      | MAE=  499.35 | MaxErr=46339.34 @ 611.1 nm
+Evaluation sample indices: [0, 7127, 16392, 3008]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)', 'conc_CeCl3_wt% = 1.0000 (p15)', 'conc_CeCl3_wt% = 2.8960 (p30)', 'conc_CeCl3_wt% = 5.0000 (p50)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\spectral_overlay_20260406_185204.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_003\error_heatmap_20260406_185204.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_003
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=35436.27 | MaxErr=68222.83 @ 863.2 nm
+  conc_CeCl3_wt% = 1.0000 (p15)                      | MAE=  899.81 | MaxErr=23748.39 @ 610.4 nm
+  conc_CeCl3_wt% = 2.8960 (p30)                      | MAE=  499.35 | MaxErr=46339.34 @ 611.1 nm
+  conc_CeCl3_wt% = 5.0000 (p50)                      | MAE=  340.75 | MaxErr=11280.56 @ 610.4 nm
+Evaluation sample indices: [0, 7127, 16392, 3008]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)', 'conc_CeCl3_wt% = 1.0000 (p15)', 'conc_CeCl3_wt% = 2.8960 (p30)', 'conc_CeCl3_wt% = 5.0000 (p50)']
+Spectral overlay plot saved to G:\My Drive\RLSL\Python\LIBS\eval_003\spectral_overlay_20260406_185204.png
+Heatmap saved to G:\My Drive\RLSL\Python\LIBS\eval_003\error_heatmap_20260406_185204.png
+Post-training evaluation plots saved to: G:\My Drive\RLSL\Python\LIBS\eval_003
+  conc_CeCl3_wt% = 0.0000 (p5)                       | MAE=35436.27 | MaxErr=68222.83 @ 863.2 nm
+  conc_CeCl3_wt% = 1.0000 (p15)                      | MAE=  899.81 | MaxErr=23748.39 @ 610.4 nm
+  conc_CeCl3_wt% = 2.8960 (p30)                      | MAE=  499.35 | MaxErr=46339.34 @ 611.1 nm
+  conc_CeCl3_wt% = 5.0000 (p50)                      | MAE=  340.75 | MaxErr=11280.56 @ 610.4 nm
+Total training time: 199.926 minutes

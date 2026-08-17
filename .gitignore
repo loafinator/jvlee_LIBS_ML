@@ -1,3 +1,13 @@
 __pycache__/
 .venv/
 LIBS/trn_val_split_LIBS.h5
+
+# Log Files
+*.log
+*._log.txt
+
+# Model checkpoints & large datasets
+*.h5
+*.pkl
+*.pt
+*.pth
