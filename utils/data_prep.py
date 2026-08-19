@@ -1739,6 +1739,45 @@ def load_h5_split_dataset(
 
     return X_trn_raw, X_val_raw, y_trn_raw, y_val_raw, feature_cols, wavelengths, meta_val_df
 
+def load_prepped_training_dataset(
+        prepped_h5_path: str | Path
+):
+    """
+    Loads the prepped, downsampled, and scaled dataset for model training.
+    """
+    prepped_h5_path = str(prepped_h5_path)
+    
+    with h5py.File(prepped_h5_path, 'r') as hf:
+        # 1. Use your working hf_get pattern to load the main numpy datasets
+        X_trn = hf_get(hf, 'X_trn')
+        X_val = hf_get(hf, 'X_val')
+        y_trn = hf_get(hf, 'y_trn')
+        y_val = hf_get(hf, 'y_val')
+        y_val_physical = hf_get(hf, 'y_val_physical')
+        wavelengths = hf_get(hf, 'wavelengths')
+        
+        # 2. Decode string datasets back into standard Python string lists
+        target_cols = [c.decode('utf-8') for c in hf_get(hf, 'target_cols')]
+        surviving_cols = [c.decode('utf-8') for c in hf_get(hf, 'surviving_cols')]
+        
+        # 3. Loop through the metadata group and rebuild the Pandas DataFrame
+        meta_dict = {}
+        meta_grp = hf.get('metadata_val')
+        if isinstance(meta_grp, h5py.Group):
+            for col_name in meta_grp.keys():
+                data = hf_get(hf, f'metadata_val/{col_name}')
+                # If the column contains byte strings, decode them into normal text
+                if data.dtype.kind in ('O', 'S', 'V'):
+                    meta_dict[col_name] = [x.decode('utf-8') if isinstance(x, bytes) else x for x in data]
+                else:
+                    meta_dict[col_name] = data
+                
+        meta_val_df = pd.DataFrame(meta_dict)
+        
+    return X_trn, X_val, y_trn, y_val, y_val_physical, surviving_cols, meta_val_df
+
+
+
 def sanitize_path(
         path: Path | None = None,
         log_path: Path | None = None,
