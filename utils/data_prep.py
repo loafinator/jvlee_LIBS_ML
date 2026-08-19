@@ -23,6 +23,7 @@ import logging
 import os
 import warnings
 import h5py
+import pickle
 # endregion
 
 # region as
@@ -1523,6 +1524,183 @@ def combine_and_save_as_CSV(
         log(logger=logger, msg = f'  ❌ {e}')
         return None
 
+def training_ready_h5(
+        h5_path: str | Path,
+        prepped_h5_path: str | Path,
+        allowed_cols: set[str],
+):
+    from sklearn.feature_selection import VarianceThreshold
+    from sklearn.preprocessing import StandardScaler
+
+    if h5_path is None:
+        h5_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\trn_val_split_LIBS.h5"
+    if prepped_h5_path is None:
+        prepped_h5_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\training_ready_LIBS.h5"
+    if allowed_cols is None:
+        allowed_cols= {
+                'frac_LiCl', 'frac_KCl',
+                'conc_Ce_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%',
+                'conc_Ca_wt%', 'conc_CaCl3_wt%',
+                'conc_U_wt%', 'conc_UCl3_wt%',
+                'conc_Sm_wt%', 'conc_SmCl3_wt%',
+                'conc_Gd_wt%', 'conc_GdCl3_wt%',
+                'conc_La_wt%', 'conc_LaCl3_wt%',
+                'conc_Mg_wt%', 'conc_MgCl2_wt%',
+                'conc_H2o_wt%', 'conc_Nd_wt%',
+            }
+
+    prepped_h5_path = Path(prepped_h5_path)
+    output_dir = prepped_h5_path.parent
+
+    y_trn_raw, y_val_raw, X_trn_raw, X_val_raw, target_cols, wavelengths, meta_val_df = load_h5_split_dataset(
+                h5_path=h5_path,
+                allowed_cols=allowed_cols,
+                log_path=None
+            )
+
+    assert X_trn_raw.shape[0] == y_trn_raw.shape[0], \
+                f'X/y row mismatch: {X_trn_raw.shape[0]} vs {y_trn_raw.shape[0]}'
+
+    selector = VarianceThreshold(threshold=1e-10)
+    X_scaler = StandardScaler()
+    y_scaler = StandardScaler()
+
+    # region Filter out rows
+    # Find the fraction of NaN values as wavelength per row
+    nan_frac_trn = np.isnan(X_trn_raw).mean(axis=1)
+    nan_frac_val = np.isnan(X_val_raw).mean(axis=1)
+
+    # Designate any row with more than __% as bad rows to be dropped
+    bad_rows_trn = nan_frac_trn > 0.1
+    bad_rows_val = nan_frac_val > 0.1
+    #log(logger=logger, msg= f'Dropping {bad_rows_trn.sum()} training rows and {bad_rows_val.sum()} validation rows with >10% NaN values in Spectrum')
+
+    # Drop designated rows
+    X_trn_raw = X_trn_raw[~bad_rows_trn]
+    X_val_raw = X_val_raw[~bad_rows_val]
+    y_trn_raw = y_trn_raw[~bad_rows_trn]
+    y_val_raw = y_val_raw[~bad_rows_val]
+
+    meta_val_df = meta_val_df[~bad_rows_val].reset_index(drop=True)
+    # endregion
+
+    # region Clip bright data
+    # Clip the extra bright shots so they don't skew the mean and standard deviation
+    clip_threshold = np.nanpercentile(X_trn_raw, 99.5)
+    #log(logger=logger, msg= f'Clipping spectra intensities above: {clip_threshold:.1f}')
+    X_trn_raw = np.clip(X_trn_raw, 0, clip_threshold)
+    X_val_raw = np.clip(X_val_raw, 0, clip_threshold)   # val uses the same threshold as trn
+    # endregion 
+
+    # region Keep physical copy
+        # keep a copy of the clipped but not scaled for the predicted/actual plot
+    y_val_physical = y_val_raw.copy()
+    # endregion
+
+    # region Filter the y data
+    selector.fit(y_trn_raw)
+    surviving_cols = [c for c, keep in zip(target_cols, selector.get_support()) if keep]
+    y_trn_filtered = pd.DataFrame(
+        np.array(selector.transform(y_trn_raw)),
+        columns=surviving_cols)
+    y_val_filtered = pd.DataFrame(
+        np.array(selector.transform(y_val_raw)),
+        columns=surviving_cols)
+    # Filter the metadata df so that index alignment is preserved
+    meta_val_df = meta_val_df[[c for c in surviving_cols if c in meta_val_df.columns]]
+    # endregion
+    
+    # region Scale the X data
+    X_trn_scaled = np.nan_to_num(X_scaler.fit_transform(X_trn_raw), nan=0.0, posinf=0.0, neginf=0.0)
+    X_val_scaled = np.nan_to_num(X_scaler.transform(X_val_raw), nan=0.0, posinf=0.0, neginf=0.0)
+    # endregion
+
+    # region Downsample
+    downsample_factor = 4
+    X_trn_scaled = X_trn_scaled[:, ::downsample_factor]
+    X_val_scaled = X_val_scaled[:, ::downsample_factor]
+    # endregion
+
+    # region Expand X data
+    X_trn = np.expand_dims(X_trn_scaled, axis=1).astype(np.float32)
+    X_val = np.expand_dims(X_val_scaled, axis=1).astype(np.float32)
+    # endregion
+
+    # region Scale y data
+    y_trn = np.nan_to_num(y_scaler.fit_transform(y_trn_filtered), nan=0.0).astype(np.float32)
+    y_val = np.nan_to_num(y_scaler.transform(y_val_filtered), nan=0.0).astype(np.float32)
+    # endregion
+
+    # region Align metadata df to surviving bad-row mask
+    meta_val_df = meta_val_df.reset_index(drop=True)
+    # endregion
+
+    # region Report
+    n_features = X_trn.shape[2]
+    n_targets = y_trn.shape[1]
+    row_maxes = X_trn_raw.max(axis=1)
+    outlier_mask = row_maxes > np.percentile(row_maxes, 99)
+
+    # Set up compression just like your combiner function
+    comp_kwargs = {'compression': 'gzip', 'compression_opts': 3}
+
+    print(f"Writing HDF5 → {prepped_h5_path.name}")
+    with h5py.File(str(prepped_h5_path), 'w') as hf:
+        # 1. Save the main arrays
+        hf.create_dataset('X_trn', data=X_trn, **comp_kwargs)
+        hf.create_dataset('X_val', data=X_val, **comp_kwargs)
+        hf.create_dataset('y_trn', data=y_trn, **comp_kwargs)
+        hf.create_dataset('y_val', data=y_val, **comp_kwargs)
+        hf.create_dataset('y_val_physical', data=y_val_physical, **comp_kwargs)
+        hf.create_dataset('wavelengths', data=wavelengths)
+
+        # 2. Save lists of columns (encoded as native HDF5 strings)
+        dt_str = h5py.string_dtype(encoding='utf-8')
+        hf.create_dataset('target_cols', data=np.array(target_cols, dtype=object), dtype=dt_str)
+        hf.create_dataset('surviving_cols', data=np.array(surviving_cols, dtype=object), dtype=dt_str)
+
+        # 3. Save the Validation Metadata DataFrame natively column-by-column (Bypasses PyTables!)
+        meta_grp = hf.create_group('metadata_val')
+        for col in meta_val_df.columns:
+            series = meta_val_df[col]
+            if pd.api.types.is_numeric_dtype(series):
+                arr = series.to_numpy(dtype=np.float32, na_value=np.nan)
+                meta_grp.create_dataset(col, data=arr, **comp_kwargs)
+            else:
+                arr = series.fillna('').astype(str).to_numpy()
+                meta_grp.create_dataset(col, data=arr, dtype=dt_str)
+
+        # 4. Attach helpful global attributes
+        hf.attrs['X_trn_shape'] = list(X_trn.shape)
+        hf.attrs['X_val_shape'] = list(X_val.shape)
+        hf.attrs['metadata_cols'] = list(meta_val_df.columns)
+
+    # 5. Save the scalers alongside it
+    with open(output_dir / "X_scaler.pkl", "wb") as f:
+        pickle.dump(X_scaler, f)
+    with open(output_dir / "y_scaler.pkl", "wb") as f:
+        pickle.dump(y_scaler, f)
+
+    size_mb = prepped_h5_path.stat().st_size / 1_048_576
+    print(f"✅ Successfully saved training dataset: {prepped_h5_path.name} | {size_mb:.1f} MB")
+    # endregion
+
+def load_scalers(
+        y_scaler_path: str | Path,
+        X_scaler_path: str | Path,
+):
+    if y_scaler_path is None:
+        y_scaler_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\y_scaler.pkl"
+    if X_scaler_path is None:
+        X_scaler_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\X_scaler.pkl"
+
+    with open(y_scaler_path, "rb") as f:
+        y_scaler = pickle.load(f)
+    with open(X_scaler_path, "rb") as f:
+        X_scaler = pickle.load(f)
+
+    return(y_scaler,X_scaler)
+
 def load_h5_split_dataset(
         h5_path: str | Path,
         allowed_cols: set[str],
@@ -1653,6 +1831,23 @@ def hf_get(
 
 if __name__=="__main__":
     print("hi")
+    allowed_cols= {
+                'frac_LiCl', 'frac_KCl',
+                'conc_Ce_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%',
+                'conc_Ca_wt%', 'conc_CaCl3_wt%',
+                'conc_U_wt%', 'conc_UCl3_wt%',
+                'conc_Sm_wt%', 'conc_SmCl3_wt%',
+                'conc_Gd_wt%', 'conc_GdCl3_wt%',
+                'conc_La_wt%', 'conc_LaCl3_wt%',
+                'conc_Mg_wt%', 'conc_MgCl2_wt%',
+                'conc_H2o_wt%', 'conc_Nd_wt%',
+            }
+    training_ready_h5(
+        h5_path= Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\trn_val_split_LIBS.h5"),
+        prepped_h5_path= Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\training_ready_LIBS.h5"),
+        allowed_cols=allowed_cols
+        )
+
     #    recursive_mpr_to_csv(
     #        data_root= r"W:\Phongikaroon Group\AndrewsH",
     #        csv_root= r"G:\My Drive\Radiochemistry_&_Laser_Spectroscopy_Lab\Data\ML_practice_data_from_W_drive",

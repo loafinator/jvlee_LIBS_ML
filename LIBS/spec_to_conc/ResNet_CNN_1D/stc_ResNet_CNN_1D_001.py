@@ -324,7 +324,7 @@ if __name__ == "__main__":
             y_val=y_val,
             X_scaler= None,
             y_scaler= None,
-            max_epochs=500,
+            max_epochs=5,
             device= torch.device('xpu'),
             batch_size=256,
             shuffle= True,

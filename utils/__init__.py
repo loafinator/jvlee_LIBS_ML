@@ -12,6 +12,7 @@ from .post_processing import *
 import multiprocessing
 if multiprocessing.current_process().name == 'MainProcess':
     from .xpu_setup import *
+    from .gpu_setup import *
 
 __all__: list[str] = [
     # region file_type_processing
@@ -24,6 +25,10 @@ __all__: list[str] = [
     # region xpu_setup
     "mae",
     "init_xpu_trainer",
+    # endregion
+
+    # region gpu_setup
+    "init_gpu_trainer",
     # endregion
 
     # region speak

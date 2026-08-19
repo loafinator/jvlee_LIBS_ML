@@ -213,3 +213,61 @@ Training setup time: 82.755 seconds
 Model parameters: 1,314,695
 Training on cpu | Epochs: 500 | Batch size: 256
 Train samples: 147039
+
+========================================
+2026-08-17 14:50:16
+==================================================
+Target columns (19): ['conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'frac_KCl', 'frac_LiCl']
+wavelengths: [ 250.         250.0750075  250.150015  ...  999.849985   999.9249925
+ 1000.       ]
+first shot intensities: [-440.792  -873.4239 -659.9911 ...  349.746   349.746   349.746 ]
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+Clipping spectra intensities above: 87526.2
+Columns surviving VarianceThreshold: ['conc_CeCl3_wt%', 'conc_GdCl3_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%']
+NaNs in X_trn: 0
+NaNs in y_trn: 0
+NaNs in X_val: 0
+NaNs in y_val: 0
+y_trn min/max: -0.8764 / 121.2555
+X_trn min/max: -1.2344 / 6.6698
+Number of features is:          2500
+Training features shape:        (147039, 1, 2500)
+Validation features shape:      (36760, 1, 2500)
+Training targets shape:         (147039, 7)
+Validation targets shape:       (36760, 7)
+Top 10 max intensities per spectrum: [87526.195 87526.195 87526.195 87526.195 87526.195 87526.195 87526.195
+ 87526.195 87526.195 87526.195]
+Spectra with extreme max values: 0 / 147039
+Training setup time: 84.118 seconds
+Model parameters: 1,314,695
+Start transfer data to xpu
+Data transfer to xpu took 1.349705399999948 sec
+Training on xpu | Epochs: 5 | Batch size: 256
+Train samples: 147039
+Epoch 1/5 | Train Loss: 0.529079 | Val Loss: 0.724958 | Val MAE: 43.0569 | Res μ: +0.2148 σ: 0.6974 | 6.606 min
+Epoch 2/5 | Train Loss: 0.388309 | Val Loss: 0.437546 | Val MAE: 22.6794 | Res μ: +0.0454 σ: 0.5796 | 6.654 min
+Epoch 3/5 | Train Loss: 0.357614 | Val Loss: 0.616608 | Val MAE: 27.2648 | Res μ: -0.1485 σ: 0.6756 | 6.405 min
+Epoch 4/5 | Train Loss: 0.338890 | Val Loss: 0.608050 | Val MAE: 38.6078 | Res μ: +0.2461 σ: 0.6554 | 6.296 min
+Epoch 5/5 | Train Loss: 0.325992 | Val Loss: 0.666775 | Val MAE: 30.6810 | Res μ: -0.1362 σ: 0.6901 | 6.204 min
+Training plot saved to C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\spec_to_conc\ResNet_CNN_1D\eval_ResNet_CNN_1D_001\training_history_20260817_145144.png
+Training time: 32.223 minutes
+Starting post-training spectral evaluation...
+Residual history plot saved to C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\spec_to_conc\ResNet_CNN_1D\eval_ResNet_CNN_1D_001\residual_history_20260817_152355.png
+Total training time: 33.652 minutes
+
+========================================
+2026-08-19 10:15:20
+==================================================
+Target columns (19): ['conc_CaCl3_wt%', 'conc_Ca_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%', 'conc_Ce_wt%', 'conc_GdCl3_wt%', 'conc_Gd_wt%', 'conc_H2o_wt%', 'conc_LaCl3_wt%', 'conc_La_wt%', 'conc_MgCl2_wt%', 'conc_Mg_wt%', 'conc_Nd_wt%', 'conc_SmCl3_wt%', 'conc_Sm_wt%', 'conc_UCl3_wt%', 'conc_U_wt%', 'frac_KCl', 'frac_LiCl']
+wavelengths: [ 250.         250.0750075  250.150015  ...  999.849985   999.9249925
+ 1000.       ]
+first shot intensities: [-440.792  -873.4239 -659.9911 ...  349.746   349.746   349.746 ]
+Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
+
+========================================
+2026-08-19 10:17:01
+==================================================
+
+========================================
+2026-08-19 10:18:22
+==================================================
