@@ -271,3 +271,91 @@ Dropping 19 training rows and 5 validation rows with >10% NaN values in Spectrum
 ========================================
 2026-08-19 10:18:22
 ==================================================
+
+========================================
+2026-08-20 10:23:11
+==================================================
+Training setup time: 16.579 seconds
+Model parameters: 1,314,695
+Start transfer data to GPU
+Data transfer to GPU took 2.756819358910434 sec
+Training on cuda | Epochs: 5 | Batch size: 256
+Train samples: 147039
+Epoch 1/5 | Train Loss: 0.525588 | Val Loss: 0.546439 | Val MAE: 29.1930 | Res μ: +0.0554 σ: 0.6471 | 0.958 min
+Epoch 2/5 | Train Loss: 0.393399 | Val Loss: 0.503674 | Val MAE: 28.6537 | Res μ: +0.1199 σ: 0.6250 | 0.340 min
+Epoch 3/5 | Train Loss: 0.360951 | Val Loss: 0.429736 | Val MAE: 20.2235 | Res μ: -0.0317 σ: 0.5734 | 0.341 min
+Epoch 4/5 | Train Loss: 0.340219 | Val Loss: 0.400553 | Val MAE: 19.6748 | Res μ: +0.0297 σ: 0.5461 | 0.341 min
+Epoch 5/5 | Train Loss: 0.325956 | Val Loss: 0.664263 | Val MAE: 31.8253 | Res μ: -0.1477 σ: 0.7057 | 0.339 min
+Training plot saved to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/spec_to_conc/ResNet_CNN_1D/eval_ResNet_CNN_1D_001/training_history_20260820_102345.png
+Training time: 2.600 minutes
+Starting post-training spectral evaluation...
+Residual history plot saved to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/spec_to_conc/ResNet_CNN_1D/eval_ResNet_CNN_1D_001/residual_history_20260820_102606.png
+Total training time: 2.928 minutes
+🔊 Speech simulation: Training complete!
+
+========================================
+2026-08-20 12:13:41
+==================================================
+Training setup time: 14.147 seconds
+Model parameters: 1,314,695
+Start transfer data to GPU
+Data transfer to GPU took 1.5286374549614266 sec
+Training on cuda | Epochs: 50 | Batch size: 256
+Train samples: 147039
+Epoch 1/50 | Train Loss: 0.502457 | Val Loss: 0.516036 | Val MAE: 28.2233 | Res μ: +0.0703 σ: 0.6283 | 0.542 min
+Epoch 2/50 | Train Loss: 0.379682 | Val Loss: 0.692025 | Val MAE: 37.8937 | Res μ: +0.1679 σ: 0.6638 | 0.339 min
+Epoch 3/50 | Train Loss: 0.350270 | Val Loss: 0.466439 | Val MAE: 25.6309 | Res μ: +0.0240 σ: 0.6016 | 0.341 min
+Epoch 4/50 | Train Loss: 0.334238 | Val Loss: 1.531713 | Val MAE: 70.2025 | Res μ: +0.4606 σ: 0.8292 | 0.341 min
+Epoch 5/50 | Train Loss: 0.321189 | Val Loss: 0.493167 | Val MAE: 22.6589 | Res μ: -0.0629 σ: 0.6131 | 0.339 min
+Epoch 6/50 | Train Loss: 0.310711 | Val Loss: 0.706045 | Val MAE: 34.9879 | Res μ: -0.2157 σ: 0.7079 | 0.341 min
+Epoch 7/50 | Train Loss: 0.300530 | Val Loss: 0.663625 | Val MAE: 29.2410 | Res μ: -0.2003 σ: 0.6949 | 0.339 min
+Epoch 8/50 | Train Loss: 0.295693 | Val Loss: 0.501033 | Val MAE: 20.7163 | Res μ: +0.0148 σ: 0.5956 | 0.341 min
+Epoch 9/50 | Train Loss: 0.290085 | Val Loss: 0.559857 | Val MAE: 35.7239 | Res μ: +0.1131 σ: 0.6589 | 0.339 min
+Epoch 10/50 | Train Loss: 0.281200 | Val Loss: 0.376558 | Val MAE: 19.7270 | Res μ: +0.0254 σ: 0.5302 | 0.341 min
+Epoch 11/50 | Train Loss: 0.276847 | Val Loss: 0.612500 | Val MAE: 27.1059 | Res μ: -0.1930 σ: 0.6702 | 0.339 min
+Epoch 12/50 | Train Loss: 0.272255 | Val Loss: 0.388714 | Val MAE: 16.0321 | Res μ: -0.0370 σ: 0.5398 | 0.341 min
+Epoch 13/50 | Train Loss: 0.266694 | Val Loss: 0.714739 | Val MAE: 42.5188 | Res μ: +0.1154 σ: 0.7238 | 0.339 min
+Epoch 14/50 | Train Loss: 0.263469 | Val Loss: 0.715469 | Val MAE: 42.1547 | Res μ: +0.1665 σ: 0.7169 | 0.341 min
+Epoch 15/50 | Train Loss: 0.259525 | Val Loss: 0.702100 | Val MAE: 35.7555 | Res μ: +0.0037 σ: 0.7423 | 0.341 min
+Epoch 16/50 | Train Loss: 0.256483 | Val Loss: 0.629812 | Val MAE: 24.9631 | Res μ: -0.1377 σ: 0.6770 | 0.339 min
+Epoch 17/50 | Train Loss: 0.251268 | Val Loss: 0.831688 | Val MAE: 29.7480 | Res μ: -0.0468 σ: 0.7752 | 0.341 min
+Epoch 18/50 | Train Loss: 0.249398 | Val Loss: 0.380019 | Val MAE: 14.9229 | Res μ: -0.0198 σ: 0.5373 | 0.339 min
+Epoch 19/50 | Train Loss: 0.246571 | Val Loss: 1.215482 | Val MAE: 39.2643 | Res μ: +0.0093 σ: 0.8982 | 0.340 min
+Epoch 20/50 | Train Loss: 0.242033 | Val Loss: 0.488787 | Val MAE: 20.3656 | Res μ: -0.1098 σ: 0.6110 | 0.339 min
+Epoch 21/50 | Train Loss: 0.241066 | Val Loss: 0.577434 | Val MAE: 35.5893 | Res μ: +0.0760 σ: 0.6852 | 0.341 min
+Epoch 22/50 | Train Loss: 0.230700 | Val Loss: 0.392064 | Val MAE: 13.6865 | Res μ: -0.0074 σ: 0.5038 | 0.339 min
+Epoch 23/50 | Train Loss: 0.228201 | Val Loss: 0.413240 | Val MAE: 16.4578 | Res μ: -0.0880 σ: 0.5720 | 0.340 min
+Epoch 24/50 | Train Loss: 0.222545 | Val Loss: 0.585850 | Val MAE: 23.1534 | Res μ: -0.1624 σ: 0.6548 | 0.340 min
+Epoch 25/50 | Train Loss: 0.221948 | Val Loss: 0.456547 | Val MAE: 18.7238 | Res μ: -0.1091 σ: 0.5889 | 0.339 min
+Epoch 26/50 | Train Loss: 0.222029 | Val Loss: 0.496440 | Val MAE: 16.7631 | Res μ: +0.0876 σ: 0.5706 | 0.340 min
+Epoch 27/50 | Train Loss: 0.212679 | Val Loss: 1.976058 | Val MAE: 74.1826 | Res μ: +0.3813 σ: 1.1309 | 0.339 min
+Epoch 28/50 | Train Loss: 0.215979 | Val Loss: 1.082360 | Val MAE: 32.4423 | Res μ: +0.0568 σ: 0.8622 | 0.341 min
+Epoch 29/50 | Train Loss: 0.213246 | Val Loss: 0.326338 | Val MAE: 13.0857 | Res μ: +0.0541 σ: 0.4679 | 0.339 min
+Epoch 30/50 | Train Loss: 0.207671 | Val Loss: 0.853484 | Val MAE: 46.7334 | Res μ: +0.1583 σ: 0.8129 | 0.340 min
+Epoch 31/50 | Train Loss: 0.210062 | Val Loss: 0.984752 | Val MAE: 30.9199 | Res μ: +0.0258 σ: 0.8418 | 0.339 min
+Epoch 32/50 | Train Loss: 0.204704 | Val Loss: 0.677487 | Val MAE: 25.0910 | Res μ: -0.0413 σ: 0.7279 | 0.340 min
+Epoch 33/50 | Train Loss: 0.202120 | Val Loss: 0.657958 | Val MAE: 25.9993 | Res μ: -0.1829 σ: 0.7050 | 0.340 min
+Epoch 34/50 | Train Loss: 0.198946 | Val Loss: 0.484339 | Val MAE: 18.2950 | Res μ: +0.1158 σ: 0.5600 | 0.339 min
+Epoch 35/50 | Train Loss: 0.198700 | Val Loss: 0.640313 | Val MAE: 39.0795 | Res μ: +0.0767 σ: 0.7240 | 0.341 min
+Epoch 36/50 | Train Loss: 0.198685 | Val Loss: 0.259924 | Val MAE: 11.3677 | Res μ: +0.0110 σ: 0.4221 | 0.340 min
+Epoch 37/50 | Train Loss: 0.190594 | Val Loss: 0.293077 | Val MAE: 13.9068 | Res μ: -0.0217 σ: 0.4550 | 0.342 min
+Epoch 38/50 | Train Loss: 0.190029 | Val Loss: 0.357556 | Val MAE: 20.1113 | Res μ: -0.0087 σ: 0.5446 | 0.339 min
+Epoch 39/50 | Train Loss: 0.188988 | Val Loss: 2.380558 | Val MAE: 69.6095 | Res μ: +0.4296 σ: 1.1932 | 0.341 min
+Epoch 40/50 | Train Loss: 0.184281 | Val Loss: 0.611858 | Val MAE: 26.4523 | Res μ: -0.1815 σ: 0.6716 | 0.339 min
+Epoch 41/50 | Train Loss: 0.183503 | Val Loss: 0.268640 | Val MAE: 13.3455 | Res μ: +0.0195 σ: 0.4530 | 0.341 min
+Epoch 42/50 | Train Loss: 0.181391 | Val Loss: 0.828600 | Val MAE: 23.3426 | Res μ: +0.1126 σ: 0.6760 | 0.341 min
+Epoch 43/50 | Train Loss: 0.180023 | Val Loss: 0.584442 | Val MAE: 24.3251 | Res μ: -0.1648 σ: 0.6749 | 0.339 min
+Epoch 44/50 | Train Loss: 0.180912 | Val Loss: 0.250028 | Val MAE: 15.1902 | Res μ: +0.0210 σ: 0.4512 | 0.341 min
+Epoch 45/50 | Train Loss: 0.173546 | Val Loss: 3.089560 | Val MAE: 39.1153 | Res μ: +0.2964 σ: 0.9967 | 0.339 min
+Epoch 46/50 | Train Loss: 0.171886 | Val Loss: 0.417927 | Val MAE: 24.9665 | Res μ: +0.0111 σ: 0.5999 | 0.341 min
+Epoch 47/50 | Train Loss: 0.169166 | Val Loss: 0.555800 | Val MAE: 24.1298 | Res μ: -0.1502 σ: 0.6631 | 0.339 min
+Epoch 48/50 | Train Loss: 0.162956 | Val Loss: 0.605302 | Val MAE: 24.5892 | Res μ: -0.0466 σ: 0.6847 | 0.341 min
+Epoch 49/50 | Train Loss: 0.169269 | Val Loss: 0.272769 | Val MAE: 15.0702 | Res μ: -0.0309 σ: 0.4618 | 0.339 min
+Epoch 50/50 | Train Loss: 0.160389 | Val Loss: 4.491610 | Val MAE: 67.4248 | Res μ: +0.4384 σ: 1.2953 | 0.341 min
+Training plot saved to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/spec_to_conc/ResNet_CNN_1D/eval_ResNet_CNN_1D_001/training_history_20260820_121431.png
+📊 Run viewed on headless Linux server. Plot preserved at: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/spec_to_conc/ResNet_CNN_1D/eval_ResNet_CNN_1D_001/training_history_20260820_121431.png
+Training time: 17.790 minutes
+Starting post-training spectral evaluation...
+Residual history plot saved to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/spec_to_conc/ResNet_CNN_1D/eval_ResNet_CNN_1D_001/residual_history_20260820_123144.png
+Total training time: 18.057 minutes
+🔊 Speech simulation: Training complete!

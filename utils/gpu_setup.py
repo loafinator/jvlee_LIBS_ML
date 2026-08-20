@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 """
 jvlee_LIBS_ML > utils > gpu_setup.py
 
-Function definitions setting up the trainer for models on the GPU. Note that this
-is for an intel GPU, not NVIDIA so it is called an xpu instead of gpu in pytorch.
+Function definitions setting up the trainer for models on the GPU.
 
 """
 
@@ -13,6 +14,9 @@ print('gpu_setup.py loading...')
 import torch
 import joblib
 import time 
+import os
+import platform
+import subprocess
 # endregion 
 
 # region as
@@ -23,8 +27,9 @@ import matplotlib.pyplot as plt
 
 # region from
 from torch import nn, optim
+from torch.optim import Optimizer, Adam
 from torch.utils.data import TensorDataset, DataLoader
-from typing import Optional, Tuple, Dict, Any 
+from typing import Optional, Tuple, Dict, Any, Callable
 from datetime import datetime
 from pathlib import Path
 # endregion
@@ -40,11 +45,16 @@ except ImportError:
 # endregion
 # endregion
 
-xpu = torch.device('xpu')
 
 def init_cnn(module):
     if type(module) == nn.Linear or type(module) == nn.Conv2d:
         nn.init.xavier_uniform_(module.weight)
+
+def mae(outputs, labels):
+    return torch.mean(torch.abs(outputs - labels)).item()
+
+def mse(outputs, labels):
+    return torch.mean((outputs - labels)**2).item()
 
 def init_gpu_trainer(
         # region Arguments
@@ -65,7 +75,7 @@ def init_gpu_trainer(
         learning_rate: float = 0.001,
         criterion: nn.Module = nn.MSELoss(),
         clip_grads: bool = True,
-        optimizer_cls = optim.Adam,
+        optimizer_cls: Callable[..., Optimizer] = Adam,
         weight_decay: float = 1e-4,
         verbose: bool = True,
         plot_animation: bool = True,
@@ -183,6 +193,7 @@ def init_gpu_trainer(
     save_dir.mkdir(parents=True, exist_ok=True)
     best_model_path = save_dir / f'best_model_{time_stamp}.pt'
     fig_save_path = save_dir / f"training_history_{time_stamp}.png"
+    fig_save_path = os.path.abspath(fig_save_path)
     # endregion
 
     # region Scheduler / Early Stopping
@@ -232,9 +243,8 @@ def init_gpu_trainer(
 
         # region Training Loop
         for batch_x, batch_y in train_loader:
-            if batch_x.device.type != device.type:
-                batch_x = batch_x.to(device)
-                batch_y = batch_y.to(device)
+            batch_x = batch_x.to(device)
+            batch_y = batch_y.to(device)
             optimizer.zero_grad()
             outputs = model(batch_x)
             loss = criterion(outputs, batch_y)
@@ -264,9 +274,8 @@ def init_gpu_trainer(
             # region Validation
             with torch.no_grad():
                 for batch_x, batch_y in val_loader:
-                    if batch_x.device.type != device.type:
-                        batch_x = batch_x.to(device)
-                        batch_y = batch_y.to(device)
+                    batch_x = batch_x.to(device)
+                    batch_y = batch_y.to(device)
                     outputs = model(batch_x)
                     val_loss_sum += criterion(outputs, batch_y).item()
                     val_mae_sum += mae(outputs, batch_y)
@@ -297,7 +306,7 @@ def init_gpu_trainer(
                                                             # lazy workaround. Docs explicitly support floats
                                                             # for fractional epochs.
             else:
-                pass
+                scheduler.step()
             # endregion
 
             # region Schedule / Save / Early stop
@@ -306,9 +315,9 @@ def init_gpu_trainer(
                 patience_counter = 0
                 torch.save(model.state_dict(), best_model_path)
                 if X_scaler is not None:
-                    joblib.dump(X_scaler, save_dir / f'X_scaler_{time_stamp}.pk1')
+                    joblib.dump(X_scaler, save_dir / f'X_scaler_{time_stamp}.pkl')
                 if y_scaler is not None:
-                    joblib.dump(y_scaler, save_dir / f'y_scaler_{time_stamp}.pk1')
+                    joblib.dump(y_scaler, save_dir / f'y_scaler_{time_stamp}.pkl')
             else:
                 patience_counter += 1
                 if patience_counter >= early_stop_patience:
@@ -353,16 +362,14 @@ def init_gpu_trainer(
         # endregion
         
         # region Force open the saved image with Windows default viewer
-        import os
-        os.startfile(os.path.abspath(fig_save_path))
+        if platform.system() == "Windows":
+            os.startfile(os.path.abspath(fig_save_path)) # type: ignore[attr-defined]
+        elif platform.system() == "Darwin":
+            subprocess.run(["open", fig_save_path])
+        else:
+            print(f"📊 Run viewed on headless Linux server. Plot preserved at: {fig_save_path}")
         # endregion
     # endregion
     # endregion
 
     return model, history
-
-def mae(outputs, labels):
-    return torch.mean(torch.abs(outputs - labels)).item()
-
-def mse(outputs, labels):
-    return torch.mean((outputs - labels)**2).item()

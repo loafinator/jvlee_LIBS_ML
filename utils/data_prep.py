@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 
 jvlee_LIBS_ML > utils > data_prep.py
@@ -1776,8 +1778,6 @@ def load_prepped_training_dataset(
         
     return X_trn, X_val, y_trn, y_val, y_val_physical, surviving_cols, meta_val_df
 
-
-
 def sanitize_path(
         path: Path | None = None,
         log_path: Path | None = None,
@@ -1882,8 +1882,8 @@ if __name__=="__main__":
                 'conc_H2o_wt%', 'conc_Nd_wt%',
             }
     training_ready_h5(
-        h5_path= Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\trn_val_split_LIBS.h5"),
-        prepped_h5_path= Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\training_ready_LIBS.h5"),
+        h5_path= Path(r"/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/trn_val_split_LIBS.h5"),
+        prepped_h5_path= Path(r"/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/training_ready_LIBS.h5"),
         allowed_cols=allowed_cols
         )
 

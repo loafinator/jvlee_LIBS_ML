@@ -10,7 +10,7 @@ TODO: Try out AdamW instead of Adam for the optimizer. The weight decay implemen
 
 """
 
-
+# print('hello?')
 # region Imports
 # region imports
 import time
@@ -19,12 +19,13 @@ import logging
 import sys
 import multiprocessing
 # endregion
-
+# print('check 1')
 # region as
 import torch.nn as nn
 import pandas as pd
 import numpy as np
 # endregion
+# print('check 2')
 
 # region froms
 from datetime import datetime
@@ -34,15 +35,19 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import VarianceThreshold
 from logging.handlers import QueueListener
 # endregion
+# print('check 3')
 
 # endregion
 
 # region Paths
+# print('check 4')
 WRK_DIR = Path(__file__).parent.parent.parent.parent.resolve()
 print(f"Working directory is {WRK_DIR}")
-logger_path = WRK_DIR.joinpath(r"LIBS\spec_to_conc\ResNet_CNN_1D\stc_ResNet_CNN_1D_001_log.txt")
-h5_path = WRK_DIR.joinpath(r"LIBS\training_ready_LIBS.h5")
-eval_dir = WRK_DIR.joinpath(r"LIBS\spec_to_conc\ResNet_CNN_1D\eval_ResNet_CNN_1D_001")
+logger_path = WRK_DIR / "LIBS" / "spec_to_conc" / "ResNet_CNN_1D" / "stc_ResNet_CNN_1D_001_log.txt"
+h5_path = WRK_DIR / "LIBS" / "training_ready_LIBS.h5"
+eval_dir = WRK_DIR / "LIBS" / "spec_to_conc" / "ResNet_CNN_1D" / "eval_ResNet_CNN_1D_001"
+X_scaler_path= WRK_DIR / "LIBS" / "X_scaler.pkl"
+y_scaler_path= WRK_DIR / "LIBS" / "y_scaler.pkl"
 # endregion
 
 class ResBlock1D(nn.Module):
@@ -129,15 +134,15 @@ if __name__ == "__main__":
         gen_speak,
         get_worker_logger,
         log,
-        init_xpu_trainer,
         init_gpu_trainer,
         plot_residual_history,
         # plot_peak_error_heatmap,
         # plot_predicted_vs_actual,
         # run_spectral_inference,
         # hf_get,
-        load_h5_split_dataset,
-        load_prepped_training_dataset
+        # load_h5_split_dataset,
+        load_prepped_training_dataset,
+        load_scalers
     )
 
     # endregion
@@ -200,15 +205,20 @@ if __name__ == "__main__":
         n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         log(logger=logger, msg=f'Model parameters: {n_params:,}')
 
-        log(logger=logger, msg='Start transfer data to xpu')
+        log(logger=logger, msg='Start transfer data to GPU')
         time_t1 = time.perf_counter()
-        X_trn_t = torch.from_numpy(X_trn).to('xpu')
-        y_trn_t = torch.from_numpy(y_trn).to('xpu')
-        X_val_t = torch.from_numpy(X_val).to('xpu')
-        y_val_t = torch.from_numpy(y_val).to('xpu')
+        X_trn_t = torch.from_numpy(X_trn).to('cuda')
+        y_trn_t = torch.from_numpy(y_trn).to('cuda')
+        X_val_t = torch.from_numpy(X_val).to('cuda')
+        y_val_t = torch.from_numpy(y_val).to('cuda')
         time_t2 = time.perf_counter()
-        log(logger=logger, msg=f'Data transfer to xpu took {(time_t2 - time_t1)} sec')
+        log(logger=logger, msg=f'Data transfer to GPU took {(time_t2 - time_t1)} sec')
 
+        # Import the scalers used in data_prep
+        X_scaler, y_scaler = load_scalers(
+            X_scaler_path= X_scaler_path,
+            y_scaler_path= y_scaler_path
+            )
 
         start_time_b = time.perf_counter()
         training_model, history = init_gpu_trainer(
@@ -217,10 +227,10 @@ if __name__ == "__main__":
             y_train=y_trn,
             X_val=X_val,
             y_val=y_val,
-            X_scaler= None,
-            y_scaler= None,
-            max_epochs=5,
-            device= torch.device('xpu'),
+            X_scaler= X_scaler,
+            y_scaler= y_scaler,
+            max_epochs=50,
+            device= torch.device('cuda'),
             batch_size=256,
             shuffle= True,
             num_workers= 0,

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 """
 jvlee_LIBS_ML > utils > xpu_setup.py
 
@@ -350,7 +353,7 @@ def init_xpu_trainer(
         
         # region Force open the saved image with Windows default viewer
         import os
-        os.startfile(os.path.abspath(fig_save_path))
+        os.startfile(os.path.abspath(fig_save_path)) # type: ignore[attr-defined]
         # endregion
     # endregion
     # endregion
