@@ -1,0 +1,8 @@
+
+========================================
+2026-08-20 15:20:55
+==================================================
+wavelengths = 2500
+n_features = 7
+Training setup time: 16.840947506017983 seconds
+🔊 Speech simulation: Training complete!

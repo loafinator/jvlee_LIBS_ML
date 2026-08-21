@@ -43,9 +43,9 @@ from logging.handlers import QueueListener
 # print('check 4')
 WRK_DIR = Path(__file__).parent.parent.parent.parent.resolve()
 print(f"Working directory is {WRK_DIR}")
-logger_path = WRK_DIR / "LIBS" / "spec_to_conc" / "ResNet_CNN_1D" / "stc_ResNet_CNN_1D_001_log.txt"
+logger_path = WRK_DIR / "LIBS" / "spec_to_conc" / "ResNet_CNN_1D" / "stc_ResNet_CNN_1D_002_log.txt"
 h5_path = WRK_DIR / "LIBS" / "training_ready_LIBS.h5"
-eval_dir = WRK_DIR / "LIBS" / "spec_to_conc" / "ResNet_CNN_1D" / "eval_ResNet_CNN_1D_001"
+eval_dir = WRK_DIR / "LIBS" / "spec_to_conc" / "ResNet_CNN_1D" / "eval_ResNet_CNN_1D_002"
 X_scaler_path= WRK_DIR / "LIBS" / "X_scaler.pkl"
 y_scaler_path= WRK_DIR / "LIBS" / "y_scaler.pkl"
 # endregion

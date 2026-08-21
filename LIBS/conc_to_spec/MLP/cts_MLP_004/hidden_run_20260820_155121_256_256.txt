@@ -1,0 +1,28 @@
+
+========================================
+2026-08-20 15:51:21
+==================================================
+wavelengths array shape = (10000,)
+n_features = 7
+Training setup time: 9.050918887020089 seconds
+Training on cuda | Epochs: 10 | Batch size: 256
+Train samples: 147039
+Epoch 1/10 | Train Loss: 0.983814 | Val Loss: 0.555789 | Val MAE: 25.3108 | Res μ: -0.0275 σ: 0.7006 | 0.062 min
+Epoch 2/10 | Train Loss: 0.478431 | Val Loss: 0.316921 | Val MAE: 23.1569 | Res μ: -0.0180 σ: 0.5445 | 0.060 min
+Epoch 3/10 | Train Loss: 0.381014 | Val Loss: 0.256824 | Val MAE: 22.0959 | Res μ: -0.0141 σ: 0.4978 | 0.055 min
+Epoch 4/10 | Train Loss: 0.319901 | Val Loss: 0.287720 | Val MAE: 22.0048 | Res μ: +0.0013 σ: 0.5280 | 0.056 min
+Epoch 5/10 | Train Loss: 0.277234 | Val Loss: 0.466450 | Val MAE: 20.8116 | Res μ: -0.0490 σ: 0.6403 | 0.058 min
+Epoch 6/10 | Train Loss: 0.261506 | Val Loss: 0.389069 | Val MAE: 20.2815 | Res μ: -0.0258 σ: 0.5821 | 0.056 min
+Epoch 7/10 | Train Loss: 0.252418 | Val Loss: 0.485410 | Val MAE: 21.4467 | Res μ: +0.0019 σ: 0.6259 | 0.056 min
+Epoch 8/10 | Train Loss: 0.249467 | Val Loss: 0.371371 | Val MAE: 20.6800 | Res μ: -0.0396 σ: 0.5645 | 0.060 min
+Epoch 9/10 | Train Loss: 0.247072 | Val Loss: 0.365837 | Val MAE: 20.1307 | Res μ: -0.0148 σ: 0.5712 | 0.058 min
+Epoch 10/10 | Train Loss: 0.243581 | Val Loss: 0.328921 | Val MAE: 20.6271 | Res μ: -0.0291 σ: 0.5372 | 0.055 min
+Training plot saved to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/cts_MLP_004/cts_MLP_004_trn_Histhidden_run_20260820_155121_256_256/training_history_20260820_155135.png
+📊 Run viewed on headless Linux server. Plot preserved at: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/cts_MLP_004/cts_MLP_004_trn_Histhidden_run_20260820_155121_256_256/training_history_20260820_155135.png
+Training time: 0.6750690070330165 minutes
+Starting post-training spectral evaluation...
+Residual history plot saved to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/cts_MLP_004/hidden_run_20260820_155121_256_256/residual_history_20260820_155121.png
+Composition-range sampling column: conc_CeCl3_wt%
+Evaluation sample indices: [0]
+Evaluation sample labels: ['conc_CeCl3_wt% = 0.0000 (p5)']
+🔊 Speech simulation: Training complete!

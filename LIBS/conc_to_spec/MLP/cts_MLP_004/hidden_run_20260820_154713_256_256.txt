@@ -1,0 +1,10 @@
+
+========================================
+2026-08-20 15:47:13
+==================================================
+wavelengths array shape = (10000,)
+n_features = 7
+Training setup time: 9.064250366995111 seconds
+Training on cuda | Epochs: 10 | Batch size: 256
+Train samples: 147039
+🔊 Speech simulation: Training complete!

@@ -1,0 +1,8 @@
+
+========================================
+2026-08-20 15:39:38
+==================================================
+wavelengths array shape = (10000,)
+n_features = 7
+Training setup time: 9.151819549966604 seconds
+🔊 Speech simulation: Training complete!
