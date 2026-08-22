@@ -885,64 +885,41 @@ def parent_concentration_data(
         
         # region Extract Concentration Data
         # region Extract compositions
-        path_species = []
-        seen_cols = set()
-        matched_nice_names = set()
-        
-        for key, nice_name in sorted(_SPECIES_MAP.items(), key=species_sort_key):
-            match = re.match(r'[A-Za-z]+', nice_name)
-            if match is None:
-                continue
-            base_element = match.group(0)
-            if any(n.startswith(base_element) and n != nice_name for n in matched_nice_names):
-                continue
+        filename_text = path.name.upper()  # Force uppercase to match _SPECIES_MAP keys
 
-            if re.search(rf'(?i)(?<![a-z]){re.escape(key.lower())}(?=[_\s.\-/\\(]|$)', all_text):
-                col = f'conc_{nice_name}_wt%'
-                if col in data and col not in seen_cols:
-                    path_species.append((col, nice_name))
-                    seen_cols.add(col)
-                    matched_nice_names.add(nice_name)
+        # Sort keys by length descending so "CECL3" matches before "CE"
+        sorted_keys = sorted(_SPECIES_MAP.keys(), key=len, reverse=True)
 
-        filename_text = path.name.lower()
-        conc_match = _CONC_PATTERN.search(filename_text)
-
-        if conc_match and len(path_species) == 1:
-            val = float(conc_match.group(1))
-            unit = conc_match.group(2).lower()
-            if 'ppm' in unit:
-                val = val / 10000.0
-            col = path_species[0][0]
-            data[col] = val
-        
-        word_vals = {'half': 0.5, '3quarters': 0.75, 'quarter': 0.25}
-        for pattern, nice_name in _COMPILED_SPECIES_PATTERNS.items():
-            for match in pattern.finditer(all_text):
+        for key in sorted_keys:
+            nice_name = _SPECIES_MAP[key]
+            
+            # Matches a decimal/float, an optional connector (_wt_, _wt%, _, etc.), and the chemical key
+            # Example match: "0.5_WT_CECL3" -> group(1)="0.5"
+            pattern = re.compile(rf"([0-9.]+)(?:_str|_wt|_wt%|wt%|ppm)?_?{re.escape(key)}(?=[_\s.\-/\\(]|$)", re.IGNORECASE)
+            
+            match = pattern.search(filename_text)
+            if match:
                 val_str = match.group(1)
-                if val_str is None:
-                    continue 
-                val_str = val_str.lower()
-                #print(f'   MATCH: val_str={repr(val_str)} | nice_name={nice_name} | full_match={repr(match.group(0))}')
-                if val_str in word_vals:
-                    val = word_vals[val_str]
-                else:
+                col = f"conc_{nice_name}_wt%"
+                
+                # Simple adjustment to map word-form aliases to the expected column structure
+                if nice_name == "H2o":
+                    col = "conc_H2o_wt%"
+                    
+                if col in _DEFAULT_CONC_COLS:
                     try:
                         val = float(val_str)
+                        
+                        # Handle ppm conversion if found in the surrounding filename context
+                        context_around = filename_text[max(0, match.start()-5):match.end()+5]
+                        if 'PPM' in context_around:
+                            val = val / 10000.0
+                            
+                        data[col] = val
+                        print(f" -> Parsed concentration: {col} = {val}")
                     except ValueError:
-                        print(f'   Could not convert "{val_str}" to float, skipping match')
                         continue
 
-                after_match = all_text[match.end():match.end()+5]
-                if 'ppm' in after_match:
-                    val = val / 10000.0
-                # NOTE: this is just a common approximation for LiCl-KCl and really
-                # should be more specific. What would be best is a conversion 
-                # per added species. But for now the approximation is ok since
-                # I am just trying to get this thing to work at all.
-                # TODO: replace with species-specific ppm -> wt% conversion factors 
-                col = f'conc_{nice_name}_wt%'
-                if col in data:
-                    data[col] = val
         # endregion
 
         # region Concentration Maps
@@ -1870,22 +1847,40 @@ def hf_get(
 
 if __name__=="__main__":
     print("hi")
-    allowed_cols= {
-                'frac_LiCl', 'frac_KCl',
-                'conc_Ce_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%',
-                'conc_Ca_wt%', 'conc_CaCl3_wt%',
-                'conc_U_wt%', 'conc_UCl3_wt%',
-                'conc_Sm_wt%', 'conc_SmCl3_wt%',
-                'conc_Gd_wt%', 'conc_GdCl3_wt%',
-                'conc_La_wt%', 'conc_LaCl3_wt%',
-                'conc_Mg_wt%', 'conc_MgCl2_wt%',
-                'conc_H2o_wt%', 'conc_Nd_wt%',
-            }
-    training_ready_h5(
-        h5_path= Path(r"/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/trn_val_split_LIBS.h5"),
-        prepped_h5_path= Path(r"/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/training_ready_LIBS.h5"),
-        allowed_cols=allowed_cols
-        )
+
+    enrich_file_with_metadata(
+        path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_data/nist_libs_1.5_wt_CeCl3_and_3.0_wt_SmCl3.csv"),
+        enriched_root=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_data/"),
+        drop_columns= None,
+        rename_columns = None,
+        composition_columns = None,
+        technique = 'libs',
+        allowed_extensions = None,
+        required_columns = None,
+        salt_states = None,
+        experimental_variation_columns = None,
+        include_experimental_variation_columns = True,
+        min_wavelength = 200,
+        max_wavelength = 1000,
+        log_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_data/log"),
+    )
+
+    # allowed_cols= {
+    #             'frac_LiCl', 'frac_KCl',
+    #             'conc_Ce_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%',
+    #             'conc_Ca_wt%', 'conc_CaCl3_wt%',
+    #             'conc_U_wt%', 'conc_UCl3_wt%',
+    #             'conc_Sm_wt%', 'conc_SmCl3_wt%',
+    #             'conc_Gd_wt%', 'conc_GdCl3_wt%',
+    #             'conc_La_wt%', 'conc_LaCl3_wt%',
+    #             'conc_Mg_wt%', 'conc_MgCl2_wt%',
+    #             'conc_H2o_wt%', 'conc_Nd_wt%',
+    #         }
+    # training_ready_h5(
+    #     h5_path= Path(r"/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/trn_val_split_LIBS.h5"),
+    #     prepped_h5_path= Path(r"/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/training_ready_LIBS.h5"),
+    #     allowed_cols=allowed_cols
+    #     )
 
     #    recursive_mpr_to_csv(
     #        data_root= r"W:\Phongikaroon Group\AndrewsH",
