@@ -16,7 +16,8 @@ from pathlib import Path
 # endregion
 
 # region NIST URL
-NIST_LIBS_URL = "https://physics.nist.gov/cgi-bin/ASD/lines1.pl"
+# NIST_LIBS_URL = "https://physics.nist.gov/cgi-bin/ASD/libs-1.pl"
+NIST_LIBS_URL = "https://physics.nist.gov/cgi-bin/ASD/libs-form.cgi"
 # endregion
 
 def fetch_nist_libs_data(comp_string: str, plasma_params: dict) -> pd.DataFrame | None:
@@ -80,8 +81,9 @@ def generate_simple_intensity_profile(df_discrete: pd.DataFrame, low_w: float = 
     if df_discrete is None or df_discrete.empty:
         return pd.DataFrame(columns=["Wavelength (nm)", "Intensity"])
 
-    # 1. Create a uniform wavelength grid (e.g., 200.0, 200.1, 200.2...)
-    wavelength_grid = np.arange(low_w, upp_w + step, step)
+    # 1. Create a bulletproof uniform wavelength grid using np.linspace
+    num_points = int(round((upp_w - low_w) / step)) + 1
+    wavelength_grid = np.linspace(low_w, upp_w, num_points)
     intensity_array = np.zeros_like(wavelength_grid)
     
     # 2. Apply Gaussian Broadening around each peak
@@ -110,6 +112,135 @@ def generate_simple_intensity_profile(df_discrete: pd.DataFrame, low_w: float = 
         "Intensity": intensity_array
     })
 
+def _fetch_single_nist_chunk(
+    comp_string: str,
+    plasma_params: dict,
+    low_w: float,
+    upp_w: float,
+    max_retries: int = 3
+) -> pd.DataFrame | None:
+    """Queries NIST ASD LIBS endpoint using tuple parameter pairs and proper User-Agent headers."""
+    elements = [pair.split(":")[0].strip() for pair in comp_string.split(";")]
+    percents = [pair.split(":")[1].strip() for pair in comp_string.split(";")]
+    
+    spectra_str = ",".join(f"{el}0-2" for el in elements)
+
+    # Standard browser headers to ensure connection approval
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://physics.nist.gov/PhysRefData/ASD/plots/libs.html"
+    }
+
+    # Complete NIST LIBS parameter payload formatted as tuples
+    payload = [
+        ("element", "All"),
+        ("low_w", f"{low_w:.1f}"),
+        ("upp_w", f"{upp_w:.1f}"),
+        ("limits_type", "0"),
+        ("unit", "1"),
+        ("format", "0"),
+        ("line_out", "0"),
+        ("remove_d", "on"),
+        ("A_unit", "0"),
+        ("resolution", str(plasma_params.get("resolution", "1000"))),
+        ("temp", str(plasma_params.get("temp", "1.0"))),
+        ("eden", str(plasma_params.get("eden", "1e17"))),
+        ("maxcharge", str(plasma_params.get("maxcharge", "2"))),
+        ("min_rel_int", str(plasma_params.get("min_rel_int", "0.1"))),
+        ("show_av", "2"),
+        ("libs", "1"),
+        ("spectra", spectra_str),
+    ]
+
+    # Append elemental composition array arguments
+    for el, perc in zip(elements, percents):
+        payload.append(("mytext[]", el))
+        payload.append(("myperc[]", perc))
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = requests.post(NIST_LIBS_URL, data=payload, headers=headers, timeout=60)
+            
+            if response.status_code in (503, 504):
+                print(f'   [Window {low_w}-{upp_w}nm] Server busy ({response.status_code}). Retry {attempt}/{max_retries} in 5s...')
+                time.sleep(5)
+                continue
+                
+            if response.status_code != 200:
+                print(f'   [Window {low_w}-{upp_w}nm] Server error: HTTP {response.status_code}')
+                return None
+                
+            match = re.search(r"var lines = \[(.*?)\];", response.text, re.DOTALL)
+            if not match:
+                if "Input Error" in response.text:
+                    err_match = re.search(r"<h3>(.*?)</h3>", response.text, re.DOTALL | re.IGNORECASE)
+                    msg = err_match.group(1).strip() if err_match else "Form submission rejected."
+                    print(f"   [Window {low_w}-{upp_w}nm] NIST Input Error: {msg}")
+                else:
+                    print(f"   [Window {low_w}-{upp_w}nm] No spectral lines block found.")
+                return pd.DataFrame()
+                
+            raw_data_block = match.group(1).strip()
+            if not raw_data_block:
+                return pd.DataFrame()
+
+            row_strings = re.findall(r"\[([^\]]+)\]", raw_data_block)
+            if not row_strings:
+                return pd.DataFrame()
+
+            headers_list = [
+                "Wavelength (nm)", "Intensity", "Energy Level 1", 
+                "Element Code 1", "Element Code 2", "Energy Level 2"
+            ]
+            
+            parsed_rows = [[float(val.strip()) for val in row.split(",")] for row in row_strings]
+            return pd.DataFrame(parsed_rows, columns=headers_list)
+            
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+            print(f'   [Window {low_w}-{upp_w}nm] Connection dropped. Retry {attempt}/{max_retries} in 5s...')
+            time.sleep(5)
+        except Exception as e:
+            print(f'   [Window {low_w}-{upp_w}nm] Exception: {str(e)}')
+            return None
+
+    return None
+
+def fetch_nist_libs_data_new(comp_string: str, plasma_params: dict, num_chunks: int = 2) -> pd.DataFrame | None:
+    """
+    Splits the main wavelength range into smaller windows, queries NIST sequentially,
+    and returns a consolidated discrete peak list.
+    """
+    start_w = float(plasma_params["low_w"])
+    end_w = float(plasma_params["upp_w"])
+    
+    # Generate chunk boundaries (e.g., [200.0, 600.0, 1000.0])
+    boundaries = np.linspace(start_w, end_w, num_chunks + 1)
+    
+    collected_dfs = []
+    
+    for i in range(num_chunks):
+        low_w = boundaries[i]
+        upp_w = boundaries[i + 1]
+        
+        df_chunk = _fetch_single_nist_chunk(comp_string, plasma_params, low_w, upp_w)
+        
+        if df_chunk is None:
+            # If a chunk fails completely, abort the run so bad/incomplete data isn't saved
+            return None
+            
+        if not df_chunk.empty:
+            collected_dfs.append(df_chunk)
+            
+        # Short breather between internal chunk requests
+        time.sleep(1.5)
+
+    if not collected_dfs:
+        return pd.DataFrame()
+
+    # Combine all wavelength sub-tables and deduplicate any boundary boundary overlaps
+    full_df = pd.concat(collected_dfs, ignore_index=True)
+    full_df = full_df.drop_duplicates(subset=["Wavelength (nm)", "Intensity"])
+    return full_df
 
 # file path: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/NIST_data.py
 output_dir = Path(__file__).parent.parent / "LIBS" / "NIST_data"
@@ -117,7 +248,7 @@ output_dir.mkdir(parents=True, exist_ok=True)
 
 plasma_params = {
     "low_w": "200",         # Wavelength Minimum (nm)
-    "upp_w": "1000",        # Wavelength Maximum (nm)
+    "upp_w": "600",        # Wavelength Maximum (nm)
     "limits_type": "0",     # 0 for Wavelength range bounds
     "unit": "1",            # Wavelength unit: 1 for nm
     "resolution": "1000",   # Instead of resolving_power
@@ -176,18 +307,18 @@ wt_percents_list = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
 
 
 def gather_2_data(
-        dopant_1: str,
-        mmc_dopant_1: float,
-        num_bond_atoms_1: int,
-        dopant_2: str,
-        mmc_dopant_2: float,
-        num_bond_atoms_2: int,
-        mfr_salt_a: float,
-        mmc_salt_a: float,
-        mfr_salt_b: float,
-        mmc_salt_b: float,
-        salt: str,
-        wt_percents: list,
+    dopant_1: str,
+    mmc_dopant_1: float,
+    num_bond_atoms_1: int,
+    dopant_2: str,
+    mmc_dopant_2: float,
+    num_bond_atoms_2: int,
+    mfr_salt_a: float,
+    mmc_salt_a: float,
+    mfr_salt_b: float,
+    mmc_salt_b: float,
+    salt: str,
+    wt_percents: list,
 ):
     grid = [(w1, w2) for w1 in wt_percents for w2 in wt_percents]
     experiment_df = pd.DataFrame(grid, columns=[f"{dopant_1}_wt%", f"{dopant_2}_wt%"])
@@ -248,34 +379,48 @@ def gather_2_data(
         dopant_1_val = (dopant_1_atoms / total_atoms) * 100
         dopant_2_val = (dopant_2_atoms / total_atoms) * 100
 
-        element_1 = dopant_1[:2]
-        element_2 = dopant_2[:2]
+        match1 = re.match(r"([A-Z][a-z]?)", dopant_1)
+        match2 = re.match(r"([A-Z][a-z]?)", dopant_2)
+
+        element_1 = match1.group(1) if match1 else dopant_1
+        element_2 = match2.group(1) if match2 else dopant_2
         
         comp_string = f"{salt_a}:{salt_a_val:.5f};{salt_b}:{salt_b_val:.5f};{bond_element}:{bond_val:.5f};{element_1}:{dopant_1_val:.5f};{element_2}:{dopant_2_val:.5f}"
         
         print(f"Processing Run {idx}/{len(experiment_df)}: {dopant_1}={wt_dopant_1}wt%, {dopant_2}={wt_dopant_2}wt%")
         
-        # Step 1: Fetch the discrete data points from the web
+        # Step 1: Fetch discrete peak lines
         df_discrete = fetch_nist_libs_data(comp_string, plasma_params)
         
-        if df_discrete is not None and not df_discrete.empty:
-            # Step 2: Pass those discrete data points into the continuous converter
-            df_continuous = generate_simple_intensity_profile(
-                df_discrete,
-                low_w=float(plasma_params["low_w"]),
-                upp_w=float(plasma_params["upp_w"]),
-                step=0.1, # Grid precision step size (nm)
-                resolution=float(plasma_params["resolution"])
-            )
+        if df_discrete is None:
+            print(f' -> Error: Server fetch failed for Run {idx}. Skipping save.')
+            time.sleep(2.0)
+            continue
             
-            
-            # Save the clean continuous 2-column DataFrame to your workspace
+        if df_discrete.empty:
+            print(f' -> Warning: No spectral lines found for Run {idx}.')
+            time.sleep(2.0)
+            continue
+
+        # Step 2: Broaden profiles
+        df_continuous = generate_simple_intensity_profile(
+            df_discrete,
+            low_w=float(plasma_params["low_w"]),
+            upp_w=float(plasma_params["upp_w"]),
+            step=0.1,
+            resolution=float(plasma_params["resolution"])
+        )
+        
+        # Step 3: Single atomic write to disk
+        if not df_continuous.empty:
             tmp_path = file_path.with_suffix(".csv.tmp")
             df_continuous.to_csv(tmp_path, index=False)
-            tmp_path.rename(file_path)
+            tmp_path.replace(file_path)  # atomic overwrite across POSIX filesystems
             print(f' -> Successfully parsed, broadened, and saved data to: {filename}')
+        else:
+            print(' -> Warning: Broadened profile returned 0 data points.')
             
-        # Crucial polite delay loop for server compliance
+        # Server rate-limit delay
         time.sleep(2.0)
 
     print('\n--- Matrix data collection complete ---')
