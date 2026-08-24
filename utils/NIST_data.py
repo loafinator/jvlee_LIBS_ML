@@ -195,6 +195,13 @@ def gather_2_data(
     for idx, (_, row) in enumerate(experiment_df.iterrows(), start=1):
         wt_dopant_1 = row[f"{dopant_1}_wt%"]
         wt_dopant_2 = row[f"{dopant_2}_wt%"]
+
+        filename = f"nist_libs_{wt_dopant_1}_wt_{dopant_1}_and_{wt_dopant_2}_wt_{dopant_2}.csv"
+        file_path = output_dir / filename
+
+        if file_path.exists():
+            print(f"Skipping {filename}, already exists...")
+            continue
         
         wt_dopants = wt_dopant_1 + wt_dopant_2
         wt_salt = 100.0 - wt_dopants
@@ -259,8 +266,6 @@ def gather_2_data(
                 resolution=float(plasma_params["resolution"])
             )
             
-            filename = f"nist_libs_{wt_dopant_1}_wt_{dopant_1}_and_{wt_dopant_2}_wt_{dopant_2}.csv"
-            file_path = output_dir / filename
             
             # Save the clean continuous 2-column DataFrame to your workspace
             df_continuous.to_csv(file_path, index=False)
