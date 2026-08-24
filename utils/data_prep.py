@@ -249,7 +249,7 @@ _STANDARD_SHOTS = 50         # "W:\Phongikaroon Group\AndrewsH\Backup\Experiment
 _DEFAULT_CONC_COLS: List[str] = [
     'frac_LiCl',        'frac_KCl', 
     'conc_Ce_wt%',      'conc_CeCl3_wt%',
-                        'conc_CeN_wt%',
+                        # 'conc_CeN_wt%',
     'conc_Ca_wt%',      'conc_CaCl3_wt%',
     'conc_U_wt%',       'conc_UCl3_wt%',
     'conc_Sm_wt%',      'conc_SmCl3_wt%',
@@ -257,7 +257,16 @@ _DEFAULT_CONC_COLS: List[str] = [
     'conc_La_wt%',      'conc_LaCl3_wt%',
     'conc_Mg_wt%',      'conc_MgCl2_wt%',
     'conc_H2o_wt%',
-    'conc_Nd_wt%',
+    'conc_Nd_wt%',      'conc_NdCl3_wt%',
+
+    'conc_CsCl_wt%',
+    'conc_SrCl2_wt%',
+    'conc_BaCl2_wt%',
+    'conc_YCl3_wt%',
+    'conc_FeCl2_wt%',
+    'conc_CrCl2_wt%',
+    'conc_NiCl2_wt%',
+    'conc_MnCl2_wt%',
 ]
 
 _SPECIES_MAP = {

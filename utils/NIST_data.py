@@ -17,7 +17,8 @@ from pathlib import Path
 
 # region NIST URL
 # NIST_LIBS_URL = "https://physics.nist.gov/cgi-bin/ASD/libs-1.pl"
-NIST_LIBS_URL = "https://physics.nist.gov/cgi-bin/ASD/libs-form.cgi"
+# NIST_LIBS_URL = "https://physics.nist.gov/cgi-bin/ASD/libs-form.cgi"
+NIST_LIBS_URL = "https://physics.nist.gov/cgi-bin/ASD/lines1.pl"
 # endregion
 
 def fetch_nist_libs_data(comp_string: str, plasma_params: dict) -> pd.DataFrame | None:
@@ -72,7 +73,6 @@ def fetch_nist_libs_data(comp_string: str, plasma_params: dict) -> pd.DataFrame 
         print(f' -> Network failure: {str(e)}')
         return None
 
-
 def generate_simple_intensity_profile(df_discrete: pd.DataFrame, low_w: float = 200.0, upp_w: float = 1000.0, step: float = 0.1, resolution: float = 1000.0) -> pd.DataFrame:
     """
     Converts discrete peak lines into a uniform wavelength intensity array.
@@ -112,135 +112,143 @@ def generate_simple_intensity_profile(df_discrete: pd.DataFrame, low_w: float = 
         "Intensity": intensity_array
     })
 
-def _fetch_single_nist_chunk(
-    comp_string: str,
-    plasma_params: dict,
-    low_w: float,
-    upp_w: float,
-    max_retries: int = 3
-) -> pd.DataFrame | None:
-    """Queries NIST ASD LIBS endpoint using tuple parameter pairs and proper User-Agent headers."""
-    elements = [pair.split(":")[0].strip() for pair in comp_string.split(";")]
-    percents = [pair.split(":")[1].strip() for pair in comp_string.split(";")]
+# def _fetch_single_nist_chunk(
+#     comp_string: str,
+#     plasma_params: dict,
+#     low_w: float,
+#     upp_w: float,
+#     max_retries: int = 3
+# ) -> pd.DataFrame | None:
+#     """Queries NIST ASD LIBS endpoint using tuple parameter pairs and proper User-Agent headers."""
+#     elements = [pair.split(":")[0].strip() for pair in comp_string.split(";")]
+#     percents = [pair.split(":")[1].strip() for pair in comp_string.split(";")]
     
-    spectra_str = ",".join(f"{el}0-2" for el in elements)
+#     spectra_str = ",".join(f"{el}0-2" for el in elements)
 
-    # Standard browser headers to ensure connection approval
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer": "https://physics.nist.gov/PhysRefData/ASD/plots/libs.html"
-    }
+#     # Standard browser headers to ensure connection approval
+#     headers = {
+#         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+#         "Referer": "https://physics.nist.gov/PhysRefData/ASD/plots/libs.html"
+#     }
 
-    # Complete NIST LIBS parameter payload formatted as tuples
-    payload = [
-        ("element", "All"),
-        ("low_w", f"{low_w:.1f}"),
-        ("upp_w", f"{upp_w:.1f}"),
-        ("limits_type", "0"),
-        ("unit", "1"),
-        ("format", "0"),
-        ("line_out", "0"),
-        ("remove_d", "on"),
-        ("A_unit", "0"),
-        ("resolution", str(plasma_params.get("resolution", "1000"))),
-        ("temp", str(plasma_params.get("temp", "1.0"))),
-        ("eden", str(plasma_params.get("eden", "1e17"))),
-        ("maxcharge", str(plasma_params.get("maxcharge", "2"))),
-        ("min_rel_int", str(plasma_params.get("min_rel_int", "0.1"))),
-        ("show_av", "2"),
-        ("libs", "1"),
-        ("spectra", spectra_str),
-    ]
+#     # Complete NIST LIBS parameter payload formatted as tuples
+#     # payload = [
+#     #     ("element", "All"),
+#     #     ("low_w", f"{low_w:.1f}"),
+#     #     ("upp_w", f"{upp_w:.1f}"),
+#     #     ("limits_type", "0"),
+#     #     ("unit", "1"),
+#     #     ("format", "0"),
+#     #     ("line_out", "0"),
+#     #     ("remove_d", "on"),
+#     #     ("A_unit", "0"),
+#     #     ("resolution", str(plasma_params.get("resolution", "1000"))),
+#     #     ("temp", str(plasma_params.get("temp", "1.0"))),
+#     #     ("eden", str(plasma_params.get("eden", "1e17"))),
+#     #     ("maxcharge", str(plasma_params.get("maxcharge", "2"))),
+#     #     ("min_rel_int", str(plasma_params.get("min_rel_int", "0.1"))),
+#     #     ("show_av", "2"),
+#     #     ("libs", "1"),
+#     #     ("spectra", spectra_str),
+#     # ]
+#     payload = {
+#             **plasma_params,
+#             "composition": comp_string,
+#             "spectra": ",".join(f"{el}0-2" for el in elements),
+#             "mytext[]": elements,
+#             "myperc[]": percents
+#         }
 
-    # Append elemental composition array arguments
-    for el, perc in zip(elements, percents):
-        payload.append(("mytext[]", el))
-        payload.append(("myperc[]", perc))
+#     # Append elemental composition array arguments
+#     # for el, perc in zip(elements, percents):
+#     #     payload.append(("mytext[]", el))
+#     #     payload.append(("myperc[]", perc))
 
-    for attempt in range(1, max_retries + 1):
-        try:
-            response = requests.post(NIST_LIBS_URL, data=payload, headers=headers, timeout=60)
+#     for attempt in range(1, max_retries + 1):
+#         try:
+#             response = requests.post(NIST_LIBS_URL, data=payload, headers=headers, timeout=60)
             
-            if response.status_code in (503, 504):
-                print(f'   [Window {low_w}-{upp_w}nm] Server busy ({response.status_code}). Retry {attempt}/{max_retries} in 5s...')
-                time.sleep(5)
-                continue
+#             if response.status_code in (503, 504):
+#                 print(f'   [Window {low_w}-{upp_w}nm] Server busy ({response.status_code}). Retry {attempt}/{max_retries} in 5s...')
+#                 time.sleep(5)
+#                 continue
                 
-            if response.status_code != 200:
-                print(f'   [Window {low_w}-{upp_w}nm] Server error: HTTP {response.status_code}')
-                return None
+#             if response.status_code != 200:
+#                 print(f'   [Window {low_w}-{upp_w}nm] Server error: HTTP {response.status_code}')
+#                 return None
                 
-            match = re.search(r"var lines = \[(.*?)\];", response.text, re.DOTALL)
-            if not match:
-                if "Input Error" in response.text:
-                    err_match = re.search(r"<h3>(.*?)</h3>", response.text, re.DOTALL | re.IGNORECASE)
-                    msg = err_match.group(1).strip() if err_match else "Form submission rejected."
-                    print(f"   [Window {low_w}-{upp_w}nm] NIST Input Error: {msg}")
-                else:
-                    print(f"   [Window {low_w}-{upp_w}nm] No spectral lines block found.")
-                return pd.DataFrame()
+#             match = re.search(r"var lines = \[(.*?)\];", response.text, re.DOTALL)
+#             if not match:
+#                 if "Input Error" in response.text:
+#                     err_match = re.search(r"<h3>(.*?)</h3>", response.text, re.DOTALL | re.IGNORECASE)
+#                     msg = err_match.group(1).strip() if err_match else "Form submission rejected."
+#                     print(f"   [Window {low_w}-{upp_w}nm] NIST Input Error: {msg}")
+#                 else:
+#                     print(f"   [Window {low_w}-{upp_w}nm] No spectral lines block found.")
+#                 return pd.DataFrame()
                 
-            raw_data_block = match.group(1).strip()
-            if not raw_data_block:
-                return pd.DataFrame()
+#             raw_data_block = match.group(1).strip()
+#             if not raw_data_block:
+#                 return pd.DataFrame()
 
-            row_strings = re.findall(r"\[([^\]]+)\]", raw_data_block)
-            if not row_strings:
-                return pd.DataFrame()
+#             row_strings = re.findall(r"\[([^\]]+)\]", raw_data_block)
+#             if not row_strings:
+#                 return pd.DataFrame()
 
-            headers_list = [
-                "Wavelength (nm)", "Intensity", "Energy Level 1", 
-                "Element Code 1", "Element Code 2", "Energy Level 2"
-            ]
+#             headers_list = [
+#                 "Wavelength (nm)", "Intensity", "Energy Level 1", 
+#                 "Element Code 1", "Element Code 2", "Energy Level 2"
+#             ]
             
-            parsed_rows = [[float(val.strip()) for val in row.split(",")] for row in row_strings]
-            return pd.DataFrame(parsed_rows, columns=headers_list)
+#             parsed_rows = [[float(val.strip()) for val in row.split(",")] for row in row_strings]
+#             return pd.DataFrame(parsed_rows, columns=headers_list)
             
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
-            print(f'   [Window {low_w}-{upp_w}nm] Connection dropped. Retry {attempt}/{max_retries} in 5s...')
-            time.sleep(5)
-        except Exception as e:
-            print(f'   [Window {low_w}-{upp_w}nm] Exception: {str(e)}')
-            return None
+#         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+#             print(f'   [Window {low_w}-{upp_w}nm] Connection dropped. Retry {attempt}/{max_retries} in 5s...')
+#             time.sleep(5)
+#         except Exception as e:
+#             print(f'   [Window {low_w}-{upp_w}nm] Exception: {str(e)}')
+#             return None
 
-    return None
+#     return None
 
-def fetch_nist_libs_data_new(comp_string: str, plasma_params: dict, num_chunks: int = 2) -> pd.DataFrame | None:
-    """
-    Splits the main wavelength range into smaller windows, queries NIST sequentially,
-    and returns a consolidated discrete peak list.
-    """
-    start_w = float(plasma_params["low_w"])
-    end_w = float(plasma_params["upp_w"])
+# def fetch_nist_libs_data_new(comp_string: str, plasma_params: dict, num_chunks: int = 2) -> pd.DataFrame | None:
+#     """
+#     Splits the main wavelength range into smaller windows, queries NIST sequentially,
+#     and returns a consolidated discrete peak list.
+#     """
+#     start_w = float(plasma_params["low_w"])
+#     end_w = float(plasma_params["upp_w"])
     
-    # Generate chunk boundaries (e.g., [200.0, 600.0, 1000.0])
-    boundaries = np.linspace(start_w, end_w, num_chunks + 1)
+#     # Generate chunk boundaries (e.g., [200.0, 600.0, 1000.0])
+#     boundaries = np.linspace(start_w, end_w, num_chunks + 1)
     
-    collected_dfs = []
+#     collected_dfs = []
     
-    for i in range(num_chunks):
-        low_w = boundaries[i]
-        upp_w = boundaries[i + 1]
+#     for i in range(num_chunks):
+#         low_w = boundaries[i]
+#         upp_w = boundaries[i + 1]
         
-        df_chunk = _fetch_single_nist_chunk(comp_string, plasma_params, low_w, upp_w)
+#         df_chunk = _fetch_single_nist_chunk(comp_string, plasma_params, low_w, upp_w)
         
-        if df_chunk is None:
-            # If a chunk fails completely, abort the run so bad/incomplete data isn't saved
-            return None
+#         if df_chunk is None:
+#             print('Chunk failure')
+#             # If a chunk fails completely, abort the run so bad/incomplete data isn't saved
+#             return None
             
-        if not df_chunk.empty:
-            collected_dfs.append(df_chunk)
+#         if not df_chunk.empty:
+#             collected_dfs.append(df_chunk)
             
-        # Short breather between internal chunk requests
-        time.sleep(1.5)
+#         # Short breather between internal chunk requests
+#         time.sleep(1.5)
 
-    if not collected_dfs:
-        return pd.DataFrame()
+#     if not collected_dfs:
+#         return pd.DataFrame()
 
-    # Combine all wavelength sub-tables and deduplicate any boundary boundary overlaps
-    full_df = pd.concat(collected_dfs, ignore_index=True)
-    full_df = full_df.drop_duplicates(subset=["Wavelength (nm)", "Intensity"])
-    return full_df
+#     # Combine all wavelength sub-tables and deduplicate any boundary boundary overlaps
+#     full_df = pd.concat(collected_dfs, ignore_index=True)
+#     full_df = full_df.drop_duplicates(subset=["Wavelength (nm)", "Intensity"])
+#     return full_df
 
 # file path: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/NIST_data.py
 output_dir = Path(__file__).parent.parent / "LIBS" / "NIST_data"
@@ -248,7 +256,7 @@ output_dir.mkdir(parents=True, exist_ok=True)
 
 plasma_params = {
     "low_w": "200",         # Wavelength Minimum (nm)
-    "upp_w": "600",        # Wavelength Maximum (nm)
+    "upp_w": "1000",        # Wavelength Maximum (nm)
     "limits_type": "0",     # 0 for Wavelength range bounds
     "unit": "1",            # Wavelength unit: 1 for nm
     "resolution": "1000",   # Instead of resolving_power
@@ -261,6 +269,7 @@ plasma_params = {
 }
 
 # Material constants (g/mol)
+
 DOPANT_SPECS = {
     'CeCl3': {'mmc': 246.475, 'num_bond_atoms': 3},
     'SmCl3': {'mmc': 256.72,  'num_bond_atoms': 3},
@@ -274,23 +283,27 @@ DOPANT_SPECS = {
     'CrCl2': {'mmc': 122.902, 'num_bond_atoms': 2},
     'NiCl2': {'mmc': 129.599, 'num_bond_atoms': 2},
     'MnCl2': {'mmc': 125.844, 'num_bond_atoms': 2},
-    'UCl3':  {'mmc': 344.388, 'num_bond_atoms': 3}
+    'UCl3':  {'mmc': 344.388, 'num_bond_atoms': 3},
+    # 'CeN': {'mmc': 154.123, 'num_bond_atoms':},
+    'CaCl2': {'mmc': 110.984, 'num_bond_atoms': 2},
+    'GdCl3': {'mmc': 263.610, 'num_bond_atoms': 3},
+    'MgCl2': {'mmc': 095.211, 'num_bond_atoms': 2}
 }
-mmc_cecl3 = 246.475
-mmc_smcl3 = 256.72
-mmc_lacl3 = 245.264
-mmc_ndcl3 = 250.601
-mmc_cscl = 168.358
-mmc_srcl2 = 158.53
-mmc_bacl2 = 208.233
-mmc_ycl3 = 195.265
-mmc_fecl2 = 126.751
-mmc_crcl2 = 122.902
-mmc_nicl2 = 129.599
-mmc_mncl2 = 125.844
-mmc_ucl3 = 344.388
-mmc_ = 1
-mmc_ = 1
+# mmc_cecl3 = 246.475
+# mmc_smcl3 = 256.72
+# mmc_lacl3 = 245.264
+# mmc_ndcl3 = 250.601
+# mmc_cscl = 168.358
+# mmc_srcl2 = 158.53
+# mmc_bacl2 = 208.233
+# mmc_ycl3 = 195.265
+# mmc_fecl2 = 126.751
+# mmc_crcl2 = 122.902
+# mmc_nicl2 = 129.599
+# mmc_mncl2 = 125.844
+# mmc_ucl3 = 344.388
+# mmc_ = 1
+# mmc_ = 1
 
 mmc_lif = 25.939
 mmc_bef = 47.009
@@ -391,6 +404,7 @@ def gather_2_data(
         
         # Step 1: Fetch discrete peak lines
         df_discrete = fetch_nist_libs_data(comp_string, plasma_params)
+        # df_discrete = fetch_nist_libs_data(comp_string, plasma_params,num_chunks=2)
         
         if df_discrete is None:
             print(f' -> Error: Server fetch failed for Run {idx}. Skipping save.')
