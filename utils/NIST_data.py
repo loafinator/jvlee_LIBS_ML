@@ -24,11 +24,13 @@ def fetch_nist_libs_data(comp_string: str, plasma_params: dict) -> pd.DataFrame 
     Sends a query to the NIST LIBS database and parses the hidden JavaScript 
     array into a discrete peak list DataFrame.
     """
+    elements = [pair.split(":")[0] for pair in comp_string.split(";")]
+
     payload = {
         **plasma_params,
         "composition": comp_string,
-        "spectra": "Li0-2,K0-2,Cl0-2,Ce0-2,Sm0-2",
-        "mytext[]": ["Li", "K", "Cl", "Ce", "Sm"],
+        "spectra": ",".join(f"{el}0-2" for el in elements),
+        "mytext[]": elements,
         "myperc[]": [val.split(":")[1] for val in comp_string.split(";")]
     }
     
@@ -268,11 +270,13 @@ def gather_2_data(
             
             
             # Save the clean continuous 2-column DataFrame to your workspace
-            df_continuous.to_csv(file_path, index=False)
+            tmp_path = file_path.with_suffix(".csv.tmp")
+            df_continuous.to_csv(tmp_path, index=False)
+            tmp_path.rename(file_path)
             print(f' -> Successfully parsed, broadened, and saved data to: {filename}')
             
         # Crucial polite delay loop for server compliance
-        time.sleep(3.5)
+        time.sleep(2.0)
 
     print('\n--- Matrix data collection complete ---')
 

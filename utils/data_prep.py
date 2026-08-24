@@ -31,6 +31,7 @@ import pickle
 # region as
 import pandas as pd 
 import numpy as np
+import multiprocessing as mp
 # endregion
 
 # region from
@@ -448,7 +449,7 @@ def enrich_with_progress(
         experimental_variation_columns: Optional[List[str]] = None,
         include_experimental_variation_columns: bool = True,
         log_q=None,
-        # log_path: Path | None = None,
+        log_path: Path | None = None,
 ) -> List[Path]:
     """
     Reusable function with progress bar for enriching any technique.
@@ -518,14 +519,15 @@ def enrich_with_progress(
         experimental_variation_columns=experimental_variation_columns,
         include_experimental_variation_columns=include_experimental_variation_columns,
         min_wavelength=min_wavelength,
-        max_wavelength=max_wavelength
+        max_wavelength=max_wavelength,
+        log_path=log_path
     )
 
     # max_workers=None lets Python pick (usually cpu_count())
     # For I/O-heavy work you can go higher, e.g. max_workers=os.cpu_count() * 2
-    print(f"Starting ProcessPoolExecutor with {min(4, os.cpu_count() or 4)} workers...")
+    print(f"Starting ProcessPoolExecutor with {min(3, os.cpu_count() or 3)} workers...")
     with ProcessPoolExecutor(
-        max_workers=min(4,os.cpu_count() or 4),
+        max_workers=min(3,os.cpu_count() or 3),
         initializer=worker_init,
         initargs=(log_q,)
     ) as executor:
@@ -1848,22 +1850,41 @@ def hf_get(
 if __name__=="__main__":
     print("hi")
 
-    enrich_file_with_metadata(
-        path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_data/nist_libs_1.5_wt_CeCl3_and_3.0_wt_SmCl3.csv"),
-        enriched_root=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_data/"),
-        drop_columns= None,
-        rename_columns = None,
-        composition_columns = None,
-        technique = 'libs',
-        allowed_extensions = None,
-        required_columns = None,
-        salt_states = None,
-        experimental_variation_columns = None,
-        include_experimental_variation_columns = True,
-        min_wavelength = 200,
-        max_wavelength = 1000,
-        log_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_data/log"),
-    )
+    nist_dir = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_data")
+    enriched_root = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_data_enriched")
+    enriched_root.mkdir(parents=True, exist_ok=True)
+    log_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_data_enriched/enrich.txt")
+
+    csv_files = list(nist_dir.glob("*.csv"))
+
+    log_q = mp.Queue()
+    listener_logger = logging.getLogger('main')
+    listener_logger.addHandler(logging.FileHandler("enrich_run.log"))
+    listener_logger.setLevel(logging.DEBUG)
+    listener = handlers.QueueListener(log_q, *listener_logger.handlers)
+    listener.start()
+
+    try:
+        enriched_paths = enrich_with_progress(
+            files=csv_files,
+            enriched_root=enriched_root,
+            technique_name='libs',
+            drop_columns=None,
+            rename_columns=None,
+            composition_columns=None,
+            min_wavelength=200,
+            max_wavelength=1000,
+            allowed_extensions=None,
+            required_columns=None,
+            salt_states=None,
+            experimental_variation_columns=None,
+            include_experimental_variation_columns=True,
+            log_q=log_q,
+            log_path=log_path
+        )
+
+    finally:
+        listener.stop()
 
     # allowed_cols= {
     #             'frac_LiCl', 'frac_KCl',
