@@ -376,20 +376,82 @@ def asc_to_csv(
     except Exception as e:
         log(logger=logger, msg = f'  ❌ ASC error on {asc_path.name}: {e}')
 
-def txt_to_csv(
-        txt_path: str | Path,
-        csv_path: str | Path,
-        log_path: Path | None = None,
+def nist_pipe_to_csv(txt_path: str | Path,
+    csv_path: str | Path,
+    log_path: Path | None = None,
 ) -> None:
     txt_path = Path(txt_path).resolve()
     csv_path = Path(csv_path).resolve()
 
     # region Logger Setup
     if log_path is None:
-        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+        log_path = Path(r"/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/default_log.txt").resolve()
 
     logger = get_worker_logger(Path(log_path).stem)
     # endregion
+
+    try:
+        wavelengths = []
+        intensities = []
+
+        with open(txt_path, 'r', encoding='utf-8', errors='replace') as f:
+            for line in f:
+                line = line.strip()
+                # Skip borders, empty lines, and header lines containing text
+                if not line or line.startswith('-') or '|' not in line:
+                    continue
+
+                parts = [p.strip() for p in line.split('|')]
+
+                # Must have enough pipe segments to contain Wavelength (index 1) and Int (index 3)
+                if len(parts) < 4:
+                    continue
+
+                try:
+                    # Column index 1 = Observed Wavelength Air (nm)
+                    wl = float(parts[1])
+                    # Column index 3 = Rel. Int. (Default to 0.0 if empty)
+                    rel_int = float(parts[3]) if parts[3] else 0.0
+
+                    wavelengths.append(wl)
+                    intensities.append(rel_int)
+                except ValueError:
+                    # Skips header text lines like "Observed", "Air (nm)", etc.
+                    continue
+
+        if not wavelengths:
+            log(logger=logger, msg=f'Warning: no NIST data rows parsed in {txt_path.name}')
+            return
+
+        # Format into 2D DataFrame (1 shot/row, wavelengths as columns)
+        # to match your existing dataset standard format
+        df = pd.DataFrame([intensities], columns=wavelengths)
+        df.to_csv(csv_path, index=False)
+        log(logger=logger, msg=f'Saved NIST CSV {csv_path.name} | shape: {df.shape}')
+
+    except Exception as e:
+        log(logger=logger, msg=f'  ❌ NIST txt error on {txt_path.name}: {e}')
+
+def txt_to_csv(
+        txt_path: str | Path,
+        csv_path: str | Path,
+        log_path: Path | None = None,
+        delimiter: str = 'tab',
+) -> None:
+    txt_path = Path(txt_path).resolve()
+    csv_path = Path(csv_path).resolve()
+
+    # region Logger Setup
+    if log_path is None:
+        log_path = Path(r"/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/default_log.txt").resolve()
+
+    logger = get_worker_logger(Path(log_path).stem)
+    # endregion
+
+    if delimiter == 'tab':
+        d_key = '\t'
+    else:
+        d_key = ','
 
 
     try:
@@ -398,12 +460,13 @@ def txt_to_csv(
         with open(txt_path, 'r', encoding='utf-8', errors='replace') as f:
             for line in f:
                 line = line.strip()
-                if not line or line.startswith("'"):
-                    continue  # skip header lines
-                parts = line.split('\t')
+                if not line or line.startswith("'") or line.lower().startswith('wavelength'):
+                    continue  # skip empty lines, comment lines, and header lines
+                parts = line.split(d_key)
                 try:
-                    wl = float(parts[0])
-                    intensities = [float(x) for x in parts[1:] if x.strip()]
+                    wl = float(parts[0].strip())
+                    intensities = [float(x.strip()) if x.strip() else 0.0 for x in parts[1:]]
+                    # intensities = [float(x) for x in parts[1:] if x.strip()]
                     if intensities:
                         data_rows.append((wl, intensities))
                 except ValueError:
@@ -416,10 +479,14 @@ def txt_to_csv(
         wavelengths = [r[0] for r in data_rows]
         # Each row is one wavelength, each column is one shot — need to transpose
         # so that rows = shots, columns = wavelengths (same as asc_to_csv output)
-        n_shots = len(data_rows[0][1])
-        spectra_2d = [[data_rows[wl_i][1][shot_i] 
+        max_cols = max(len(r[1]) for r in data_rows)
+        padded_rows = [
+            r[1] + [0.0] * (max_cols - len(r[1]))
+            for r in data_rows
+        ]
+        spectra_2d = [[padded_rows[wl_i][shot_i] 
                        for wl_i in range(len(wavelengths))] 
-                       for shot_i in range(n_shots)]
+                       for shot_i in range(max_cols)]
 
         df = pd.DataFrame(spectra_2d, columns=wavelengths)
         df.to_csv(csv_path, index=False)
@@ -528,6 +595,17 @@ def log(logger,msg):
 
 if __name__ == '__main__':
     print('hi')
+
+    # nist_pipe_to_csv(
+    #     txt_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_singles/Wavelength (nm),Sum,U ABS I (1.1e-02),Y.txt',
+    #     csv_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_singles/Wavelength (nm),Sum,U ABS I (1.1e-02),Y.csv'
+    # )
+
+    # txt_to_csv(
+    #     txt_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_singles/Wavelength (nm),Sum,Y I (1.1e-02),Y.txt',
+    #     csv_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_singles/Wavelength (nm),Sum,Y I (1.1e-02),Y.csv',
+    #     delimiter=','
+    # )
     # mpr_to_csv(mpr_path=r"W:\Phongikaroon Group\Dalsung Y\Electrochemical NEPU project\Data\Cd Exp\PURE SALT _1\500C\1_CV_200mV_C01.mpr",
     #            csv_path=r"W:\Phongikaroon Group\Dalsung Y\Electrochemical NEPU project\Data\Cd Exp\PURE SALT _1\500C\1_CV_200mV_C01.csv")
     

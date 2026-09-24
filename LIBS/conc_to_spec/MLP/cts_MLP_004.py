@@ -56,7 +56,8 @@ from utils import (
 WRK_DIR = Path(__file__).parent.parent.parent.parent.resolve()
 print(f"Working directory is {WRK_DIR}")
 logger_root = WRK_DIR / "LIBS" / "conc_to_spec" / "MLP" / "cts_MLP_004"
-h5_path = WRK_DIR / "LIBS" / "training_ready_LIBS.h5"
+# h5_path = WRK_DIR / "LIBS" / "training_ready_LIBS.h5"                     # 0.217666
+h5_path = WRK_DIR / "LIBS" / "training_ready_pairs_LIBS.h5"
 eval_dir = WRK_DIR / "LIBS" / "conc_to_spec" / "MLP" / "eval_cts_MLP_004"
 X_scaler_path= WRK_DIR / "LIBS" / "X_scaler.pkl"
 y_scaler_path= WRK_DIR / "LIBS" / "y_scaler.pkl"

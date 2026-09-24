@@ -1,0 +1,27 @@
+[leejv2@athena1 LIBS]$ sbatch get_NIST_trios.sh 
+(.venv) [leejv2@athena208 LIBS]$ tail -f logs/nist_*.out
+==========================================================
+Job Started: Thu Aug 27 03:24:40 PM EDT 2026
+Running on node: athena209
+Job ID: 3015298
+Scratch Directory: /tmp/slurm_3015298
+==========================================================
+NIST_data.py loading ...
+🔍 Pre-scanning grid to find uncompleted runs...
+🚀 Found 560000 remaining simulation runs to execute.
+⚡ Processing with 4 concurrent threads (1.2s worker delay)...
+[Run 3/560000] ✅ Saved: nist_libs_0.5_wt_CeCl3_and_0.5_wt_SmCl3_and_1.5_wt_LaCl3.csv
+[Run 4/560000] ✅ Saved: nist_libs_0.5_wt_CeCl3_and_0.5_wt_SmCl3_and_2.0_wt_LaCl3.csv
+[Run 1/560000] ✅ Saved: nist_libs_0.5_wt_CeCl3_and_0.5_wt_SmCl3_and_0.5_wt_LaCl3.csv
+[Run 2/560000] ✅ Saved: nist_libs_0.5_wt_CeCl3_and_0.5_wt_SmCl3_and_1.0_wt_LaCl3.csv
+[Run 5/560000] ✅ Saved: nist_libs_0.5_wt_CeCl3_and_0.5_wt_SmCl3_and_2.5_wt_LaCl3.csv
+[Run 6/560000] ✅ Saved: nist_libs_0.5_wt_CeCl3_and_0.5_wt_SmCl3_and_3.0_wt_LaCl3.csv
+[Run 8/560000] ✅ Saved: nist_libs_0.5_wt_CeCl3_and_0.5_wt_SmCl3_and_4.0_wt_LaCl3.csv
+[Run 7/560000] ✅ Saved: nist_libs_0.5_wt_CeCl3_and_0.5_wt_SmCl3_and_3.5_wt_LaCl3.csv
+[Run 9/560000] ✅ Saved: nist_libs_0.5_wt_CeCl3_and_0.5_wt_SmCl3_and_4.5_wt_LaCl3.csv
+[Run 10/560000] ✅ Saved: nist_libs_0.5_wt_CeCl3_and_0.5_wt_SmCl3_and_5.0_wt_LaCl3.csv
+[Run 11/560000] ✅ Saved: nist_libs_0.5_wt_CeCl3_and_1.0_wt_SmCl3_and_0.5_wt_LaCl3.csv
+[Run 12/560000] ✅ Saved: nist_libs_0.5_wt_CeCl3_and_1.0_wt_SmCl3_and_1.0_wt_LaCl3.csv
+[Run 14/560000] ✅ Saved: nist_libs_0.5_wt_CeCl3_and_1.0_wt_SmCl3_and_2.0_wt_LaCl3.csv
+[Run 13/560000] ✅ Saved: nist_libs_0.5_wt_CeCl3_and_1.0_wt_SmCl3_and_1.5_wt_LaCl3.csv
+[Run 15/560000] ✅ Saved: nist_libs_0.5_wt_CeCl3_and_1.0_wt_SmCl3_and_2.5_wt_LaCl3.c

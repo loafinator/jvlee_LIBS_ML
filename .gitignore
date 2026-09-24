@@ -12,3 +12,4 @@ LIBS/trn_val_split_LIBS.h5
 *.pt
 *.pth
 *.csv
+*.zip
