@@ -7,6 +7,7 @@ jvlee_LIBS_ML > LIBS > p3VAE > p3vae_002.py
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
 import h5py
 import numpy as np
 import sys
@@ -19,10 +20,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from setup import add_project_root_to_path
 add_project_root_to_path(parent_generation=1)
 
+# torch.autograd.set_detect_anomaly(True)
+
 # region Global Variables
 max_epochs = 5
 batch_size = 256
-learning_rate = 1e-03
+learning_rate = 1e-05
 weight_decay = 1e-04
 
 ALL_COLUMNS = [
@@ -72,21 +75,46 @@ class LIBSSpectraDataset(Dataset):
         if self.hf is not None:
             self.hf.close()
 
+class LIBSSpectraDatasetInMemory(Dataset):
+    def __init__(self, h5_path: str | Path, split: str = 'train'):
+        h5_path = str(h5_path)
+        print(f"Loading '{split}' dataset into memory...")
+        
+        with h5py.File(h5_path, 'r') as hf:
+            # Read entire arrays directly into RAM (NumPy) -> convert to torch Tensors
+            self.spectra = torch.from_numpy(hf[split]['spectra'][:]).float()        # type: ignore
+            self.targets = torch.from_numpy(hf[split]['metadata']['elem_comp_wt%'][:]).float()        # type: ignore
+            self.is_synth = torch.from_numpy(hf[split]['metadata']['is_synthetic'][:]).long()        # type: ignore
+
+    def __len__(self):
+        return len(self.spectra)
+
+    def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
+        return {
+            'spectrum': self.spectra[idx],
+            'targets': self.targets[idx],
+            'is_synthetic': self.is_synth[idx],
+        }
 
 class PhysicsSpectralDecoder(nn.Module):
     def __init__(self, wl_grid, nist_wls, nist_intens):
         super().__init__()
-        self.register_buffer('grid', wl_grid.unsqueeze(0))              # (1, N_channels)
-        self.register_buffer('line_centers', nist_wls.unsqueeze(0))     # (1, N_lines)
-        self.register_buffer('line_base_amps', nist_intens.unsqueeze(0)) # (1, N_lines)
+        self.register_buffer('grid', wl_grid.unsqueeze(0))             # (1, N_channels)
+        self.register_buffer('line_centers', nist_wls.unsqueeze(0))    # (1, N_lines)
+        self.register_buffer('line_base_amps', nist_intens.unsqueeze(0))# (1, N_lines)
 
     def forward(self, concentrations, broadening):
-        grid = self.grid.unsqueeze(1)         # (1, 1, N_channels)
-        centers = self.line_centers.unsqueeze(2)  # (1, N_lines, 1)
-        gammas = broadening.unsqueeze(2)     # (batch_size, N_lines, 1)
+        grid = self.grid.unsqueeze(1)          # (1, 1, N_channels)
+        centers = self.line_centers.unsqueeze(2)   # (1, N_lines, 1)
+        
+        # Ensure a robust lower bound on gamma to avoid zero-division in denom
+        gammas = broadening.unsqueeze(2) + 1e-3   # (batch_size, N_lines, 1)
 
         amps = (concentrations * self.line_base_amps).unsqueeze(2)
-        profiles = amps * (gammas / torch.pi) / ((grid - centers)**2 + gammas**2)
+        
+        # Add epsilon to denominator for strict numerical stability
+        denom = ((grid - centers) ** 2) + (gammas ** 2) + 1e-8
+        profiles = amps * (gammas / torch.pi) / denom
 
         return torch.sum(profiles, dim=1)
 
@@ -129,21 +157,25 @@ class PhysicsInformedVAE(nn.Module):
             nn.Sigmoid()
         )
 
-    def reparameterize(self, mu, logvar):
-        std = torch.exp(0.5 * logvar)
-        eps = torch.randn_like(std)
-        return mu + eps * std
+        nn.init.constant_(self.fc_logvar_phys.weight, 0.0)
+        nn.init.constant_(self.fc_logvar_phys.bias, 0.0)
+        nn.init.constant_(self.fc_logvar_matrix.weight, 0.0)
+        nn.init.constant_(self.fc_logvar_matrix.bias, 0.0)
 
     def forward(self, x):
         h = self.encoder(x)
 
-        mu_p, logvar_p = self.fc_mean_phys(h), self.fc_logvar_phys(h)
+        mu_p = self.fc_mean_phys(h)
+        # Clamp logvar so logvar_p.exp() never overflows in the KL loss
+        logvar_p = torch.clamp(self.fc_logvar_phys(h), min=-8.0, max=8.0)
         z_phys = self.reparameterize(mu_p, logvar_p)
 
-        concentrations = nn.functional.softplus(z_phys[:, :self.n_lines])
-        broadening = nn.functional.softplus(z_phys[:, self.n_lines:])
+        concentrations = nn.functional.softplus(z_phys[:, : self.n_lines])
+        broadening = nn.functional.softplus(z_phys[:, self.n_lines :])
 
-        mu_m, logvar_m = self.fc_mean_matrix(h), self.fc_logvar_matrix(h)
+        mu_m = self.fc_mean_matrix(h)
+        # Clamp logvar so logvar_m.exp() never overflows in the KL loss
+        logvar_m = torch.clamp(self.fc_logvar_matrix(h), min=-8.0, max=8.0)
         z_matrix = self.reparameterize(mu_m, logvar_m)
 
         ideal_physics_spectrum = self.physics_decoder(concentrations, broadening)
@@ -152,6 +184,11 @@ class PhysicsInformedVAE(nn.Module):
         reconstructed_spectrum = ideal_physics_spectrum + matrix_residual
 
         return reconstructed_spectrum, mu_p, logvar_p, mu_m, logvar_m
+
+    def reparameterize(self, mu, logvar):
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        return mu + eps * std
 
 
 class PhysicsVAELoss(nn.Module):
@@ -173,11 +210,13 @@ class PhysicsVAELoss(nn.Module):
         mu_m: torch.Tensor,
         logvar_m: torch.Tensor,
     ) -> dict[str, torch.Tensor]:
+        
         recon_loss = self.mse(x_recon, x_target)
         sup_loss = self.mse(pred_conc, true_conc)
 
-        kl_phys = -0.5 * torch.sum(1 + logvar_p - mu_p.pow(2) - logvar_p.exp(), dim=1).mean()
-        kl_matrix = -0.5 * torch.sum(1 + logvar_m - mu_m.pow(2) - logvar_m.exp(), dim=1).mean()
+        # Numerically stable KL calculation averaged across the batch and features
+        kl_phys = -0.5 * torch.mean(1 + logvar_p - mu_p.pow(2) - torch.exp(logvar_p))
+        kl_matrix = -0.5 * torch.mean(1 + logvar_m - mu_m.pow(2) - torch.exp(logvar_m))
         kl_loss = kl_phys + kl_matrix
 
         total_loss = (self.alpha_recon * recon_loss) + (self.beta_sup * sup_loss) + (self.gamma_kl * kl_loss)
@@ -203,17 +242,24 @@ def train_physics_vae(
     n_lines: int = 19,
     epochs: int = 20,
     batch_size: int = 256,
-    lr: float = 1e-3,
+    lr: float = learning_rate,
     weight_decay: float = 1e-4,
     device: str | None = None,
+    debug: bool = False,
 ) -> PhysicsInformedVAE:
+
+    
+    
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
     device_obj = torch.device(device)
     print(f"🚀 Training on device: {device_obj}")
 
-    train_dataset = LIBSSpectraDataset(h5_path, split="train")
-    val_dataset = LIBSSpectraDataset(h5_path, split="val")
+    train_dataset = LIBSSpectraDatasetInMemory(h5_path, split='train')
+    val_dataset = LIBSSpectraDatasetInMemory(h5_path, split='val')
+
+    # train_dataset = LIBSSpectraDataset(h5_path, split="train")
+    # val_dataset = LIBSSpectraDataset(h5_path, split="val")
 
     # Read n_lines directly from dataset metadata if available
     n_lines = len(ALL_COLUMNS)
@@ -223,8 +269,10 @@ def train_physics_vae(
         batch_size=batch_size,
         shuffle=True,
         num_workers=4,
-        pin_memory=True if device == "cuda" else False,
+        # num_workers=0,
+        pin_memory=(device_obj.type == 'cuda'),
         worker_init_fn=worker_init_fn,
+        persistent_workers=True
     )
 
     val_loader = DataLoader(
@@ -232,8 +280,10 @@ def train_physics_vae(
         batch_size=batch_size,
         shuffle=False,
         num_workers=2,
-        pin_memory=True if device == "cuda" else False,
+        # num_workers=0,
+        pin_memory=(device_obj.type == 'cuda'),
         worker_init_fn=worker_init_fn,
+        persistent_workers=True
     )
 
     wl_grid = torch.linspace(200, 900, input_dim, device=device_obj)
@@ -261,33 +311,44 @@ def train_physics_vae(
         model.train()
         train_running_loss, train_recon_acc, train_sup_acc = 0.0, 0.0, 0.0
 
-        for batch in train_loader:
-            x = batch["spectrum"].to(device_obj, non_blocking=True)
-            y_conc = batch["targets"].to(device_obj, non_blocking=True)
+        # Enable/disable anomaly detection based on debug flag
+        with torch.autograd.set_detect_anomaly(debug):      # type: ignore
+            for batch in train_loader:
+                x = batch["spectrum"].to(device_obj, non_blocking=True)
+                y_conc = batch["targets"].to(device_obj, non_blocking=True)
 
-            optimizer.zero_grad()
-            x_recon, mu_p, logvar_p, mu_m, logvar_m = model(x)
-            pred_conc = nn.functional.softplus(mu_p[:, :n_lines])
+                if torch.isnan(x).any() or torch.isnan(y_conc).any():
+                    raise ValueError("Input batch contains NaN values!")
 
-            losses = criterion(
-                x_recon=x_recon,
-                x_target=x,
-                pred_conc=pred_conc,
-                true_conc=y_conc,
-                mu_p=mu_p,
-                logvar_p=logvar_p,
-                mu_m=mu_m,
-                logvar_m=logvar_m,
-            )
+                optimizer.zero_grad()
 
-            loss = losses["loss"]
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
-            optimizer.step()
+                x_recon, mu_p, logvar_p, mu_m, logvar_m = model(x)
+                pred_conc = nn.functional.softplus(mu_p[:, :n_lines])
 
-            train_running_loss += loss.item() * x.size(0)
-            train_recon_acc += losses["recon_loss"].item() * x.size(0)
-            train_sup_acc += losses["sup_loss"].item() * x.size(0)
+                losses = criterion(
+                    x_recon=x_recon,
+                    x_target=x,
+                    pred_conc=pred_conc,
+                    true_conc=y_conc,
+                    mu_p=mu_p,
+                    logvar_p=logvar_p,
+                    mu_m=mu_m,
+                    logvar_m=logvar_m,
+                )
+
+                loss = losses["loss"]
+
+                if torch.isnan(loss):
+                    print(f"⚠️ Warning: NaN detected in loss at epoch {epoch}. Skipping step.")
+                    continue
+
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                optimizer.step()
+
+                train_running_loss += loss.item() * x.size(0)
+                train_recon_acc += losses["recon_loss"].item() * x.size(0)
+                train_sup_acc += losses["sup_loss"].item() * x.size(0)
 
         epoch_train_loss = train_running_loss / len(train_dataset)
         epoch_train_recon = train_recon_acc / len(train_dataset)
@@ -385,7 +446,8 @@ if __name__ == "__main__":
         n_lines=len(ALL_COLUMNS),
         epochs=50,
         batch_size=256,
-        lr=1e-3,
+        lr=learning_rate,
+        debug=True
     )
 
     loop_time_end = time.perf_counter()

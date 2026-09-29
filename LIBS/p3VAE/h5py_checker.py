@@ -6,6 +6,31 @@ from pathlib import Path
 
 
 # ---------------------------------------------------------------------------------------
+# CHECK .h5 FOR NaN's
+# ---------------------------------------------------------------------------------------
+h5_path = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset_clean.h5"
+
+with h5py.File(h5_path, 'r') as hf:
+    for split in ['train', 'val', 'test']:
+        if split not in hf:
+            continue
+        print(f"\n--- Checking split: {split} ---")
+        spectra = hf[split]['spectra'][:]       # type: ignore
+        targets = hf[split]['metadata']['elem_comp_wt%'][:]       # type: ignore
+        nan_spectra = np.isnan(spectra).sum()
+        nan_targets = np.isnan(targets).sum()
+        print(f"Spectra shape: {spectra.shape} | NaNs in spectra: {nan_spectra}")       # type: ignore
+        print(f"Targets shape: {targets.shape} | Nans in targets: {nan_targets}")       # type: ignore
+
+        if nan_spectra > 0:
+            bad_rows = np.isnan(spectra).any(axis=1)
+            print(f"  -> {bad_rows.sum()} rows in '{split}/spectra' contatin NaNs")
+        if nan_targets > 0:
+            bad_rows = np.isnan(targets).any(axis=1)
+            print(f"  -> {bad_rows.sum()} rows in '{split}/metadata' contatin NaNs")
+
+
+# ---------------------------------------------------------------------------------------
 # COMPARE TWO FILES TO SEE IF STRUCTURE IS THE SAME
 # ---------------------------------------------------------------------------------------
 # def compare_h5_structure(file1_path: str, file2_path: str) -> bool:

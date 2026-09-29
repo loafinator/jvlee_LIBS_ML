@@ -1,0 +1,15 @@
+Lmod has detected the following error: The following module(s) are unknown:
+"python/3.9.18"
+
+Please check the spelling or version number. Also try "module spider ..."
+It is also possible your cache file is out-of-date; it may help to try:
+  $ module --ignore_cache load "python/3.9.18"
+
+Also make sure that all modulefiles written in TCL start with the string
+#%Module
+
+
+
+/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/.venv/lib64/python3.9/site-packages/torch/optim/lr_scheduler.py:28: UserWarning: The verbose parameter is deprecated. Please use get_last_lr() to access the learning rate.
+  warnings.warn("The verbose parameter is deprecated. Please use get_last_lr() "
+slurmstepd: error: *** JOB 3208605 ON athena512 CANCELLED AT 2026-09-25T14:04:47 ***

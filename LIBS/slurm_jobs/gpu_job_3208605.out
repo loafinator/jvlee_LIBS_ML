@@ -1,0 +1,8 @@
+Added to the sys.path: /lustre/home/leejv2/git_repos
+Starting run
+🚀 Training on device: cuda
+Epoch 01/50 [14910.8s] | Train Loss: nan (Recon: nan, Conc MSE: nan) | Val Loss: nan (Recon: nan, Conc MSE: nan)
+Epoch 02/50 [16963.9s] | Train Loss: nan (Recon: nan, Conc MSE: nan) | Val Loss: nan (Recon: nan, Conc MSE: nan)
+Epoch 03/50 [14348.7s] | Train Loss: nan (Recon: nan, Conc MSE: nan) | Val Loss: nan (Recon: nan, Conc MSE: nan)
+Epoch 04/50 [15051.5s] | Train Loss: nan (Recon: nan, Conc MSE: nan) | Val Loss: nan (Recon: nan, Conc MSE: nan)
+Epoch 05/50 [13481.7s] | Train Loss: nan (Recon: nan, Conc MSE: nan) | Val Loss: nan (Recon: nan, Conc MSE: nan)

@@ -2141,6 +2141,63 @@ def recombine_h5_splits(
 
     return X_combined, y_combined, meta_combined_df, feature_cols, wavelengths
 
+def remove_nans_h5(
+    input_path: Path | str,
+    output_path: Path | str,
+):
+    """
+    Cleans an HDF5 LIBS dataset by removing rows containing NaN values in spectra 
+    or targets, preserving all metadata structure and datasets across splits.
+    """
+    input_path = Path(input_path).resolve()
+    output_path = Path(output_path).resolve()
+
+    print(f"Reading from: {input_path}")
+    print(f"Writing clean dataset to: {output_path}")
+
+    with h5py.File(input_path, 'r') as hf_in, h5py.File(output_path, 'w') as hf_out:
+        for split in ['train', 'val', 'test']:
+            if split not in hf_in:
+                continue
+            
+            print(f"\n--- Processing split: '{split}' ---")
+            
+            # Load arrays as NumPy (keep as numpy for h5py compatibility)
+            spectra_np = hf_in[split]['spectra'][:]     # type: ignore
+            targets_np = hf_in[split]['metadata']['elem_comp_wt%'][:]     # type: ignore
+            is_synth_np = hf_in[split]['metadata']['is_synthetic'][:]     # type: ignore
+
+            # Identify valid rows without any NaNs across both spectra and targets
+            valid_mask = ~np.isnan(spectra_np).any(axis=1) & ~np.isnan(targets_np).any(axis=1)
+            dropped = len(spectra_np) - np.sum(valid_mask)     # type: ignore
+
+            if dropped > 0:
+                print(f"⚠️ Filtered out {dropped} NaN rows out of {len(spectra_np)} from '{split}'")     # type: ignore
+            else:
+                print(f"✅ Split '{split}' is clean (0 NaNs found).")
+
+            # Create split group in output file
+            split_group = hf_out.create_group(split)
+            
+            # Save filtered dataset arrays (compression keeps file size small)
+            split_group.create_dataset(
+                'spectra', 
+                data=spectra_np[valid_mask],      # type: ignore
+                compression='gzip'
+            )
+            
+            # Recreate metadata group
+            meta_group = split_group.create_group('metadata')
+            meta_group.create_dataset('elem_comp_wt%', data=targets_np[valid_mask], compression='gzip')     # type: ignore
+            meta_group.create_dataset('is_synthetic', data=is_synth_np[valid_mask], compression='gzip')     # type: ignore
+            
+            # Copy remaining metadata arrays (e.g., elem_names) if they exist
+            if 'elem_names' in hf_in[split]['metadata']:     # type: ignore
+                meta_group.create_dataset('elem_names', data=hf_in[split]['metadata']['elem_names'][:])     # type: ignore
+
+    print("\n🎉 Preprocessing complete! Clean HDF5 dataset saved successfully.")
+
+
 def sanitize_path(
         path: Path | None = None,
         log_path: Path | None = None,
@@ -2925,14 +2982,19 @@ def _process_single_file(args):
 if __name__ == "__main__":
     print('Hi')
 
-    train_val_test_splitter_HDF5(
-        h5_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/combined_exp_syn_dataset.h5',
-        output_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset.h5',
-        val_frac=0.1,
-        test_frac=0.1,
-        random_state=42,
-        log_path=Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_log.txt')
+    remove_nans_h5(
+        input_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset.h5',
+        output_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset_clean.h5'
     )
+
+    # train_val_test_splitter_HDF5(
+    #     h5_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/combined_exp_syn_dataset.h5',
+    #     output_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset.h5',
+    #     val_frac=0.1,
+    #     test_frac=0.1,
+    #     random_state=42,
+    #     log_path=Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_log.txt')
+    # )
 
     # convert_to_elemental_comp(
     #     input_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/experimental.h5',
