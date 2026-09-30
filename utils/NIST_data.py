@@ -16,6 +16,7 @@ import zipfile
 import os
 import h5py
 import io
+import glob
 
 import pandas as pd
 import numpy as np
@@ -25,6 +26,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 from datetime import datetime
 from typing import Any, Optional, Dict
+from scipy.signal import find_peaks
 # from utils import enrich_file_with_metadata
 # endregion
 
@@ -707,7 +709,118 @@ def get_thread_session() -> requests.Session:
     if not hasattr(thread_local, 'session'):
         thread_local.session = get_nist_session()
     return thread_local.session
-   
+
+def master_line_table():
+    ELEMENTS = [
+        'Ba',
+        'Ca',
+        'Ce',
+        'Cr',
+        'Cs',
+        'Fe',
+        'Gd',
+        'K',
+        'La',
+        'Li',
+        'Mg',
+        'Mn',
+        'Nd',
+        'Ni',
+        'Sm',
+        'Sr',
+        'U',
+        'Y',
+        'Cl',
+    ]
+
+    NIST_DIR = (
+        '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_singles/Enriched'
+    )
+    OUTPUT_CSV = 'master_line_table.csv'
+
+    # Known non-wavelength metadata columns
+    METADATA_COLS = {
+        'conc_Ba_wt%',
+        'frac_LiCl',
+        'temperature_C',
+        'scan_rate_mVs',
+        'delay',
+        'energy',
+        'static_',
+        'blank',
+        'kinetic',
+        'repetition',
+    }
+
+    lines_data = []
+
+    for elem_idx, elem in enumerate(ELEMENTS):
+        # Find matching CSV file for this element
+        pattern = os.path.join(NIST_DIR, f'*{elem}*.csv')
+        files = glob.glob(pattern)
+
+        if not files:
+            print(f'Warning: No NIST CSV file found for the element {elem}')
+            continue
+
+        df = pd.read_csv(files[0])
+
+        # 1. Identify wavelength columns vs metadata columns
+        wavelength_cols = []
+        for col in df.columns:
+            if col in METADATA_COLS:
+                continue
+            try:
+                # Convert header name to float wavelength value
+                wl_val = float(col)
+                wavelength_cols.append((col, wl_val))
+            except ValueError:
+                # Skip non-numeric header strings that aren't wavelengths
+                continue
+
+        if not wavelength_cols:
+            print(
+                f'Warning: No valid wavelength headers found in file for {elem}'
+            )
+            continue
+
+        # Sort columns chronologically by wavelength
+        wavelength_cols.sort(key=lambda x: x[1])
+        col_names = [c[0] for c in wavelength_cols]
+        wls = np.array([c[1] for c in wavelength_cols])
+
+        # 2. Extract intensities across wavelengths (mean spectrum across all rows)
+        intens = df[col_names].mean(axis=0).values
+
+        # 3. Clean NaN / negative values
+        intens = np.nan_to_num(intens, nan=0.0)     # type: ignore
+        intens = np.clip(intens, 0, None)
+
+        # 4. Peak detection
+        peaks, properties = find_peaks(
+            intens, height=0.01, prominence=0.005, distance=3
+        )
+
+        for p in peaks:
+            lines_data.append({
+                'element': elem,
+                'elem_idx': elem_idx,
+                'wavelength_nm': wls[p],
+                'base_intensity': intens[p],
+            })
+
+    master_df = pd.DataFrame(lines_data)
+    # Sort by wavelength for memory-efficient PyTorch operations
+    master_df = master_df.sort_values(by='wavelength_nm').reset_index(
+        drop=True
+    )
+    master_df.to_csv(OUTPUT_CSV, index=False)
+
+    print(
+        f'Master Line Table created successfully with {len(master_df)} total'
+        f' lines across {len(ELEMENTS)} elements.'
+    )
+
 def master_parallel_run():
     # 1. Scan existing ZIP archives to avoid re-downloading completed runs
     
@@ -1262,7 +1375,9 @@ def final_combo():
 
 if __name__ == "__main__":
 
-    final_combo()
+    master_line_table()
+
+    # final_combo()
 
     # synthetic_data_generator(
     #     input_dir='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_singles/Enriched',
