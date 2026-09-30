@@ -118,7 +118,6 @@ class PhysicsSpectralDecoder(nn.Module):
 
         return torch.sum(profiles, dim=1)
 
-
 class PhysicsInformedVAE(nn.Module):
     def __init__(
         self, 
@@ -190,7 +189,6 @@ class PhysicsInformedVAE(nn.Module):
         eps = torch.randn_like(std)
         return mu + eps * std
 
-
 class PhysicsVAELoss(nn.Module):
     def __init__(self, alpha_recon: float = 1.0, beta_sup: float = 10.0, gamma_kl: float = 1e-4):
         super().__init__()
@@ -228,13 +226,11 @@ class PhysicsVAELoss(nn.Module):
             "kl_loss": kl_loss,
         }
 
-
 def worker_init_fn(worker_id: int):
     worker_info = get_worker_info()
     if worker_info is not None:
         dataset = worker_info.dataset
         dataset.hf = None     # type: ignore
-
 
 def train_physics_vae(
     h5_path: str | Path,
@@ -438,7 +434,7 @@ def train_physics_vae(
 if __name__ == "__main__":
     print('Starting run')
     loop_time_start = time.perf_counter()
-    h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset.h5"
+    h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset_clean.h5"
 
     trained_model = train_physics_vae(
         h5_path=h5_file,
