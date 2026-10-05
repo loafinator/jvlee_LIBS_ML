@@ -43,6 +43,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed #, ThreadPoolEx
 from functools import partial
 from logging import handlers
 from collections.abc import Container
+from numpy.typing import NDArray
 # endregion
 
 # region custom
@@ -1380,43 +1381,225 @@ def h5_column_update(
 
     return added_cols
 
+def h5_to_xandy(
+    input_h5: Path | str,
+    output_h5: Path | str,
+    feature_selector: bool = False,
+    down_sample_rows: int = 0,               # number of specimens (stride)
+    down_sample_cols: int = 0,               # number of wavelengths (stride)
+    allowed_cols: set[str] | None = None,
+    log_path: Path | None = None,
+    conc_to_spec: bool = True,
+):
+    from sklearn.preprocessing import MinMaxScaler
+    from sklearn.feature_selection import VarianceThreshold
+    
+    input_h5 = Path(input_h5).resolve()
+    output_h5 = Path(output_h5).resolve()
+
+    (
+        X_train_raw, X_val_raw, X_test_raw, 
+        y_train_raw, y_val_raw, y_test_raw, 
+        train_syn, val_syn, test_syn, 
+        feature_cols, wavelengths 
+    ) = load_h5_split_dataset(
+        h5_path=input_h5,
+        allowed_cols=allowed_cols,
+        log_path=log_path,
+        conc_to_spec=conc_to_spec
+    )
+
+    # 1. Clip spectra intensity spikes at 99.5th percentile
+    if conc_to_spec:
+        clip_threshold = np.nanpercentile(y_train_raw, 99.5)
+        y_train_raw = np.clip(y_train_raw, 0, clip_threshold)
+        y_val_raw   = np.clip(y_val_raw, 0, clip_threshold)
+        y_test_raw  = np.clip(y_test_raw, 0, clip_threshold)
+    else:
+        clip_threshold = np.nanpercentile(X_train_raw, 99.5)
+        X_train_raw = np.clip(X_train_raw, 0, clip_threshold)
+        X_val_raw   = np.clip(X_val_raw, 0, clip_threshold)
+        X_test_raw  = np.clip(X_test_raw, 0, clip_threshold)
+
+    # Backups taken after clipping (or before, if you prefer raw spikes)
+    X_train_backup = X_train_raw.copy()
+    X_val_backup   = X_val_raw.copy()
+    X_test_backup  = X_test_raw.copy()
+    y_train_backup = y_train_raw.copy()
+    y_val_backup   = y_val_raw.copy()
+    y_test_backup  = y_test_raw.copy()
+
+    # 2. Fit scalers on TRAIN, transform VAL/TEST
+    y_scaler = MinMaxScaler(feature_range=(0, 1))
+    y_train_scaled = y_scaler.fit_transform(y_train_raw)
+    y_val_scaled   = y_scaler.transform(y_val_raw)
+    y_test_scaled  = y_scaler.transform(y_test_raw)
+
+    X_scaler = MinMaxScaler(feature_range=(0, 1))
+    X_train_scaled = X_scaler.fit_transform(X_train_raw)
+    X_val_scaled   = X_scaler.transform(X_val_raw)
+    X_test_scaled  = X_scaler.transform(X_test_raw)
+
+    # 3. Variance threshold selection on CONCENTRATIONS
+    if feature_selector:
+        selector = VarianceThreshold(threshold=1e-10)
+        if conc_to_spec:
+            X_train_scaled = selector.fit_transform(X_train_scaled)
+            X_val_scaled   = selector.transform(X_val_scaled)
+            X_test_scaled  = selector.transform(X_test_scaled)
+        else:
+            y_train_scaled = selector.fit_transform(y_train_scaled)
+            y_val_scaled   = selector.transform(y_val_scaled)
+            y_test_scaled  = selector.transform(y_test_scaled)
+
+        retained_indices = selector.get_support(indices=True)
+        feature_cols = [feature_cols[i] for i in retained_indices]
+
+    # 4. Downsample SPECTRAL CHANNELS (columns)
+    if down_sample_cols > 1:
+        if conc_to_spec:
+            y_train_scaled = y_train_scaled[:, ::down_sample_cols]
+            y_val_scaled   = y_val_scaled[:, ::down_sample_cols]
+            y_test_scaled  = y_test_scaled[:, ::down_sample_cols]
+        else:
+            X_train_scaled = X_train_scaled[:, ::down_sample_cols]
+            X_val_scaled   = X_val_scaled[:, ::down_sample_cols]
+            X_test_scaled  = X_test_scaled[:, ::down_sample_cols]
+
+        if wavelengths is not None:
+            wavelengths = wavelengths[::down_sample_cols]
+
+    # 5. Downsample SPECIMENS (rows) — training set only
+    if down_sample_rows > 1:
+        X_train_scaled = X_train_scaled[::down_sample_rows]
+        y_train_scaled = y_train_scaled[::down_sample_rows]
+        train_syn      = train_syn[::down_sample_rows]
+        X_train_backup = X_train_backup[::down_sample_rows]
+        y_train_backup = y_train_backup[::down_sample_rows]
+
+    # 6. Save to output HDF5
+    comp_kwargs = {'compression': 'gzip', 'compression_opts': 3}
+    utf8_type = h5py.string_dtype(encoding='utf-8')
+
+    with h5py.File(output_h5, 'w') as hf:
+        hf.create_dataset('X_train', data=X_train_scaled, **comp_kwargs)
+        hf.create_dataset('X_val', data=X_val_scaled, **comp_kwargs)
+        hf.create_dataset('X_test', data=X_test_scaled, **comp_kwargs)
+        
+        hf.create_dataset('y_train', data=y_train_scaled, **comp_kwargs)
+        hf.create_dataset('y_val', data=y_val_scaled, **comp_kwargs)
+        hf.create_dataset('y_test', data=y_test_scaled, **comp_kwargs)
+        
+        hf.create_dataset('X_train_backup', data=X_train_backup, **comp_kwargs)
+        hf.create_dataset('X_val_backup', data=X_val_backup, **comp_kwargs)
+        hf.create_dataset('X_test_backup', data=X_test_backup, **comp_kwargs)
+        
+        hf.create_dataset('y_train_backup', data=y_train_backup, **comp_kwargs)
+        hf.create_dataset('y_val_backup', data=y_val_backup, **comp_kwargs)
+        hf.create_dataset('y_test_backup', data=y_test_backup, **comp_kwargs)
+        
+        # FIX: Corrected val_syn and test_syn variable names
+        hf.create_dataset('train_syn', data=train_syn, **comp_kwargs)
+        hf.create_dataset('val_syn', data=val_syn, **comp_kwargs)
+        hf.create_dataset('test_syn', data=test_syn, **comp_kwargs)
+        
+        # FIX: Explicit UTF-8 string encoding for feature_cols
+        if feature_cols is not None:
+            hf.create_dataset('feature_cols', data=np.array(feature_cols, dtype=object), dtype=utf8_type)
+            
+        if wavelengths is not None:
+            hf.create_dataset('wavelengths', data=wavelengths, **comp_kwargs)
+
+    print(f"Dataset successfully saved to {output_h5}")
+
 def load_h5_split_dataset(
         h5_path: str | Path,
-        allowed_cols: set[str],
+        allowed_cols: set[str] | None = None,
         log_path: Path | None = None,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str], np.ndarray, pd.DataFrame]:
+        conc_to_spec: bool = True
+) -> tuple[
+    NDArray[np.float32], NDArray[np.float32], NDArray[np.float32],  # X_train, X_val, X_test
+    NDArray[np.float32], NDArray[np.float32], NDArray[np.float32],  # y_train, y_val, y_test
+    NDArray[np.int_], NDArray[np.int_], NDArray[np.int_],           # train_syn, val_syn, test_syn
+    list[str],                                                      # feature_cols
+    NDArray[np.float32] | None
+]:
     """
     Returns:
-        X_trn_raw    : np.ndarray, shape (N_trn, n_features), float32
+        X_train_raw  : np.ndarray, shape (N_train, n_features), float32
         X_val_raw    : np.ndarray, shape (N_val, n_features), float32
-        y_trn_raw    : np.ndarray, shape (N_trn, W), float32
+        X_test_raw   : np.ndarray, shape (N_test, n_features), float32
+        y_train_raw  : np.ndarray, shape (N_train, W), float32
         y_val_raw    : np.ndarray, shape (N_val, W), float32
+        y_test_raw   : np.ndarray, shape (N_test, W), float32
+        train_syn    : np.ndarray, shape (N_train,), int (0 or 1)
+        val_syn      : np.ndarray, shape (N_val,), int (0 or 1)
+        test_syn     : np.ndarray, shape (N_test,), int (0 or 1)
         feature_cols : list[str]
-        wavelengths  : np.ndarray
-        meta_val_df  : pd.DataFrame
+        wavelengths  : np.ndarray | None, shape (W,), float32
     """
     with h5py.File(h5_path, 'r') as hf:
-        y_trn_raw   = hf_get(hf, 'train/spectra')
-        y_val_raw   = hf_get(hf, 'val/spectra')
-        wavelengths = hf_get(hf, 'wavelengths')
+        # 1. Load spectra arrays
+        y_train_raw     = hf_get(hf, 'train/spectra')
+        y_val_raw       = hf_get(hf, 'val/spectra')
+        y_test_raw      = hf_get(hf, 'test/spectra')
 
-        trn_meta_grp = hf['train/metadata']
-        assert isinstance(trn_meta_grp, h5py.Group), "Expected a Group at 'train/metadata'"
-        all_cols     = list(trn_meta_grp.keys())
-        feature_cols = [c for c in all_cols if c in allowed_cols]
+        # 2. Load wavelengths (or return None / empty if missing)
+        wavelengths     = hf_get(hf, 'wavelengths') if 'wavelengths' in hf else None
 
-        X_trn_raw = np.stack(
-            [hf_get(hf, f'train/metadata/{c}') for c in feature_cols], axis=1
-        ).astype(np.float32)
-        X_val_raw = np.stack(
-            [hf_get(hf, f'val/metadata/{c}') for c in feature_cols], axis=1
-        ).astype(np.float32)
+        # 3. Extract element names from 1D byte array
+        raw_elem_names  = hf_get(hf, 'train/metadata/elem_names')
+        # decode byte strings (ex. b'Fe') to standard python strings (ex. 'Fe')
+        feature_cols    = [
+            e.decode('utf-8') if hasattr(e, 'decode') else str(e)
+            for e in raw_elem_names
+        ]
 
-        meta_val_df = pd.DataFrame(
-            {c: hf_get(hf, f'val/metadata/{c}') for c in feature_cols}
-        )
+        # 4. Load 2D target arrays
+        X_train_raw     = hf_get(hf, 'train/metadata/elem_comp_wt%').astype(np.float32)
+        X_val_raw       = hf_get(hf, 'val/metadata/elem_comp_wt%').astype(np.float32)
+        X_test_raw      = hf_get(hf, 'test/metadata/elem_comp_wt%').astype(np.float32)
 
-    return X_trn_raw, X_val_raw, y_trn_raw, y_val_raw, feature_cols, wavelengths, meta_val_df
+        # 5. Filter allowed columns if specified
+        if allowed_cols:
+            col_indices     = [i for i, col in enumerate(feature_cols) if col in allowed_cols]
+            feature_cols    = [feature_cols[i] for i in col_indices]
+            X_train_raw     = X_train_raw[:, col_indices]
+            X_val_raw       = X_val_raw[:, col_indices]
+            X_test_raw      = X_test_raw[:, col_indices]
+
+        # 6. Build metadata validation DataFrame
+        train_syn       = hf_get(hf, 'train/metadata/is_synthetic').astype(int)
+        val_syn         = hf_get(hf, 'val/metadata/is_synthetic').astype(int)
+        test_syn        = hf_get(hf, 'test/metadata/is_synthetic').astype(int)
+
+        # 7. Swap inputs/targets if model direction is inverted
+        if not conc_to_spec:
+            y_train_raw, X_train_raw    = X_train_raw, y_train_raw
+            y_val_raw, X_val_raw        = X_val_raw, y_val_raw
+            y_test_raw, X_test_raw      = X_test_raw, y_test_raw
+
+        print(f"X_train: {X_train_raw[:5]}")
+        print(f"X_val: {X_val_raw[:5]}")
+        print(f"X_test: {X_test_raw[:5]}")
+        print(f"y_train: {y_train_raw[:5]}")
+        print(f"y_val: {y_val_raw[:5]}")
+        print(f"y_test: {y_test_raw[:5]}")
+        print(f"train_syn: {train_syn[:5]}")
+        print(f"val_syn: {val_syn[:5]}")
+        print(f"test_syn: {test_syn[:5]}")
+        print(f"feature_cols: {feature_cols[:5]}")
+        if wavelengths is not None:
+            print(f"wavelengths: {wavelengths[:5]}")
+        else:
+            print("No wavelengths found")
+
+    return (
+        X_train_raw, X_val_raw, X_test_raw, 
+        y_train_raw, y_val_raw, y_test_raw, 
+        train_syn, val_syn, test_syn,
+        feature_cols, wavelengths
+    )
 
 def load_h5_base_dataset(
     h5_path: str | Path,
@@ -2156,6 +2339,14 @@ def remove_nans_h5(
     print(f"Writing clean dataset to: {output_path}")
 
     with h5py.File(input_path, 'r') as hf_in, h5py.File(output_path, 'w') as hf_out:
+
+        # 1. Copy root-level datasets (ex. 'wavelengths')
+        for key in hf_in.keys():
+            if key not in ['train', 'val', 'test']:
+                print(f"Copying root-level item: '{key}'")
+                hf_in.copy(key, hf_out)
+
+        # 2. Process dataset splits
         for split in ['train', 'val', 'test']:
             if split not in hf_in:
                 continue
@@ -2196,7 +2387,6 @@ def remove_nans_h5(
                 meta_group.create_dataset('elem_names', data=hf_in[split]['metadata']['elem_names'][:])     # type: ignore
 
     print("\n🎉 Preprocessing complete! Clean HDF5 dataset saved successfully.")
-
 
 def sanitize_path(
         path: Path | None = None,
@@ -2684,7 +2874,7 @@ def training_ready_h5(
     prepped_h5_path = Path(prepped_h5_path)
     output_dir = prepped_h5_path.parent
 
-    y_trn_raw, y_val_raw, X_trn_raw, X_val_raw, target_cols, wavelengths, meta_val_df = load_h5_split_dataset(
+    y_trn_raw, y_val_raw, y_test_raw, X_trn_raw, X_val_raw, X_test_raw, train_syn, val_syn, test_syn, target_cols, wavelengths = load_h5_split_dataset(
                 h5_path=h5_path,
                 allowed_cols=allowed_cols,
                 log_path=None
@@ -2982,10 +3172,28 @@ def _process_single_file(args):
 if __name__ == "__main__":
     print('Hi')
 
-    remove_nans_h5(
-        input_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset.h5',
-        output_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset_clean.h5'
+    h5_to_xandy(
+        input_h5='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset_clean.h5',
+        output_h5='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/cts_xandy.h5',
+        feature_selector=False,
+        down_sample_rows=0,
+        down_sample_cols=0,
+        allowed_cols=None,
+        log_path=None,
+        conc_to_spec=True
     )
+
+    # load_h5_split_dataset(
+    #     h5_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset_clean.h5',
+    #     allowed_cols=None,
+    #     log_path=None,
+    #     conc_to_spec=True
+    # )
+
+    # remove_nans_h5(
+    #     input_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset.h5',
+    #     output_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset_clean.h5'
+    # )
 
     # train_val_test_splitter_HDF5(
     #     h5_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/combined_exp_syn_dataset.h5',

@@ -1,9 +1,0 @@
-/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/NIST_data.py:18: DeprecationWarning: 
-Pyarrow will become a required dependency of pandas in the next major release of pandas (pandas 3.0),
-(to allow more performant data types, such as the Arrow string type, and better interoperability with other libraries)
-but was not found to be installed on your system.
-If this would cause problems for you,
-please provide us feedback at https://github.com/pandas-dev/pandas/issues/54466
-        
-  import pandas as pd
-slurmstepd: error: *** JOB 3017057 ON athena201 CANCELLED AT 2026-08-28T11:51:22 ***

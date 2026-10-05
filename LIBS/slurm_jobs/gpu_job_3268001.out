@@ -1,0 +1,154 @@
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+Starting run
+🚀 Training on device: cuda
+Loading training dataset
+Loading 'train' dataset (347038 samples) into memory...
+Loading validation dataset
+Loading 'val' dataset (18381 samples) into memory...
+Initiate p3vae model.
+Initiate custom loss function
+Start Training and Validation Loops
+Epoch 01/250 [3091.3s] | Train Loss: 0.2292 | Val Loss: 0.1987 | (Recon MSE: 0.0001, Conc MSE: 0.0163)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 02/250 [1432.7s] | Train Loss: 0.1023 | Val Loss: 0.1300 | (Recon MSE: 0.0001, Conc MSE: 0.0108)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 03/250 [1464.3s] | Train Loss: 0.0732 | Val Loss: 0.1230 | (Recon MSE: 0.0001, Conc MSE: 0.0104)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 04/250 [1432.9s] | Train Loss: 0.0665 | Val Loss: 0.1018 | (Recon MSE: 0.0001, Conc MSE: 0.0082)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 05/250 [1420.9s] | Train Loss: 0.0574 | Val Loss: 0.0810 | (Recon MSE: 0.0001, Conc MSE: 0.0062)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 06/250 [1409.2s] | Train Loss: 0.0522 | Val Loss: 0.0824 | (Recon MSE: 0.0000, Conc MSE: 0.0063)
+Epoch 07/250 [1386.5s] | Train Loss: 0.0505 | Val Loss: 0.0719 | (Recon MSE: 0.0000, Conc MSE: 0.0053)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 08/250 [1441.0s] | Train Loss: 0.0493 | Val Loss: 0.0721 | (Recon MSE: 0.0001, Conc MSE: 0.0052)
+Epoch 09/250 [1428.1s] | Train Loss: 0.0502 | Val Loss: 0.0689 | (Recon MSE: 0.0000, Conc MSE: 0.0050)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 10/250 [1462.9s] | Train Loss: 0.0480 | Val Loss: 0.0699 | (Recon MSE: 0.0000, Conc MSE: 0.0050)
+Epoch 11/250 [1449.8s] | Train Loss: 0.0474 | Val Loss: 0.0681 | (Recon MSE: 0.0000, Conc MSE: 0.0049)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 12/250 [1458.1s] | Train Loss: 0.0473 | Val Loss: 0.0686 | (Recon MSE: 0.0001, Conc MSE: 0.0049)
+Epoch 13/250 [1472.5s] | Train Loss: 0.0475 | Val Loss: 0.0703 | (Recon MSE: 0.0001, Conc MSE: 0.0051)
+Epoch 14/250 [1469.6s] | Train Loss: 0.0473 | Val Loss: 0.0649 | (Recon MSE: 0.0001, Conc MSE: 0.0046)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 15/250 [1456.4s] | Train Loss: 0.0467 | Val Loss: 0.0642 | (Recon MSE: 0.0000, Conc MSE: 0.0045)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 16/250 [1453.3s] | Train Loss: 0.0463 | Val Loss: 0.0646 | (Recon MSE: 0.0001, Conc MSE: 0.0045)
+Epoch 17/250 [1470.8s] | Train Loss: 0.0462 | Val Loss: 0.0640 | (Recon MSE: 0.0001, Conc MSE: 0.0045)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 18/250 [1457.3s] | Train Loss: 0.0453 | Val Loss: 0.0629 | (Recon MSE: 0.0001, Conc MSE: 0.0044)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 19/250 [1426.5s] | Train Loss: 0.0457 | Val Loss: 0.0646 | (Recon MSE: 0.0001, Conc MSE: 0.0045)
+Epoch 20/250 [1454.0s] | Train Loss: 0.0449 | Val Loss: 0.0676 | (Recon MSE: 0.0000, Conc MSE: 0.0048)
+Epoch 21/250 [1438.5s] | Train Loss: 0.0445 | Val Loss: 0.0643 | (Recon MSE: 0.0000, Conc MSE: 0.0045)
+Epoch 22/250 [1426.9s] | Train Loss: 0.0447 | Val Loss: 0.0632 | (Recon MSE: 0.0001, Conc MSE: 0.0044)
+Epoch 23/250 [1416.5s] | Train Loss: 0.0446 | Val Loss: 0.0623 | (Recon MSE: 0.0000, Conc MSE: 0.0043)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 24/250 [1426.3s] | Train Loss: 0.0454 | Val Loss: 0.0615 | (Recon MSE: 0.0000, Conc MSE: 0.0042)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 25/250 [1445.2s] | Train Loss: 0.0443 | Val Loss: 0.0619 | (Recon MSE: 0.0000, Conc MSE: 0.0042)
+Epoch 26/250 [1431.5s] | Train Loss: 0.0444 | Val Loss: 0.0615 | (Recon MSE: 0.0000, Conc MSE: 0.0042)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 27/250 [1417.0s] | Train Loss: 0.0445 | Val Loss: 0.0653 | (Recon MSE: 0.0000, Conc MSE: 0.0046)
+Epoch 28/250 [1399.5s] | Train Loss: 0.0443 | Val Loss: 0.0622 | (Recon MSE: 0.0000, Conc MSE: 0.0043)
+Epoch 29/250 [1427.4s] | Train Loss: 0.0442 | Val Loss: 0.0618 | (Recon MSE: 0.0000, Conc MSE: 0.0042)
+Epoch 30/250 [1419.0s] | Train Loss: 0.0441 | Val Loss: 0.0606 | (Recon MSE: 0.0000, Conc MSE: 0.0041)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 31/250 [1452.8s] | Train Loss: 0.0443 | Val Loss: 0.0620 | (Recon MSE: 0.0000, Conc MSE: 0.0043)
+Epoch 32/250 [1444.3s] | Train Loss: 0.0437 | Val Loss: 0.0695 | (Recon MSE: 0.0000, Conc MSE: 0.0050)
+Epoch 33/250 [1446.7s] | Train Loss: 0.0437 | Val Loss: 0.0617 | (Recon MSE: 0.0001, Conc MSE: 0.0042)
+Epoch 34/250 [1450.4s] | Train Loss: 0.0443 | Val Loss: 0.0615 | (Recon MSE: 0.0000, Conc MSE: 0.0042)
+Epoch 35/250 [1447.4s] | Train Loss: 0.0436 | Val Loss: 0.0641 | (Recon MSE: 0.0000, Conc MSE: 0.0045)
+Epoch 36/250 [1457.4s] | Train Loss: 0.0433 | Val Loss: 0.0607 | (Recon MSE: 0.0000, Conc MSE: 0.0041)
+Epoch 37/250 [1446.9s] | Train Loss: 0.0422 | Val Loss: 0.0604 | (Recon MSE: 0.0001, Conc MSE: 0.0041)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 38/250 [1459.6s] | Train Loss: 0.0422 | Val Loss: 0.0602 | (Recon MSE: 0.0000, Conc MSE: 0.0041)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 39/250 [1449.0s] | Train Loss: 0.0425 | Val Loss: 0.0605 | (Recon MSE: 0.0000, Conc MSE: 0.0041)
+Epoch 40/250 [1440.1s] | Train Loss: 0.0425 | Val Loss: 0.0604 | (Recon MSE: 0.0000, Conc MSE: 0.0041)
+Epoch 41/250 [1455.3s] | Train Loss: 0.0420 | Val Loss: 0.0619 | (Recon MSE: 0.0000, Conc MSE: 0.0043)
+Epoch 42/250 [1450.5s] | Train Loss: 0.0422 | Val Loss: 0.0606 | (Recon MSE: 0.0000, Conc MSE: 0.0041)
+Epoch 43/250 [1453.3s] | Train Loss: 0.0419 | Val Loss: 0.0595 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 44/250 [1469.7s] | Train Loss: 0.0427 | Val Loss: 0.0595 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 45/250 [1457.8s] | Train Loss: 0.0424 | Val Loss: 0.0597 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 46/250 [1467.4s] | Train Loss: 0.0418 | Val Loss: 0.0595 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 47/250 [1452.7s] | Train Loss: 0.0417 | Val Loss: 0.0601 | (Recon MSE: 0.0000, Conc MSE: 0.0041)
+Epoch 48/250 [1450.0s] | Train Loss: 0.0418 | Val Loss: 0.0594 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 49/250 [1460.6s] | Train Loss: 0.0415 | Val Loss: 0.0597 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 50/250 [1448.1s] | Train Loss: 0.0414 | Val Loss: 0.0593 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 51/250 [1455.2s] | Train Loss: 0.0414 | Val Loss: 0.0591 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 52/250 [1470.0s] | Train Loss: 0.0414 | Val Loss: 0.0592 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 53/250 [1449.2s] | Train Loss: 0.0417 | Val Loss: 0.0591 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 54/250 [1459.7s] | Train Loss: 0.0418 | Val Loss: 0.0599 | (Recon MSE: 0.0000, Conc MSE: 0.0041)
+Epoch 55/250 [1453.9s] | Train Loss: 0.0416 | Val Loss: 0.0596 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 56/250 [1450.2s] | Train Loss: 0.0419 | Val Loss: 0.0596 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 57/250 [1460.1s] | Train Loss: 0.0415 | Val Loss: 0.0597 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 58/250 [1450.2s] | Train Loss: 0.0412 | Val Loss: 0.0595 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 59/250 [1457.0s] | Train Loss: 0.0411 | Val Loss: 0.0596 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 60/250 [1457.9s] | Train Loss: 0.0401 | Val Loss: 0.0588 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 61/250 [1452.7s] | Train Loss: 0.0400 | Val Loss: 0.0598 | (Recon MSE: 0.0000, Conc MSE: 0.0041)
+Epoch 62/250 [1458.5s] | Train Loss: 0.0399 | Val Loss: 0.0587 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 63/250 [1461.1s] | Train Loss: 0.0398 | Val Loss: 0.0588 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 64/250 [1455.3s] | Train Loss: 0.0399 | Val Loss: 0.0593 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 65/250 [1448.5s] | Train Loss: 0.0398 | Val Loss: 0.0587 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 66/250 [1455.6s] | Train Loss: 0.0397 | Val Loss: 0.0594 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 67/250 [1450.4s] | Train Loss: 0.0397 | Val Loss: 0.0586 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 68/250 [1459.5s] | Train Loss: 0.0396 | Val Loss: 0.0586 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 69/250 [1451.8s] | Train Loss: 0.0396 | Val Loss: 0.0591 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 70/250 [1454.1s] | Train Loss: 0.0397 | Val Loss: 0.0603 | (Recon MSE: 0.0000, Conc MSE: 0.0041)
+Epoch 71/250 [1454.2s] | Train Loss: 0.0396 | Val Loss: 0.0590 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 72/250 [1442.1s] | Train Loss: 0.0395 | Val Loss: 0.0596 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 73/250 [1423.5s] | Train Loss: 0.0395 | Val Loss: 0.0604 | (Recon MSE: 0.0000, Conc MSE: 0.0041)
+Epoch 74/250 [1421.3s] | Train Loss: 0.0396 | Val Loss: 0.0588 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 75/250 [1424.3s] | Train Loss: 0.0392 | Val Loss: 0.0584 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 76/250 [1421.7s] | Train Loss: 0.0390 | Val Loss: 0.0584 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 77/250 [1425.3s] | Train Loss: 0.0390 | Val Loss: 0.0582 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 78/250 [1401.8s] | Train Loss: 0.0390 | Val Loss: 0.0587 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 79/250 [1452.0s] | Train Loss: 0.0391 | Val Loss: 0.0585 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 80/250 [1454.3s] | Train Loss: 0.0391 | Val Loss: 0.0586 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 81/250 [1460.2s] | Train Loss: 0.0390 | Val Loss: 0.0591 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 82/250 [1455.9s] | Train Loss: 0.0389 | Val Loss: 0.0586 | (Recon MSE: 0.0001, Conc MSE: 0.0039)
+Epoch 83/250 [1454.8s] | Train Loss: 0.0390 | Val Loss: 0.0586 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 84/250 [1462.8s] | Train Loss: 0.0388 | Val Loss: 0.0582 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 85/250 [1455.4s] | Train Loss: 0.0388 | Val Loss: 0.0581 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+  💾 Saved new best model checkpoint to best_p3vae_model.pt
+Epoch 86/250 [1443.4s] | Train Loss: 0.0388 | Val Loss: 0.0581 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 87/250 [1453.3s] | Train Loss: 0.0387 | Val Loss: 0.0585 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 88/250 [1458.7s] | Train Loss: 0.0388 | Val Loss: 0.0584 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 89/250 [1455.0s] | Train Loss: 0.0388 | Val Loss: 0.0587 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 90/250 [1454.0s] | Train Loss: 0.0388 | Val Loss: 0.0586 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 91/250 [1452.6s] | Train Loss: 0.0387 | Val Loss: 0.0589 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 92/250 [1452.9s] | Train Loss: 0.0386 | Val Loss: 0.0587 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 93/250 [1450.1s] | Train Loss: 0.0386 | Val Loss: 0.0590 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 94/250 [1459.7s] | Train Loss: 0.0387 | Val Loss: 0.0585 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 95/250 [1454.3s] | Train Loss: 0.0387 | Val Loss: 0.0586 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 96/250 [1450.2s] | Train Loss: 0.0386 | Val Loss: 0.0587 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 97/250 [1454.3s] | Train Loss: 0.0386 | Val Loss: 0.0589 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 98/250 [1450.5s] | Train Loss: 0.0385 | Val Loss: 0.0588 | (Recon MSE: 0.0000, Conc MSE: 0.0039)
+Epoch 99/250 [1460.5s] | Train Loss: 0.0386 | Val Loss: 0.0588 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+Epoch 100/250 [1457.7s] | Train Loss: 0.0386 | Val Loss: 0.0588 | (Recon MSE: 0.0000, Conc MSE: 0.0040)
+🛑 Early stopping triggered at epoch 100: model converged.
+✨ Training complete. Loaded best model from epoch 85 (Val Loss: 0.0581)
+Run completed in 2441.33 minutes.

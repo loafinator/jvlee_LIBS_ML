@@ -1,0 +1,76 @@
+
+========================================
+2026-04-03 23:02:05
+==================================================
+Found files: 561
+
+========================================
+2026-04-03 23:04:01
+==================================================
+Found files: 2302
+
+========================================
+2026-04-04 00:00:46
+==================================================
+
+========================================
+2026-04-04 00:05:28
+==================================================
+Found files: 2302
+Reading files...
+
+========================================
+2026-04-04 00:10:00
+==================================================
+Found files: 2302
+Reading files...
+
+========================================
+2026-04-04 00:22:13
+==================================================
+Found files: 2302
+Reading files...
+  Read 100/2302
+  Read 200/2302
+  Read 300/2302
+  Read 400/2302
+  Read 500/2302
+  Read 600/2302
+  Read 700/2302
+  Read 800/2302
+  Read 900/2302
+  Read 1000/2302
+  Read 1100/2302
+  Read 1200/2302
+  Read 1300/2302
+  Read 1400/2302
+  Read 1500/2302
+  Read 1600/2302
+  Read 1700/2302
+  Read 1800/2302
+  Read 1900/2302
+  Read 2000/2302
+  Read 2100/2302
+  Read 2200/2302
+  Read 2300/2302
+Stacking arrays...
+  Spectra shape : (183823, 10000)
+  Metadata shape: (183823, 207)
+  Wavelength range: 250.0 – 1000.0 nm
+Writing HDF5 → combined_LIBS.h5
+✅ Saved: combined_LIBS.h5  |  6283.6 MB
+
+Files have been combined at: G:\My Drive\RLSL\Data\combined_CSVs\combined_LIBS.h5
+Complete, flushing and closing logger
+Time elapsed: 51.160815160000006 minutes.
+
+========================================
+2026-04-04 13:51:06
+==================================================
+Loading from combined_LIBS.h5...
+  Total rows: 183823  |  Wavelengths: 10000
+  Train: 147058  |  Val: 36765
+Writing splits → trn_val_split_LIBS.h5
+✅ Saved: trn_val_split_LIBS.h5  |  6284.2 MB
+Complete, flushing and closing logger
+Time elapsed: 4.829657310000039 minutes.

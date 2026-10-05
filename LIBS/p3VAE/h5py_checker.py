@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+"""
+jvlee_LIBS_ML > LIBS > p3VAE > h5py_checker.py
+"""
+
 import h5py
 from typing import cast
 import numpy as np
@@ -8,26 +14,26 @@ from pathlib import Path
 # ---------------------------------------------------------------------------------------
 # CHECK .h5 FOR NaN's
 # ---------------------------------------------------------------------------------------
-h5_path = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset_clean.h5"
+# h5_path = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset_clean.h5"
 
-with h5py.File(h5_path, 'r') as hf:
-    for split in ['train', 'val', 'test']:
-        if split not in hf:
-            continue
-        print(f"\n--- Checking split: {split} ---")
-        spectra = hf[split]['spectra'][:]       # type: ignore
-        targets = hf[split]['metadata']['elem_comp_wt%'][:]       # type: ignore
-        nan_spectra = np.isnan(spectra).sum()
-        nan_targets = np.isnan(targets).sum()
-        print(f"Spectra shape: {spectra.shape} | NaNs in spectra: {nan_spectra}")       # type: ignore
-        print(f"Targets shape: {targets.shape} | Nans in targets: {nan_targets}")       # type: ignore
+# with h5py.File(h5_path, 'r') as hf:
+#     for split in ['train', 'val', 'test']:
+#         if split not in hf:
+#             continue
+#         print(f"\n--- Checking split: {split} ---")
+#         spectra = hf[split]['spectra'][:]       # type: ignore
+#         targets = hf[split]['metadata']['elem_comp_wt%'][:]       # type: ignore
+#         nan_spectra = np.isnan(spectra).sum()
+#         nan_targets = np.isnan(targets).sum()
+#         print(f"Spectra shape: {spectra.shape} | NaNs in spectra: {nan_spectra}")       # type: ignore
+#         print(f"Targets shape: {targets.shape} | Nans in targets: {nan_targets}")       # type: ignore
 
-        if nan_spectra > 0:
-            bad_rows = np.isnan(spectra).any(axis=1)
-            print(f"  -> {bad_rows.sum()} rows in '{split}/spectra' contatin NaNs")
-        if nan_targets > 0:
-            bad_rows = np.isnan(targets).any(axis=1)
-            print(f"  -> {bad_rows.sum()} rows in '{split}/metadata' contatin NaNs")
+#         if nan_spectra > 0:
+#             bad_rows = np.isnan(spectra).any(axis=1)
+#             print(f"  -> {bad_rows.sum()} rows in '{split}/spectra' contatin NaNs")
+#         if nan_targets > 0:
+#             bad_rows = np.isnan(targets).any(axis=1)
+#             print(f"  -> {bad_rows.sum()} rows in '{split}/metadata' contatin NaNs")
 
 
 # ---------------------------------------------------------------------------------------
@@ -66,14 +72,16 @@ with h5py.File(h5_path, 'r') as hf:
 
 # # Usage example:
 # compare_h5_structure(
-#     "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_spectra_200k.h5",
-#     "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/experimental.h5"
+#     "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset_clean.h5",
+#     "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset.h5",
+#     # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_spectra_200k.h5",
+#     # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/experimental.h5"
 # )
 
 # ---------------------------------------------------------------------------------------
 # PRINT OUT ALL THE COLUMN HEADERS / METADATA KEYS OF A .H5
 # ---------------------------------------------------------------------------------------
-# with h5py.File('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset.h5', 'r') as f:
+# with h5py.File('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset_clean.h5', 'r') as f:
 #     metadata_group = f['test/metadata']
     
 #     # List all 219 dataset names inside metadata
@@ -430,30 +438,39 @@ def drop_h5_columns(
 #     print("Keys in elemental_experimental:", list(f.keys()))
 # print('\n\n')
 
-# file_paths = [
-#     # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/experimental.h5",
-#     # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_spectra_200k.h5",
-#     # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/elemental_experimental.h5",
-#     "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset.h5"
-# ]
 
-# def print_h5_structure(g, indent=0):
-#     """Recursively print the contents/structure of an HDF5 group or file."""
-#     for key in g.keys():
-#         item = g[key]
-#         prefix = "  " * indent
-#         if isinstance(item, h5py.Group):
-#             print(f"{prefix}📁 [{key}] Group ({len(item)} items)")
-#             print_h5_structure(item, indent + 1)
-#         elif isinstance(item, h5py.Dataset):
-#             print(f"{prefix}📄 [{key}] Dataset: shape={item.shape}, dtype={item.dtype}")
+# ---------------------------------------------------------------------------------------
+# PRINT OUT THE FILE STRUCTURE FOR ALL FILES IN 'file_paths'
+# ---------------------------------------------------------------------------------------
+file_paths = [
+    # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/experimental.h5",
+    # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_spectra_200k.h5",
+    # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/elemental_experimental.h5",
+    # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset_clean.h5",
+    # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset.h5"
+    "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_xandy.h5"
+]
 
-# # Iterate over your files
-# for path in file_paths:
-#     print(f"=== File: {path} ===")
-#     with h5py.File(path, "r") as f:
-#         print_h5_structure(f)
-#     print("\n")
+def print_h5_structure(g, indent=0):
+    """Recursively print the contents/structure of an HDF5 group or file."""
+    for key in g.keys():
+        item = g[key]
+        prefix = "  " * indent
+        if isinstance(item, h5py.Group):
+            print(f"{prefix}📁 [{key}] Group ({len(item)} items)")
+            print_h5_structure(item, indent + 1)
+        elif isinstance(item, h5py.Dataset):
+            print(f"{prefix}📄 [{key}] Dataset: shape={item.shape}, dtype={item.dtype}")
+
+# Iterate over your files
+for path in file_paths:
+    print(f"=== File: {path} ===")
+    with h5py.File(path, "r") as f:
+        print_h5_structure(f)
+    print("\n")
+
+    with h5py.File(path, 'r') as f:
+        print(f"element names: {f['feature_cols'][:]}") # type: ignore
 
 
 # ---------------------------------------------------------------------------------------

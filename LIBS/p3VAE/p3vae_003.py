@@ -16,6 +16,7 @@ import time
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset, get_worker_info
+from torch.utils.checkpoint import checkpoint
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from setup import add_project_root_to_path
@@ -109,13 +110,13 @@ class PhysicsSpectralDecoder(nn.Module):
         nist_intens = torch.tensor(master_df['base_intensity'].values, dtype=torch.float32)
         elem_indices = torch.tensor(master_df['elem_idx'].values, dtype=torch.long)
 
-        # 1. Grid shape: (1, 1, N_channels) -> broadcastable across batch and lines
+        # 1. Grid shape: (1, 1, N_channels)
         self.register_buffer('grid', wl_grid.view(1, 1, -1))
         
-        # 2. Line centers shape: (1, N_lines, 1) -> broadcastable across batch and channels
+        # 2. Line centers shape: (1, N_lines, 1)
         self.register_buffer('line_centers', nist_wls.view(1, -1, 1))
         
-        # 3. Line base amps shape: (1, N_lines)
+        # 3. Line base amps shape normalized to [0, 1]
         max_amp = nist_intens.max() if nist_intens.max() > 0 else 1.0
         self.register_buffer('line_base_amps', (nist_intens / max_amp).unsqueeze(0))
         
@@ -124,12 +125,19 @@ class PhysicsSpectralDecoder(nn.Module):
 
         self.num_lines = len(master_df)
 
-    def forward(self, concentrations, broadening, chunk_size=128):
+    @staticmethod
+    def _compute_chunk_profile(amps_chunk, gammas, grid_f32, centers_chunk):
+        """Helper function for gradient checkpointing."""
+        denom = ((grid_f32 - centers_chunk) ** 2) + (gammas ** 2) + 1e-6
+        profiles_chunk = amps_chunk * (gammas / torch.pi) / denom
+        return torch.sum(profiles_chunk, dim=1)  # Sums out line dimension -> (B, N_channels)
+
+    def forward(self, concentrations, broadening, chunk_size=32):
         concentrations = concentrations.float()
         broadening = broadening.float()
 
         line_concs = concentrations[:, self.elem_indices]
-        amps_all = (line_concs * self.line_base_amps).unsqueeze(2) # (B, N_lines, 1)
+        amps_all = (line_concs * self.line_base_amps).unsqueeze(2)  # (B, N_lines, 1)
         gammas = torch.clamp(broadening.unsqueeze(2), min=0.01, max=5.0)
 
         grid_f32 = self.grid.float()            # (1, 1, 10000)
@@ -138,15 +146,26 @@ class PhysicsSpectralDecoder(nn.Module):
         total_lines = centers_f32.size(1)
         recon_spectrum = 0.0
 
-        # Chunk lines to fit comfortably within GPU cache
         for i in range(0, total_lines, chunk_size):
             amps_chunk = amps_all[:, i:i+chunk_size, :]
             centers_chunk = centers_f32[:, i:i+chunk_size, :]
 
-            denom = ((grid_f32 - centers_chunk) ** 2) + (gammas ** 2) + 1e-6
-            profiles_chunk = amps_chunk * (gammas / torch.pi) / denom
-            
-            recon_spectrum = recon_spectrum + torch.sum(profiles_chunk, dim=1)
+            if self.training:
+                # Gradient checkpointing disposes of intermediate (B, chunk, 10000) tensors immediately
+                chunk_sum = checkpoint(
+                    self._compute_chunk_profile,
+                    amps_chunk,
+                    gammas,
+                    grid_f32,
+                    centers_chunk,
+                    use_reentrant=False
+                )
+            else:
+                chunk_sum = self._compute_chunk_profile(
+                    amps_chunk, gammas, grid_f32, centers_chunk
+                )
+
+            recon_spectrum = recon_spectrum + chunk_sum     # type: ignore
 
         return recon_spectrum
 
@@ -366,18 +385,22 @@ def train_physics_vae(
                     print(f"⚠️ Warning: NaN detected in loss at epoch {epoch}. Skipping step.")
                     continue
 
-                # 1. Scale loss and run backward pass
-                scaler.scale(loss).backward()
+                # # 1. Scale loss and run backward pass
+                # scaler.scale(loss).backward()
 
-                # 2. Unscale gradients before clipping!
-                scaler.unscale_(optimizer)
+                # # 2. Unscale gradients before clipping!
+                # scaler.unscale_(optimizer)
 
-                # 3. Clip unscaled gradients
+                # # 3. Clip unscaled gradients
+                # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+
+                # # 4. Optimizer step via scaler & update scale factor
+                # scaler.step(optimizer)
+                # scaler.update()
+
+                loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-
-                # 4. Optimizer step via scaler & update scale factor
-                scaler.step(optimizer)
-                scaler.update()
+                optimizer.step()
 
                 train_running_loss += loss.item() * x.size(0)
                 train_recon_acc += losses["recon_loss"].item() * x.size(0)
@@ -431,7 +454,7 @@ if __name__ == "__main__":
     trained_model = train_physics_vae(
         h5_path=h5_file,
         input_dim=10000,
-        epochs=5,
+        epochs=250,
         batch_size=64,
         lr=learning_rate,
         weight_decay=0.0001,
