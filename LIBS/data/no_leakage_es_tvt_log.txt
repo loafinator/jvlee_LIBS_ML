@@ -1,0 +1,12 @@
+2026-10-05 13:18:43,265 [INFO] Loading from combined_exp_syn_dataset.h5...
+2026-10-05 13:20:23,195 [INFO]   Total rows: 383823  |  Wavelengths: 10000
+2026-10-05 13:20:24,481 [INFO] Found 183823 experimental and  200000 synthetic samples.
+2026-10-05 13:20:24,481 [INFO] Found 108 UNIQUE experimental compositions.
+2026-10-05 13:20:24,562 [INFO]  Train: 292090 (200000 synth + 92090 exp)
+2026-10-05 13:20:24,562 [INFO]  Val:   51498 (100% exp)
+2026-10-05 13:20:24,562 [INFO]  Test:  40235 (100% exp)
+2026-10-05 13:20:24,605 [INFO] train(exp): groups=86 Ce=59098, Gd=33584, K=92090, Li=92090, Sm=689, U=32263, Cl=92090
+2026-10-05 13:20:24,608 [INFO] val: groups=11 Ce=23754, Gd=10870, K=51498, Li=51498, Sm=2228, U=10260, Cl=51498
+2026-10-05 13:20:24,611 [INFO] test: groups=11 Ce=32011, Gd=3000, K=40235, Li=40235, U=8224, Cl=40235
+2026-10-05 13:20:24,611 [INFO] Writing splits → no_leakage_es_tvt_dataset.h5
+2026-10-05 13:26:58,283 [INFO] ✅ Saved: no_leakage_es_tvt_dataset.h5  |  10831.0 MB

@@ -1,0 +1,60 @@
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+Starting run
+hi
+🚀 Training on device: cuda
+Loading training dataset
+Loading 'train' dataset (292090 samples) into memory...
+Loading validation dataset
+Loading 'val' dataset (51474 samples) into memory...
+Initiate p3vae model.
+Initiate custom loss function
+Start Training and Validation Loops
+Epoch 01/200 [130.2s] | Train Loss: 0.2528 | Val Loss: 0.3076 | (Recon MSE: 0.0007, Conc MSE: 0.0254)
+  💾 Saved new best model checkpoint to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261005_221928.pt
+Epoch 02/200 [52.8s] | Train Loss: 0.0677 | Val Loss: 0.2684 | (Recon MSE: 0.0007, Conc MSE: 0.0239)
+  💾 Saved new best model checkpoint to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261005_221928.pt
+Epoch 03/200 [45.1s] | Train Loss: 0.0521 | Val Loss: 0.2875 | (Recon MSE: 0.0007, Conc MSE: 0.0261)
+Epoch 04/200 [44.6s] | Train Loss: 0.0480 | Val Loss: 0.2438 | (Recon MSE: 0.0007, Conc MSE: 0.0216)
+  💾 Saved new best model checkpoint to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261005_221928.pt
+Epoch 05/200 [49.2s] | Train Loss: 0.0448 | Val Loss: 0.2389 | (Recon MSE: 0.0007, Conc MSE: 0.0213)
+  💾 Saved new best model checkpoint to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261005_221928.pt
+Epoch 06/200 [48.5s] | Train Loss: 0.0416 | Val Loss: 0.2318 | (Recon MSE: 0.0007, Conc MSE: 0.0209)
+  💾 Saved new best model checkpoint to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261005_221928.pt
+Epoch 07/200 [26.0s] | Train Loss: 0.0456 | Val Loss: 0.2402 | (Recon MSE: 0.0006, Conc MSE: 0.0219)
+Epoch 08/200 [33.6s] | Train Loss: 0.0388 | Val Loss: 0.2413 | (Recon MSE: 0.0007, Conc MSE: 0.0220)
+Epoch 09/200 [40.9s] | Train Loss: 0.0384 | Val Loss: 0.2262 | (Recon MSE: 0.0007, Conc MSE: 0.0204)
+  💾 Saved new best model checkpoint to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261005_221928.pt
+Epoch 10/200 [36.1s] | Train Loss: 0.0372 | Val Loss: 0.2278 | (Recon MSE: 0.0007, Conc MSE: 0.0205)
+Epoch 11/200 [50.1s] | Train Loss: 0.0365 | Val Loss: 0.2285 | (Recon MSE: 0.0007, Conc MSE: 0.0205)
+Epoch 12/200 [32.2s] | Train Loss: 0.0357 | Val Loss: 0.2126 | (Recon MSE: 0.0006, Conc MSE: 0.0191)
+  💾 Saved new best model checkpoint to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261005_221928.pt
+Epoch 13/200 [21.5s] | Train Loss: 0.0354 | Val Loss: 0.2200 | (Recon MSE: 0.0007, Conc MSE: 0.0197)
+Epoch 14/200 [20.2s] | Train Loss: 0.0355 | Val Loss: 0.2233 | (Recon MSE: 0.0006, Conc MSE: 0.0199)
+Epoch 15/200 [24.4s] | Train Loss: 0.0356 | Val Loss: 0.2306 | (Recon MSE: 0.0007, Conc MSE: 0.0205)
+Epoch 16/200 [50.2s] | Train Loss: 0.0343 | Val Loss: 0.2228 | (Recon MSE: 0.0007, Conc MSE: 0.0198)
+Epoch 17/200 [20.6s] | Train Loss: 0.0355 | Val Loss: 0.2239 | (Recon MSE: 0.0007, Conc MSE: 0.0201)
+Epoch 18/200 [20.8s] | Train Loss: 0.0342 | Val Loss: 0.2326 | (Recon MSE: 0.0006, Conc MSE: 0.0209)
+Epoch 19/200 [22.3s] | Train Loss: 0.0328 | Val Loss: 0.2236 | (Recon MSE: 0.0006, Conc MSE: 0.0200)
+Epoch 20/200 [24.4s] | Train Loss: 0.0327 | Val Loss: 0.2212 | (Recon MSE: 0.0006, Conc MSE: 0.0198)
+Epoch 21/200 [36.0s] | Train Loss: 0.0326 | Val Loss: 0.2304 | (Recon MSE: 0.0007, Conc MSE: 0.0205)
+Epoch 22/200 [21.3s] | Train Loss: 0.0325 | Val Loss: 0.2359 | (Recon MSE: 0.0006, Conc MSE: 0.0213)
+Epoch 23/200 [21.9s] | Train Loss: 0.0325 | Val Loss: 0.2331 | (Recon MSE: 0.0007, Conc MSE: 0.0210)
+Epoch 24/200 [32.6s] | Train Loss: 0.0323 | Val Loss: 0.2260 | (Recon MSE: 0.0006, Conc MSE: 0.0203)
+Epoch 25/200 [19.2s] | Train Loss: 0.0314 | Val Loss: 0.2324 | (Recon MSE: 0.0006, Conc MSE: 0.0209)
+Epoch 26/200 [19.2s] | Train Loss: 0.0313 | Val Loss: 0.2277 | (Recon MSE: 0.0006, Conc MSE: 0.0204)
+Epoch 27/200 [19.2s] | Train Loss: 0.0312 | Val Loss: 0.2263 | (Recon MSE: 0.0006, Conc MSE: 0.0203)
+🛑 Early stopping triggered at epoch 27: model converged.
+✨ Training complete. Loaded best model from epoch 12 (Val Loss: 0.2126)
+Running evaluation on: cuda
+Loading 'test' dataset (40235 samples) into memory...
+Loaded model from epoch 12 | (Val Loss: 0.212609)
+Saved Concentration Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots/concentration_parity_plots_test.png
+Saved Spectral Breakdown Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots/sample_2775_spectral_breakdown_test.png
+Run completed in 19.29 minutes.

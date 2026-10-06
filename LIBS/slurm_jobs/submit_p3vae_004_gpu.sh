@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=p3vae_004_r001_gpu
+#SBATCH --job-name=p3vae_004_r002_gpu
 #SBATCH --output=/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/slurm_jobs/gpu_job_%j.out
 #SBATCH --error=/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/slurm_jobs/gpu_job_%j.err
 #SBATCH --partition=gpu

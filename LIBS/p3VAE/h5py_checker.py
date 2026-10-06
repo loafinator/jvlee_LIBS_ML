@@ -448,29 +448,31 @@ file_paths = [
     # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/elemental_experimental.h5",
     # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset_clean.h5",
     # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset.h5"
-    "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_xandy.h5"
+    # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_xandy.h5"
+    # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/combined_exp_syn_dataset.h5"
+    "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5"
 ]
 
-def print_h5_structure(g, indent=0):
-    """Recursively print the contents/structure of an HDF5 group or file."""
-    for key in g.keys():
-        item = g[key]
-        prefix = "  " * indent
-        if isinstance(item, h5py.Group):
-            print(f"{prefix}📁 [{key}] Group ({len(item)} items)")
-            print_h5_structure(item, indent + 1)
-        elif isinstance(item, h5py.Dataset):
-            print(f"{prefix}📄 [{key}] Dataset: shape={item.shape}, dtype={item.dtype}")
+# def print_h5_structure(g, indent=0):
+#     """Recursively print the contents/structure of an HDF5 group or file."""
+#     for key in g.keys():
+#         item = g[key]
+#         prefix = "  " * indent
+#         if isinstance(item, h5py.Group):
+#             print(f"{prefix}📁 [{key}] Group ({len(item)} items)")
+#             print_h5_structure(item, indent + 1)
+#         elif isinstance(item, h5py.Dataset):
+#             print(f"{prefix}📄 [{key}] Dataset: shape={item.shape}, dtype={item.dtype}")
 
-# Iterate over your files
-for path in file_paths:
-    print(f"=== File: {path} ===")
-    with h5py.File(path, "r") as f:
-        print_h5_structure(f)
-    print("\n")
+# # Iterate over your files
+# for path in file_paths:
+#     print(f"=== File: {path} ===")
+#     with h5py.File(path, "r") as f:
+#         print_h5_structure(f)
+#     print("\n")
 
-    with h5py.File(path, 'r') as f:
-        print(f"element names: {f['feature_cols'][:]}") # type: ignore
+    # with h5py.File(path, 'r') as f:
+    #     print(f"element names: {f['feature_cols'][:]}") # type: ignore
 
 
 # ---------------------------------------------------------------------------------------

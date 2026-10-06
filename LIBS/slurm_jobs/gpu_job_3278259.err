@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_004.py", line 842, in <module>
+    model = train_physics_vae(
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_004.py", line 542, in train_physics_vae
+    wl_grid = torch.from_numpy(train_dataset.wavelengths).to(device_obj)
+RuntimeError: CUDA error: CUDA-capable device(s) is/are busy or unavailable
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+

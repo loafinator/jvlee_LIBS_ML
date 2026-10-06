@@ -1,0 +1,8 @@
+Hi! So question for ya, I have an ML that I just finished training and I think I can be pretty happy with how it did, but I am trying to figure out if I (probably) need to keep developing it. The model is p3vae_004.py in this project, I also supplied the .out file from the training that has the training and loss validations and whatnot. I did not include the .h5 file in the project cuz its massive, but I did include the two files (NIST_data.py and data_prep.py) that I used to organize the data all for your context. 
+
+So the questions I have are as follows:
+
+is a validation loss of 0.058062 good?
+My R^2 values for the host salts are .358, .572, and .552 for K, Li, and Cl respectively. The R^2 values for dopants actually present in the exerimental data in the test set are: .961, .555, .972,  and .534 for Ce, Gd, Sm, and U respectively. What does that tell us? For reference I am much more concerned with being accurate with the dopants than the host salt.
+All of the R^2 values for all of the other elements that did not appear in the test set are massively negative, why did it still predict their presence even if they arent there?
+lastly: Each epoch takes a freaking long time to run, what do you see that is causing the long training time and what can I do to fix it?

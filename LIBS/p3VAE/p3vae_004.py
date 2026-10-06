@@ -9,6 +9,7 @@ import h5py
 import sys
 import time
 import torch
+import math
 
 import numpy as np
 import pandas as pd
@@ -38,9 +39,11 @@ from utils import (
     # B 32, C 16, no compile wrape --> 47 min/epoch
 BATCH_SIZE = 128         # Prevents GPU OOM on your local GPU
 CHUNK_SIZE = 128         # Keeps broadcast tensor overhead tiny
-MAX_EPOCHS = 250          # Fast execution loop
+MAX_EPOCHS = 200          # Fast execution loop
 MIN_LR = 1e-06
-cpus_per_task = 8
+# ****************************************************************************************************
+cpus_per_task = 8   # TODO: MUST UPDATE FOR ANY CHANGE IN SLURM/SRUN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# ****************************************************************************************************
 NUM_WORKERS = cpus_per_task - 2
 subset_size = 500       # NOTE: not currently using
 learning_rate = 1e-03
@@ -61,13 +64,51 @@ ELEMENT_WEIGHTS = torch.tensor([
 ], dtype=torch.float32)
 
 
-h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_xandy.h5"
+h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_xandy.h5"
 master_table_path = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv').resolve()
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_{timestamp}.pt').resolve()
+model_save_path.parent.mkdir(parents=True, exist_ok=True)
 # endregion
+
+class BankedPhysicsDecoder(nn.Module):
+    def __init__(self, wl_grid, master_table_path, n_elements,
+                 n_gamma=64, g_min=0.01, g_max=5.0):
+        super().__init__()
+        df = pd.read_csv(master_table_path)
+        centers = torch.tensor(df['wavelength_nm'].values, dtype=torch.float32)
+        amps = torch.tensor(df['base_intensity'].values, dtype=torch.float32)
+        amps = amps / amps.max()
+        elem = torch.tensor(df['elem_idx'].values)
+        wl = wl_grid.detach().cpu().float()
+        gammas = torch.logspace(math.log10(g_min), math.log10(g_max), n_gamma)
+
+        bank = torch.zeros(n_gamma, n_elements, wl.numel())
+        for k, g in enumerate(gammas):
+            for e in range(n_elements):
+                m = elem == e
+                c, a = centers[m], amps[m]
+                for i in range(0, len(c), 256):
+                    d = (wl[None, :] - c[i:i+256, None])**2 + g**2 + 1e-6
+                    bank[k, e] += (a[i:i+256, None] * (g / math.pi) / d).sum(0)
+        self.register_buffer('bank', bank)
+        self.register_buffer('log_g', gammas.log())
+        self.G = n_gamma
+
+    def forward(self, conc, broadening, chunk_size=None):
+        with torch.autocast(device_type=conc.device.type, enabled=False):
+            conc = conc.float()
+            lg = torch.log(broadening.float().clamp(0.01, 5.0)).reshape(-1)
+            step = self.log_g[1] - self.log_g[0]
+            pos = (lg - self.log_g[0]) / step
+            lo = pos.floor().clamp(0, self.G - 2).long()
+            w = (pos - lo).clamp(0, 1)[:, None, None]
+            prof = (1 - w) * self.bank[lo] + w * self.bank[lo + 1]   # [B, E, W]
+            return torch.einsum('be,bew->bw', conc, prof)
 
 
 class EarlyStopping:
-    def __init__(self, patience: int = 15, min_delta: float = 1e-5):
+    def __init__(self, patience: int = 8, min_delta: float = 1e-5):
         self.patience = patience
         self.min_delta = min_delta
         self.counter = 0
@@ -275,9 +316,14 @@ class PhysicsInformedVAE(nn.Module):
         self.fc_mean_matrix = nn.Linear(128, self.matrix_latent_dim)
         self.fc_logvar_matrix = nn.Linear(128, self.matrix_latent_dim)
 
-        self.physics_decoder = PhysicsSpectralDecoder(
-            wl_grid=wl_grid,
-            master_table_path=master_table_path
+        # self.physics_decoder = PhysicsSpectralDecoder(
+        #     wl_grid=wl_grid,
+        #     master_table_path=master_table_path
+        # )
+
+        self.physics_decoder = BankedPhysicsDecoder(
+            wl_grid=wl_grid, master_table_path=master_table_path,
+            n_elements=n_elements, n_gamma=32, g_min=0.01, g_max=5.0,
         )
 
         self.matrix_decoder = nn.Sequential(
@@ -436,30 +482,35 @@ def worker_init_fn(worker_id: int):
 def train_physics_vae(
     h5_path: str | Path,
     master_table_path: str | Path,
-    log_path: str | Path,
-    save_path: str | Path = "best_p3vae_model.pt",
+    log_path: str | Path | None = None,
+    save_path: str | Path | None = None,
     input_dim: int = 10000,
-    epochs: int = 20,
+    epochs: int = MAX_EPOCHS,
     batch_size: int = BATCH_SIZE,
-    lr: float = 1e-3,
-    weight_decay: float = 1e-4,
+    lr: float = learning_rate,
+    weight_decay: float = weight_decay,
     in_memory: bool = True,
     num_workers: int = NUM_WORKERS,
     device: str | None = None,
 ) -> PhysicsInformedVAE:
 
-    
+    if not save_path:
+        save_path = model_save_path
+
     # region Logger Setup
     if log_path is None:
-        log_path = Path(r"/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/default.txt").resolve()
+        log_path = Path(f"/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/default_{timestamp}.txt").resolve()
+    else:
+        log_path = Path(str(log_path)).resolve()
+    log_path.parent.mkdir(parents=True, exist_ok=True)
     logger = get_worker_logger(Path(log_path).stem)
+    log(logger=logger, msg='hi')
     # endregion
 
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
     device_obj = torch.device(device)
     log(logger=logger, msg=f"🚀 Training on device: {device_obj}")
-
 
     num_workers = 0 if in_memory else num_workers
 
@@ -474,7 +525,6 @@ def train_physics_vae(
         worker_init_fn=worker_init_fn if not in_memory else None,
         persistent_workers=(num_workers > 0),
     )
-
     
     log(logger=logger, msg='Loading validation dataset')
     val_dataset = LIBSSpectraDataset(h5_path, log_path=log_path, split='val', in_memory=in_memory)
@@ -526,63 +576,43 @@ def train_physics_vae(
     log(logger=logger, msg='Start Training and Validation Loops')
     for epoch in range(1, epochs + 1):
         start_time = time.time()
-        log(logger=logger, msg='a')
         batch_counter = 0
 
         # --- TRAINING ---
         model.train()     # type: ignore
-        log(logger=logger, msg='b')
         train_loss, train_recon, train_sup = 0.0, 0.0, 0.0
-        log(logger=logger, msg='c')
         pbar = tqdm(train_loader, desc=f"Epoch {epoch:02d}/{epochs:02d}",miniters=25, leave=True)
-        log(logger=logger, msg='d')
 
         for batch in pbar:
             batch_counter += 1
-            # log(logger=logger, msg=f'batch_count = {batch_counter}')
             batch = {k: v.to(device_obj, non_blocking=True) for k, v in batch.items()}
 
             if torch.isnan(batch['spectrum']).any():
                 raise ValueError("Input spectrum contains NaN values!")
-            # log(logger=logger, msg=f't-{batch_counter}-a')
 
             optimizer.zero_grad()
-            # log(logger=logger, msg=f't-{batch_counter}-b')
 
             with torch.amp.autocast(device_type='cuda', enabled=use_amp, dtype=torch.float16):     # type: ignore
                 model_outputs = model(batch['spectrum'])
                 loss_dict = criterion(model_outputs, batch)
                 loss = loss_dict["loss"]
-            # log(logger=logger, msg=f't-{batch_counter}-c')
 
             if torch.isnan(loss):
                 log(logger=logger, msg=f"⚠️ Warning: NaN detected in loss at epoch {epoch}. Skipping step.")
                 continue
-            # log(logger=logger, msg=f't-{batch_counter}-d')
 
             scaler.scale(loss).backward()
-            # log(logger=logger, msg=f't-{batch_counter}-e')
             scaler.unscale_(optimizer)
-            # log(logger=logger, msg=f't-{batch_counter}-f')
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)     # type: ignore
-            # log(logger=logger, msg=f't-{batch_counter}-g')
             scaler.step(optimizer)
-            # log(logger=logger, msg=f't-{batch_counter}-h')
             scaler.update()
-            # log(logger=logger, msg=f't-{batch_counter}-i')
 
             pbar.set_postfix(loss=f"{loss.item():.4f}")
-            # log(logger=logger, msg=f't-{batch_counter}-j')
 
             batch_sz = batch['spectrum'].size(0)
-            # log(logger=logger, msg=f't-{batch_counter}-k')
             train_loss += loss.item() * batch_sz
-            # log(logger=logger, msg=f't-{batch_counter}-l')
             train_recon += loss_dict["recon_loss"].item() * batch_sz
-            # log(logger=logger, msg=f't-{batch_counter}-m')
             train_sup += loss_dict["sup_loss"].item() * batch_sz
-            # log(logger=logger, msg=f't-{batch_counter}-n')
-            # log(logger=logger, msg=f'{batch_counter}-')
 
         # --- VALIDATION ---
         model.eval()     # type: ignore
@@ -592,37 +622,24 @@ def train_physics_vae(
         with torch.no_grad():
             for batch in val_loader:
                 val_batch_counter += 1
-                # log(logger=logger, msg=f'val batch count = {val_batch_counter}')
                 batch = {k: v.to(device_obj, non_blocking=True) for k, v in batch.items()}
-                # log(logger=logger, msg=f'v-{val_batch_counter}-a')
 
                 with torch.amp.autocast(device_type='cuda', enabled=use_amp, dtype=torch.float16):     # type: ignore
                     model_outputs = model(batch['spectrum'])
                     loss_dict = criterion(model_outputs, batch)
-                # log(logger=logger, msg=f'v-{val_batch_counter}-b')
 
                 batch_sz = batch['spectrum'].size(0)
-                # log(logger=logger, msg=f'v-{val_batch_counter}-c')
                 val_loss += loss_dict["loss"].item() * batch_sz
-                # log(logger=logger, msg=f'v-{val_batch_counter}-d')
                 val_recon += loss_dict["recon_loss"].item() * batch_sz
-                # log(logger=logger, msg=f'v-{val_batch_counter}-e')
                 val_sup += loss_dict["sup_loss"].item() * batch_sz
-                # log(logger=logger, msg=f'v-{val_batch_counter}-f')
 
         epoch_train_loss = train_loss / len(train_dataset)
-        # log(logger=logger, msg='e')
         epoch_val_loss = val_loss / len(val_dataset)
-        # log(logger=logger, msg='f')
         epoch_val_recon = val_recon / len(val_dataset)
-        # log(logger=logger, msg='g')
         epoch_val_sup = val_sup / len(val_dataset)
-        # log(logger=logger, msg='h')
 
         elapsed = time.time() - start_time
-        # log(logger=logger, msg='i')
         scheduler.step(epoch_val_loss)
-        # log(logger=logger, msg='j')
 
         log(logger=logger, msg=f"Epoch {epoch:02d}/{epochs:02d} [{elapsed:.1f}s] | Train Loss: {epoch_train_loss:.4f} | Val Loss: {epoch_val_loss:.4f} | (Recon MSE: {epoch_val_recon:.4f}, Conc MSE: {epoch_val_sup:.4f})")
 
@@ -636,7 +653,6 @@ def train_physics_vae(
                 'val_loss': best_val_loss,
             }, save_path)
             log(logger=logger, msg=f"  💾 Saved new best model checkpoint to {save_path}")
-        log(logger=logger, msg='k')
 
         if optimizer.param_groups[0]['lr'] <= MIN_LR:
             patience_counter += 1
@@ -804,23 +820,45 @@ if __name__ == "__main__":
     print('Starting run')
     loop_time_start = time.perf_counter()
 
-    # model = train_physics_vae(
-    #     h5_path=h5_file,
-    #     master_table_path=master_table_path,
-    #     log_path= '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/004_log.txt',
-    #     save_path="best_p3vae_model.pt",
-    #     input_dim = 10000,
-    #     epochs = MAX_EPOCHS,
-    #     batch_size = BATCH_SIZE,
-    #     lr = learning_rate,
-    #     weight_decay = 1e-4,
-    #     in_memory = True,
-    #     num_workers = NUM_WORKERS,
-    #     device = 'cuda',
-    # )
+    # # ---------------------------------------------------
+    # # Compare new and old physics decoders
+    # # ---------------------------------------------------
+    # log_path= '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/004_log.txt'
+    # train_dataset = LIBSSpectraDataset(h5_file, log_path=log_path, split='train', in_memory=True)
+    # device = "cuda" if torch.cuda.is_available() else "cpu"
+    # device_obj = torch.device(device)
+    # wl_grid = torch.from_numpy(train_dataset.wavelengths).to(device_obj)
 
+    # old = PhysicsSpectralDecoder(wl_grid, master_table_path).cuda().eval()
+    # new = BankedPhysicsDecoder(wl_grid, master_table_path, 19).cuda().eval()
+    # conc = torch.rand(8, 19, device='cuda') * 2
+    # gam  = torch.rand(8, 1, device='cuda') * 2 + 0.05
+    # a, b = old(conc, gam), new(conc, gam)
+    # print(((a - b).abs().max() / a.abs().max()).item())
+
+    # --------------------------------------------------
+    # Train Model
+    # --------------------------------------------------
+    model = train_physics_vae(
+        h5_path=h5_file,
+        master_table_path=master_table_path,
+        log_path= '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/004_noleak_log.txt',
+        save_path= model_save_path,
+        input_dim = 10000,
+        epochs = MAX_EPOCHS,
+        batch_size = BATCH_SIZE,
+        lr = learning_rate,
+        weight_decay = 1e-4,
+        in_memory = True,
+        num_workers = NUM_WORKERS,
+        device = 'cuda',
+    )
+
+    # --------------------------------------------------
+    # Evaluate Model
+    # --------------------------------------------------
     evaluate_and_plot(
-        checkpoint_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/best_p3vae_model.pt',
+        checkpoint_path=model_save_path,
         h5_path=h5_file,
         master_table_path=master_table_path,
         split='test',
