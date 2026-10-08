@@ -515,3 +515,45 @@ file_paths = [
 # print(f"Experimental Wavelength Range: {exp_wl.min():.3f} nm - {exp_wl.max():.3f} nm") # type: ignore
 # print(f"Synthetic Wavelength Range:    {syn_wl.min():.3f} nm - {syn_wl.max():.3f} nm") # type: ignore
 # print(f"Max Absolute Wavelength Difference: {wl_diff:.6e} nm")
+
+# ---------------------------------------------------------------------------------------
+# CHECK HOW .H5 FILE WAS SCALLED
+# ---------------------------------------------------------------------------------------
+def inspect_h5_scaling(h5_path):
+    print(f"=== Inspecting HDF5 Scaling: {h5_path} ===") 
+    with h5py.File(h5_path, 'r') as hf: # Load spectra (y) and concentrations (X) 
+        if 'y' in hf: 
+            y = hf['y'][:]  # type: ignore
+            X = hf['X'][:]  # type: ignore
+        elif 'y_train' in hf: 
+            y = np.vstack([hf['y_train'][:], hf['y_val'][:], hf['y_test'][:]])  # type: ignore
+            X = np.vstack([hf['X_train'][:], hf['X_val'][:], hf['X_test'][:]])  # type: ignore
+        else: 
+            raise KeyError("Could not locate spectral dataset keys.") 
+    print(f"\\n--- SPECTRA (y) MATRIX STATS --- Shape: {y.shape}")  # type: ignore
+    print(f"Global Min: {y.min():.6f} | Global Max: {y.max():.6f} | Mean: {y.mean():.6f}")  # type: ignore
+    
+    # Check 1: Shot-by-Shot Normalization Check 
+    shot_maxes = y.max(axis=1)  # type: ignore
+    if np.allclose(shot_maxes, 1.0, atol=1e-3):
+        print("⚠️ SPECTRA WARNING: Every shot has a max of 1.0! (Per-shot normalization was applied)") 
+    else: 
+        print(f"✅ Shot maxes vary across samples (Min shot max: {shot_maxes.min():.4f}, Max shot max: {shot_maxes.max():.4f})") 
+        
+    # Check 2: Wavelength-by-Wavelength Normalization Check 
+    wavelength_maxes = y.max(axis=0)  # type: ignore
+    if np.allclose(wavelength_maxes, 1.0, atol=1e-2): 
+        print("⚠️ SPECTRA WARNING: Every wavelength channel has a max of ~1.0! (Column-wise MinMaxScaler was applied)") 
+    else: 
+        print(f"✅ Wavelength maxes preserve line ratios (Min channel max: {wavelength_maxes.min():.4f}, Max channel max: {wavelength_maxes.max():.4f})") 
+        print(f"\\n--- CONCENTRATION (X) MATRIX STATS --- Shape: {X.shape}")  # type: ignore
+    print(f"Global Min: {X.min():.6f} | Global Max: {X.max():.6f}")  # type: ignore
+        
+    # Check concentrations per element 
+    elem_maxes = X.max(axis=0)  # type: ignore
+    print("Element Max Values across matrix:") 
+    for col_idx, max_val in enumerate(elem_maxes): 
+        print(f" Col {col_idx:02d}: Max = {max_val:.4f}") 
+
+h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5" 
+inspect_h5_scaling(h5_file)
