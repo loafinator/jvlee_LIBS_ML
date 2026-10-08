@@ -1615,8 +1615,13 @@ def standardize_wavelength_grid(
 # =============================================================================
 
 def hf_get(hf: h5py.File, key: str) -> np.ndarray:
-    """ Extract a dataset array from an HDF5 group or container safely. """
+    """ Extract a dataset array from an HDF5 group or container safely and reutrn it as a ndarray. """
     return hf[key][:] # type: ignore[index]
+
+def get_h5_ds(hf: h5py.File, key: str) -> h5py.Dataset:
+    """ Extract a dataset array from a .h5 files and return it as a dataset. """
+    from typing import cast
+    return cast(h5py.Dataset, hf[key])
 
 def h5_column_update(
     file_path: Path | str, target_columns: list[str]
@@ -3096,6 +3101,86 @@ def summarize_compositions_in_h5(
         nz = Xr[:, j] > 0
         ng = len(np.unique(inv[nz])) if nz.any() else 0
         print(f"{e:<4} {nz.sum():>9} {ng:>9} {Xr[:, j].max():>9.3f}")
+
+def check_h5_compositions(h5_path: str | Path):
+    """
+    Inspects an HDF5 dataset to count overall unique experimental compositions
+    and displays a per-element breakdown of shots and unique composition groups.
+    """
+    h5_path = Path(h5_path)
+    
+    with h5py.File(h5_path, 'r') as hf:
+        # 1. Load Concentrations Matrix X
+        if 'X' in hf:
+            X = hf['X'][:]      # type: ignore
+        elif 'metadata/elem_comp_wt%' in hf:
+            X = hf['metadata/elem_comp_wt%'][:]      # type: ignore
+        else:
+            raise KeyError("Could not locate concentration matrix ('X' or 'metadata/elem_comp_wt%').")
+
+        # 2. Load Element Names
+        if 'feature_cols' in hf:
+            names = [n.decode('utf-8') if isinstance(n, bytes) else str(n) for n in hf['feature_cols'][:]]      # type: ignore
+        elif 'metadata/elem_names' in hf:
+            names = [n.decode('utf-8') if isinstance(n, bytes) else str(n) for n in hf['metadata/elem_names'][:]]      # type: ignore
+        else:
+            names = [f"Elem_{i}" for i in range(X.shape[1])]      # type: ignore
+
+        # 3. Load Domain Label (0 = Experimental, 1 = Synthetic)
+        if 'is_synthetic' in hf:
+            is_synth = hf['is_synthetic'][:]      # type: ignore
+        elif 'metadata/is_synthetic' in hf:
+            is_synth = hf['metadata/is_synthetic'][:]      # type: ignore
+        else:
+            is_synth = np.zeros(X.shape[0], dtype=int)      # type: ignore
+
+        # 4. Load or Derive Composition Group IDs
+        if 'group_id' in hf:
+            group_id = hf['group_id'][:]      # type: ignore
+        else:
+            # If group_id isn't pre-computed, group identical concentration vectors (rounded to 4 decimals)
+            _, group_id = np.unique(np.round(X, 4), axis=0, return_inverse=True)      # type: ignore
+
+    # Isolate experimental data (synthetic spectra are excluded from physical composition counts)
+    exp_mask = (is_synth == 0)
+    X_exp = X[exp_mask]      # type: ignore
+    groups_exp = group_id[exp_mask]      # type: ignore
+
+    # Calculate global unique composition count
+    total_unique_exp_groups = len(np.unique(groups_exp))      # type: ignore
+
+    print(f"\n========================================================")
+    print(f" Dataset Composition Report: {h5_path.name}")
+    print(f"========================================================")
+    print(f"Total Samples (Shots): {len(X)} ({exp_mask.sum()} Exp | {(~exp_mask).sum()} Synth)")      # type: ignore
+    print(f"Total Unique Experimental Composition Groups: {total_unique_exp_groups}")
+    print(f"--------------------------------------------------------")
+    print(f"{'Element':<12} {'Shots > 0':>10} {'Unique Groups':>15} {'Max wt%':>10}")
+    print(f"--------------------------------------------------------")
+
+    host_matrix = {'Li', 'K', 'Cl'}
+    summary_records = []
+
+    for j, elem_name in enumerate(names):
+        active_shots = X_exp[:, j] > 0      # type: ignore
+        n_shots = int(active_shots.sum())
+        
+        # Count unique group_ids where this specific element is present
+        n_groups = len(np.unique(groups_exp[active_shots])) if n_shots > 0 else 0      # type: ignore
+        max_wt = float(X_exp[:, j].max()) if n_shots > 0 else 0.0      # type: ignore
+
+        label = f"{elem_name} (Host)" if elem_name in host_matrix else elem_name
+        print(f"{label:<12} {n_shots:>10} {n_groups:>15} {max_wt:>10.3f}")
+
+        summary_records.append({
+            'element': elem_name,
+            'shots': n_shots,
+            'unique_groups': n_groups,
+            'max_wt': max_wt
+        })
+
+    print(f"--------------------------------------------------------\n")
+    return pd.DataFrame(summary_records)
 # endregion
 
 # --- Entry Point Script Execution ---
@@ -3107,20 +3192,20 @@ if __name__ == "__main__":
 
     # xandy_to_crossval(input_file=xandy_path, output_file=crossval_path)
 
-    with h5py.File(crossval_path, 'r') as hf:
-        # Load the datasets into memory using [:]
-        is_synthetic = hf['is_synthetic'][:]       # type: ignore
-        group_id = hf['group_id'][:]       # type: ignore
+    # with h5py.File(crossval_path, 'r') as hf:
+    #     # Load the datasets into memory using [:]
+    #     is_synthetic = hf['is_synthetic'][:]       # type: ignore
+    #     group_id = hf['group_id'][:]       # type: ignore
         
-        # Now the numpy operations will work
-        exp = is_synthetic == 0
-        print(np.unique(group_id[exp]).size)       # type: ignore
-        print(np.unique(group_id[~exp]))       # type: ignore
-        print(np.intersect1d(group_id[exp], group_id[~exp]).size)       # type: ignore   # expect 0: no ID shared by exp and synthetic rows
-        print(np.unique(group_id[~exp]).size)       # type: ignore                       # roughly 162,948 if the IDs are disjoint
+    #     # Now the numpy operations will work
+    #     exp = is_synthetic == 0
+    #     print(np.unique(group_id[exp]).size)       # type: ignore
+    #     print(np.unique(group_id[~exp]))       # type: ignore
+    #     print(np.intersect1d(group_id[exp], group_id[~exp]).size)       # type: ignore   # expect 0: no ID shared by exp and synthetic rows
+    #     print(np.unique(group_id[~exp]).size)       # type: ignore                       # roughly 162,948 if the IDs are disjoint
 
     # Example composition summarization run
-    # path = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_xandy.h5'
-    # summarize_compositions_in_h5(file_path=path, label='train (experimental only)')
-    # summarize_compositions_in_h5(file_path=path, label='val')
-    # summarize_compositions_in_h5(file_path=path, label='test')
+    path = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5'
+    summarize_compositions_in_h5(file_path=path, label='train (experimental only)')
+    summarize_compositions_in_h5(file_path=path, label='val')
+    summarize_compositions_in_h5(file_path=path, label='test')
