@@ -11,6 +11,7 @@ import time
 import torch
 import math
 import gc
+import random
 import matplotlib
 matplotlib.use("Agg")
 
@@ -413,86 +414,6 @@ class PhysicsVAELoss(nn.Module):
         }
 
 
-def create_test_and_cv_folds(
-    data: Dict[str, Any], 
-    num_folds: int = 5, 
-    min_groups_per_dopant: int = 1, 
-    seed: int = 42
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Splits experimental composition groups into (num_folds + 1) balanced bins:
-      - Bin 0: Holdout Test Set
-      - Bins 1..num_folds: CV Folds 0..(num_folds-1)
-    
-    Guarantees at least min_groups_per_dopant in the test set and in every CV fold.
-    """
-    # 1. Dynamically identify all active dopants (excluding host matrix: Li, K, Cl)
-    host_elements = {'Li', 'K', 'Cl'}
-    X_np = data['X'].numpy() if hasattr(data['X'], 'numpy') else data['X']
-    dopant_idx = [
-        i for i, name in enumerate(data['names']) 
-        if name not in host_elements and (X_np[:, i] > 0).any()
-    ]
-
-    is_synth_np = data['is_synth'].numpy() if hasattr(data['is_synth'], 'numpy') else data['is_synth']
-
-    # 2. Assign experimental groups across (num_folds + 1) total bins
-    all_split_ids = assign_group_folds(
-        X=X_np,
-        group_id=data['group_id'],
-        is_synthetic=is_synth_np,
-        dopant_idx=dopant_idx,
-        elem_names=data['names'],
-        n_splits=num_folds + 1,
-        min_groups_per_dopant=min_groups_per_dopant,
-        seed=seed,
-        verbose=True
-    )
-
-    # 3. Derive masks for Test vs CV partitions
-    exp_mask = (is_synth_np == 0)
-    test_mask = (all_split_ids == 0) & exp_mask
-    cv_mask = (all_split_ids > 0) | (is_synth_np == 1)  # Keeps synthetic samples in CV/Train
-
-    test_idx = np.where(test_mask)[0]
-    cv_idx = np.where(cv_mask)[0]
-
-    # 4. Map CV fold IDs (Bins 1..5 -> Fold IDs 0..4; Synthetic samples -> -1)
-    cv_fold_id = np.where(all_split_ids[cv_idx] > 0, all_split_ids[cv_idx] - 1, -1)
-
-    return test_idx, cv_idx, cv_fold_id
-
-def pull_test_holdout(data, test_ratio=0.15, seed=42):
-    """
-    Reserves a percentage of experimental composition groups for lockbox testing
-    and returns indices for cross-validation vs. test sets.
-    """
-    # Standardize array/tensor types safely
-    is_synth = data['is_synth']
-    if hasattr(is_synth, 'cpu'):
-        is_synth = is_synth.cpu().numpy()
-
-    group_id = data['group_id']
-    if hasattr(group_id, 'cpu'):
-        group_id = group_id.cpu().numpy()
-
-    # 1. Identify unique experimental composition groups
-    exp_mask = (is_synth == 0)
-    exp_groups = np.unique(group_id[exp_mask])
-
-    # 2. Reserve composition groups for lockbox testing
-    rng = np.random.default_rng(seed)
-    test_groups = rng.choice(exp_groups, size=int(test_ratio * len(exp_groups)), replace=False)
-
-    # 3. Derive sample index masks
-    test_mask = np.isin(group_id, test_groups) & exp_mask
-    cv_mask = ~np.isin(group_id, test_groups)  # Retains synthetic data + remaining experimental groups
-
-    test_idx = np.where(test_mask)[0]
-    cv_idx = np.where(cv_mask)[0]
-
-    return test_idx, cv_idx
-
 def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
                        n_splits=5, n_trials=2000, min_groups_per_dopant=1, seed=42, verbose=True):
     exp = np.where(is_synthetic == 0)[0]
@@ -550,173 +471,77 @@ def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
             print(f"{k:<5}{g.sum():>7}{shots[g].sum():>9}  " + "  ".join(f"{c:>11}" for c in cells))
     return fold_id
 
-def load_crossval_data(h5_path: str) -> Dict[str, Any]:
-    """Loads everything ONCE. y is ~15 GB, so never copy or slice it per fold."""
-    with h5py.File(h5_path, 'r') as hf:
-        data = dict(
-            X=torch.from_numpy(get_h5_ds(hf, 'X')[:]).float(),
-            y=torch.from_numpy(get_h5_ds(hf, 'y')[:]).float(),
-            is_synth=torch.from_numpy(get_h5_ds(hf, 'is_synthetic')[:]).long(),
-            group_id=get_h5_ds(hf, 'group_id')[:],
-            wavelengths=get_h5_ds(hf, 'wavelengths')[:],
-            names=[
-                n.decode('utf-8') if isinstance(n, bytes) else str(n) 
-                for n in get_h5_ds(hf, 'feature_cols')[:]
-            ],
-        )
-    return data
- 
-def get_fold_ids(cv_data, num_folds, h5_path, dopants=('Ce', 'Gd', 'Sm', 'U'), seed=42):
-    fold_path = Path(h5_path).with_name(f"{Path(h5_path).stem}_folds{num_folds}_seed{seed}.npy")
-    if fold_path.exists():
-        return np.load(fold_path)                      # reuse -> identical folds on every run
-    dop = [cv_data['names'].index(e) for e in dopants]
-    fold_id = assign_group_folds(cv_data['X'].numpy(), cv_data['group_id'], cv_data['is_synth'].numpy(),
-                                 dop, cv_data['names'], n_splits=num_folds, seed=seed)
-    np.save(fold_path, fold_id)
-    return fold_id
- 
-def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger, device_obj,
-                   element_weights, epochs, batch_size, lr, weight_decay, patience=10, use_compile=True):
-    torch._dynamo.reset()                              # fresh compile cache per fold (default limit is 8 recompiles)
-    train_idx = np.where(fold_id != fold)[0]           # synthetic (-1) + the other folds
-    val_idx = np.where(fold_id == fold)[0]
-    pin = device_obj.type == 'cuda'
-    train_ds = LIBSSpectraDataset(cv_data['y'], cv_data['X'], cv_data['is_synth'], train_idx)
-    val_ds = LIBSSpectraDataset(cv_data['y'], cv_data['X'], cv_data['is_synth'], val_idx)
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=pin)
-    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=pin)
-    log(logger=logger, msg=f"=== Fold {fold}: train {len(train_ds)} | val {len(val_ds)} "
-                           f"({len(np.unique(cv_data['group_id'][val_idx]))} compositions) ===")
- 
-    wl_grid = torch.from_numpy(cv_data['wavelengths']).to(device_obj)
-    raw_model = PhysicsInformedVAE(input_dim=cv_data['y'].shape[1], n_elements=cv_data['X'].shape[1],
-                                   wl_grid=wl_grid, master_table_path=master_table_path,
-                                   n_broadening=1).to(device_obj)
-    model = cast(nn.Module, torch.compile(raw_model, mode='reduce-overhead')) if use_compile else raw_model
- 
-    criterion = PhysicsVAELoss(element_weights=element_weights, alpha_recon=1.0, beta_sup=10.0,
-                               gamma_kl=1e-4, use_log_conc=True).to(device_obj)
-    optimizer = torch.optim.AdamW(raw_model.parameters(), lr=lr, weight_decay=weight_decay)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=5, min_lr=MIN_LR)
-    use_amp = device_obj.type == 'cuda'
-    scaler = amp.GradScaler(enabled=use_amp)
-    early_stopper = EarlyStopping(patience=patience)
-    best_val, best_epoch = float('inf'), 0
- 
-    for epoch in range(1, epochs + 1):
-        t0 = time.time()
-        model.train()
-        tr_loss = 0.0
-        for batch in tqdm(train_loader, desc=f"F{fold} E{epoch:02d}", mininterval=5, leave=False):
-            batch = {k: v.to(device_obj, non_blocking=True) for k, v in batch.items()}
-            optimizer.zero_grad()
-            with amp.autocast(enabled=use_amp, dtype=torch.float16):
-                out = model(batch['spectrum'])
-                ld = criterion(out, batch)
-            if torch.isnan(ld['loss']):
-                continue
-            scaler.scale(ld['loss']).backward()
-            scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(raw_model.parameters(), max_norm=1.0)
-            scaler.step(optimizer)
-            scaler.update()
-            tr_loss += ld['loss'].item() * batch['spectrum'].size(0)
- 
-        model.eval()
-        va_loss, va_sup = 0.0, 0.0
-        with torch.no_grad():
-            for batch in val_loader:
-                batch = {k: v.to(device_obj, non_blocking=True) for k, v in batch.items()}
-                with amp.autocast(enabled=use_amp, dtype=torch.float16):
-                    ld = criterion(model(batch['spectrum']), batch)
-                n = batch['spectrum'].size(0)
-                va_loss += ld['loss'].item() * n
-                va_sup += ld['sup_loss'].item() * n
-        tr_loss /= len(train_ds); va_loss /= len(val_ds); va_sup /= len(val_ds)
-        scheduler.step(va_loss)
-        log(logger=logger, msg=f"[F{fold}] Epoch {epoch:02d}/{epochs} [{time.time()-t0:.1f}s] | "
-                               f"Train {tr_loss:.4f} | Val {va_loss:.4f} | Conc MSE {va_sup:.4f}")
-        if va_loss < best_val:
-            best_val, best_epoch = va_loss, epoch
-            torch.save({'epoch': epoch, 'model_state_dict': raw_model.state_dict(), 'val_loss': best_val}, save_path)
-        if early_stopper(va_loss):
-            log(logger=logger, msg=f"[F{fold}] early stop at epoch {epoch}")
-            break
- 
-    # ---- out-of-fold predictions from the BEST epoch (fp32, uncompiled) ----
-    raw_model.load_state_dict(torch.load(save_path, map_location=device_obj)['model_state_dict'])
-    raw_model.eval()
-    preds = []
-    with torch.no_grad():
-        for batch in val_loader:
-            preds.append(raw_model(batch['spectrum'].to(device_obj))['concentrations'].float().cpu().numpy())
-    pred = np.concatenate(preds, axis=0)
- 
-    del model, raw_model, optimizer, scaler, train_loader, val_loader
-    gc.collect(); torch.cuda.empty_cache()
-    return dict(fold=fold, val_idx=val_idx, pred=pred, best_epoch=best_epoch, best_val=best_val)
- 
-def train_kfold_physics_vae(
-    h5_path, master_table_path, log_path=None, save_path=None,
-    epochs=MAX_EPOCHS, batch_size=BATCH_SIZE, lr=learning_rate,
-    weight_decay=weight_decay, num_folds=NUM_FOLDS, folds=None,
-    device=None, use_compile=True
-):
-    save_path = Path(save_path or model_save_path)
-    save_path.parent.mkdir(parents=True, exist_ok=True)
-    log_path = Path(log_path or f"/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/kfold_{timestamp}.txt").resolve()
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-    logger = get_worker_logger(log_path.stem)
-    device_obj = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
+def best_threshold(t, p, grid=np.linspace(0, 0.15, 151)):
+    pres = t > 0
+    def score(tau):
+        pz = np.where(p < tau, 0.0, p)
+        return 0.5 * (np.abs(t[pres] - pz[pres]).mean() + np.abs(pz[~pres]).mean())
+    return grid[np.argmin([score(tau) for tau in grid])]
 
-    # Load dataset once
-    data = load_crossval_data(h5_path)
-
-    # Generate test holdout + CV fold indices with full dopant coverage guarantees
+def build_splits_once(data, split_path, num_folds, seed=42, min_groups_per_dopant=1):
+    split_path = Path(split_path).with_suffix('.npz')
+    if split_path.exists():
+        d = np.load(split_path)
+        assert int(d['num_folds']) == num_folds and int(d['seed']) == seed, \
+            "cached split doesn't match requested settings"
+        return d['test_idx'], d['cv_idx'], d['cv_fold_id']
+    split_path.parent.mkdir(parents=True, exist_ok=True)
     test_idx, cv_idx, cv_fold_id = create_test_and_cv_folds(
-        data=data, 
-        num_folds=num_folds, 
-        min_groups_per_dopant=1, 
-        seed=42
+        data=data, num_folds=num_folds,
+        min_groups_per_dopant=min_groups_per_dopant, seed=seed)
+    np.savez(split_path, test_idx=test_idx, cv_idx=cv_idx, cv_fold_id=cv_fold_id,
+             num_folds=num_folds, seed=seed)
+    return test_idx, cv_idx, cv_fold_id
+
+def create_test_and_cv_folds(
+    data: Dict[str, Any], 
+    num_folds: int = 5, 
+    min_groups_per_dopant: int = 1, 
+    seed: int = 42
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Splits experimental composition groups into (num_folds + 1) balanced bins:
+      - Bin 0: Holdout Test Set
+      - Bins 1..num_folds: CV Folds 0..(num_folds-1)
+    
+    Guarantees at least min_groups_per_dopant in the test set and in every CV fold.
+    """
+    # 1. Dynamically identify all active dopants (excluding host matrix: Li, K, Cl)
+    host_elements = {'Li', 'K', 'Cl'}
+    X_np = data['X'].numpy() if hasattr(data['X'], 'numpy') else data['X']
+    dopant_idx = [
+        i for i, name in enumerate(data['names']) 
+        if name not in host_elements and (X_np[:, i] > 0).any()
+    ]
+
+    is_synth_np = data['is_synth'].numpy() if hasattr(data['is_synth'], 'numpy') else data['is_synth']
+
+    # 2. Assign experimental groups across (num_folds + 1) total bins
+    all_split_ids = assign_group_folds(
+        X=X_np,
+        group_id=data['group_id'],
+        is_synthetic=is_synth_np,
+        dopant_idx=dopant_idx,
+        elem_names=data['names'],
+        n_splits=num_folds + 1,
+        min_groups_per_dopant=min_groups_per_dopant,
+        seed=seed,
+        verbose=True
     )
 
-    # Save test set indices so they can be re-loaded for final lockbox evaluation
-    test_idx_path = save_path.with_name(f"{save_path.stem}_test_idx.npy")
-    np.save(test_idx_path, test_idx)
-    log(logger=logger, msg=f"Saved test holdout indices ({len(test_idx)} samples) → {test_idx_path.name}")
+    # 3. Derive masks for Test vs CV partitions
+    exp_mask = (is_synth_np == 0)
+    test_mask = (all_split_ids == 0) & exp_mask
+    cv_mask = (all_split_ids > 0) | (is_synth_np == 1)  # Keeps synthetic samples in CV/Train
 
-    # Slice sample-level entries for Cross-Validation data
-    # Total sample count in the dataset
-    n_samples = len(data['X'])  
+    test_idx = np.where(test_mask)[0]
+    cv_idx = np.where(cv_mask)[0]
 
-    cv_data = {}
-    for key, val in data.items():
-        # Only slice sample-level arrays (e.g., X, y, is_synthetic, group_id)
-        if isinstance(val, np.ndarray) and val.ndim > 0 and val.shape[0] == n_samples:
-            cv_data[key] = val[cv_idx]
-        else:
-            # Preserve 1D feature metadata like 'wavelengths' (shape: 10000,)
-            cv_data[key] = val
+    # 4. Map CV fold IDs (Bins 1..5 -> Fold IDs 0..4; Synthetic samples -> -1)
+    cv_fold_id = np.where(all_split_ids[cv_idx] > 0, all_split_ids[cv_idx] - 1, -1)
 
-    element_weights = torch.tensor(
-        [ELEMENT_WEIGHTS_REFERENCE[n.encode() if isinstance(n, str) else n] for n in cv_data['names']], 
-        dtype=torch.float32
-    )
+    return test_idx, cv_idx, cv_fold_id
 
-    results = []
-    for k in (folds if folds is not None else range(num_folds)):
-        fold_ckpt = save_path.with_name(f"{save_path.stem}_fold{k}.pt")
-        res = train_one_fold(
-            cv_data, cv_fold_id, k, master_table_path, fold_ckpt, logger, device_obj,
-            element_weights, epochs, batch_size, lr, weight_decay, use_compile=use_compile
-        )
-        np.savez(save_path.with_name(f"{save_path.stem}_oof_fold{k}.npz"), val_idx=res['val_idx'], pred=res['pred'])
-        log(logger=logger, msg=f"[F{k}] done: best epoch {res['best_epoch']}, val {res['best_val']:.4f}")
-        results.append((k, res['best_epoch'], res['best_val']))
-
-    return results
- 
 def evaluate_test_holdout(h5_path, model_prefix, num_folds, device='cuda'):
     """Evaluates all trained fold models on the held-out test set."""
     data = load_crossval_data(h5_path)
@@ -958,6 +783,212 @@ def evaluate_and_plot_kfold(
         print(f"Element {name:<5} | MAE: {mae:.4f}% | RMSE: {rmse:.4f}% | Max True wt%: {y_true.max():.3f}%")
     print("========================================================\n")
 
+def get_fold_ids(cv_data, num_folds, h5_path, dopants=('Ce', 'Gd', 'Sm', 'U'), seed=42):
+    fold_path = Path(h5_path).with_name(f"{Path(h5_path).stem}_folds{num_folds}_seed{seed}.npy")
+    if fold_path.exists():
+        return np.load(fold_path)                      # reuse -> identical folds on every run
+    dop = [cv_data['names'].index(e) for e in dopants]
+    fold_id = assign_group_folds(cv_data['X'].numpy(), cv_data['group_id'], cv_data['is_synth'].numpy(),
+                                 dop, cv_data['names'], n_splits=num_folds, seed=seed)
+    np.save(fold_path, fold_id)
+    return fold_id
+
+def group_mean(arr, gid):
+    ug, inv = np.unique(gid, return_inverse=True); inv = inv.ravel()
+    cnt = np.bincount(inv)
+    return np.stack([np.bincount(inv, weights=arr[:, j]) / cnt for j in range(arr.shape[1])], 1), ug
+
+def pull_test_holdout(data, test_ratio=0.15, seed=42):
+    """
+    Reserves a percentage of experimental composition groups for lockbox testing
+    and returns indices for cross-validation vs. test sets.
+    """
+    # Standardize array/tensor types safely
+    is_synth = data['is_synth']
+    if hasattr(is_synth, 'cpu'):
+        is_synth = is_synth.cpu().numpy()
+
+    group_id = data['group_id']
+    if hasattr(group_id, 'cpu'):
+        group_id = group_id.cpu().numpy()
+
+    # 1. Identify unique experimental composition groups
+    exp_mask = (is_synth == 0)
+    exp_groups = np.unique(group_id[exp_mask])
+
+    # 2. Reserve composition groups for lockbox testing
+    rng = np.random.default_rng(seed)
+    test_groups = rng.choice(exp_groups, size=int(test_ratio * len(exp_groups)), replace=False)
+
+    # 3. Derive sample index masks
+    test_mask = np.isin(group_id, test_groups) & exp_mask
+    cv_mask = ~np.isin(group_id, test_groups)  # Retains synthetic data + remaining experimental groups
+
+    test_idx = np.where(test_mask)[0]
+    cv_idx = np.where(cv_mask)[0]
+
+    return test_idx, cv_idx
+
+def load_crossval_data(h5_path: str) -> Dict[str, Any]:
+    """Loads everything ONCE. y is ~15 GB, so never copy or slice it per fold."""
+    with h5py.File(h5_path, 'r') as hf:
+        data = dict(
+            X=torch.from_numpy(get_h5_ds(hf, 'X')[:]).float(),
+            y=torch.from_numpy(get_h5_ds(hf, 'y')[:]).float(),
+            is_synth=torch.from_numpy(get_h5_ds(hf, 'is_synthetic')[:]).long(),
+            group_id=get_h5_ds(hf, 'group_id')[:],
+            wavelengths=get_h5_ds(hf, 'wavelengths')[:],
+            names=[
+                n.decode('utf-8') if isinstance(n, bytes) else str(n) 
+                for n in get_h5_ds(hf, 'feature_cols')[:]
+            ],
+        )
+    return data
+
+def seed_everything(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+ 
+def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger, device_obj,
+                   element_weights, epochs, batch_size, lr, weight_decay, patience=10, use_compile=True):
+    torch._dynamo.reset()                              # fresh compile cache per fold (default limit is 8 recompiles)
+    train_idx = np.where(fold_id != fold)[0]           # synthetic (-1) + the other folds
+    val_idx = np.where(fold_id == fold)[0]
+    pin = device_obj.type == 'cuda'
+    train_ds = LIBSSpectraDataset(cv_data['y'], cv_data['X'], cv_data['is_synth'], train_idx)
+    val_ds = LIBSSpectraDataset(cv_data['y'], cv_data['X'], cv_data['is_synth'], val_idx)
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=pin)
+    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=pin)
+    log(logger=logger, msg=f"=== Fold {fold}: train {len(train_ds)} | val {len(val_ds)} "
+                           f"({len(np.unique(cv_data['group_id'][val_idx]))} compositions) ===")
+ 
+    wl_grid = torch.from_numpy(cv_data['wavelengths']).to(device_obj)
+    raw_model = PhysicsInformedVAE(input_dim=cv_data['y'].shape[1], n_elements=cv_data['X'].shape[1],
+                                   wl_grid=wl_grid, master_table_path=master_table_path,
+                                   n_broadening=1).to(device_obj)
+    model = cast(nn.Module, torch.compile(raw_model, mode='reduce-overhead')) if use_compile else raw_model
+ 
+    criterion = PhysicsVAELoss(element_weights=element_weights, alpha_recon=1.0, beta_sup=10.0,
+                               gamma_kl=1e-4, use_log_conc=True).to(device_obj)
+    optimizer = torch.optim.AdamW(raw_model.parameters(), lr=lr, weight_decay=weight_decay)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=5, min_lr=MIN_LR)
+    use_amp = device_obj.type == 'cuda'
+    scaler = amp.GradScaler(enabled=use_amp)
+    early_stopper = EarlyStopping(patience=patience)
+    best_val, best_epoch = float('inf'), 0
+ 
+    for epoch in range(1, epochs + 1):
+        t0 = time.time()
+        model.train()
+        tr_loss = 0.0
+        for batch in tqdm(train_loader, desc=f"F{fold} E{epoch:02d}", mininterval=5, leave=False):
+            batch = {k: v.to(device_obj, non_blocking=True) for k, v in batch.items()}
+            optimizer.zero_grad()
+            with amp.autocast(enabled=use_amp, dtype=torch.float16):
+                out = model(batch['spectrum'])
+                ld = criterion(out, batch)
+            if torch.isnan(ld['loss']):
+                continue
+            scaler.scale(ld['loss']).backward()
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(raw_model.parameters(), max_norm=1.0)
+            scaler.step(optimizer)
+            scaler.update()
+            tr_loss += ld['loss'].item() * batch['spectrum'].size(0)
+ 
+        model.eval()
+        va_loss, va_sup = 0.0, 0.0
+        with torch.no_grad():
+            for batch in val_loader:
+                batch = {k: v.to(device_obj, non_blocking=True) for k, v in batch.items()}
+                with amp.autocast(enabled=use_amp, dtype=torch.float16):
+                    ld = criterion(model(batch['spectrum']), batch)
+                n = batch['spectrum'].size(0)
+                va_loss += ld['loss'].item() * n
+                va_sup += ld['sup_loss'].item() * n
+        tr_loss /= len(train_ds); va_loss /= len(val_ds); va_sup /= len(val_ds)
+        scheduler.step(va_loss)
+        log(logger=logger, msg=f"[F{fold}] Epoch {epoch:02d}/{epochs} [{time.time()-t0:.1f}s] | "
+                               f"Train {tr_loss:.4f} | Val {va_loss:.4f} | Conc MSE {va_sup:.4f}")
+        if va_loss < best_val:
+            best_val, best_epoch = va_loss, epoch
+            torch.save({'epoch': epoch, 'model_state_dict': raw_model.state_dict(), 'val_loss': best_val}, save_path)
+        if early_stopper(va_loss):
+            log(logger=logger, msg=f"[F{fold}] early stop at epoch {epoch}")
+            break
+ 
+    # ---- out-of-fold predictions from the BEST epoch (fp32, uncompiled) ----
+    raw_model.load_state_dict(torch.load(save_path, map_location=device_obj)['model_state_dict'])
+    raw_model.eval()
+    preds = []
+    with torch.no_grad():
+        for batch in val_loader:
+            preds.append(raw_model(batch['spectrum'].to(device_obj))['concentrations'].float().cpu().numpy())
+    pred = np.concatenate(preds, axis=0)
+ 
+    del model, raw_model, optimizer, scaler, train_loader, val_loader
+    gc.collect(); torch.cuda.empty_cache()
+    return dict(fold=fold, val_idx=val_idx, pred=pred, best_epoch=best_epoch, best_val=best_val)
+ 
+def train_kfold_physics_vae(
+    h5_path, master_table_path, log_path=None, save_path=None,
+    epochs=MAX_EPOCHS, batch_size=BATCH_SIZE, lr=learning_rate,
+    weight_decay=weight_decay, num_folds=NUM_FOLDS, folds=None,
+    device=None, use_compile=True
+):
+    save_path = Path(save_path or model_save_path)
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path = Path(log_path or f"/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/kfold_{timestamp}.txt").resolve()
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    logger = get_worker_logger(log_path.stem)
+    device_obj = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
+
+    # Load dataset once
+    data = load_crossval_data(h5_path)
+
+    # Generate test holdout + CV fold indices with full dopant coverage guarantees
+    seed_everything(seed=42)
+    split_path = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits') / f'{num_folds}_folds_seed42.npz'
+    test_idx, cv_idx, cv_fold_id = build_splits_once(data, split_path, num_folds, seed=42)
+
+    # Save test set indices so they can be re-loaded for final lockbox evaluation
+    test_idx_path = save_path.with_name(f"{save_path.stem}_test_idx.npy")
+    np.save(test_idx_path, test_idx)
+    log(logger=logger, msg=f"Saved test holdout indices ({len(test_idx)} samples) → {test_idx_path.name}")
+
+    # Slice sample-level entries for Cross-Validation data
+    # Total sample count in the dataset
+    n_samples = len(data['X'])  
+
+    cv_data = {}
+    for key, val in data.items():
+        # Only slice sample-level arrays (e.g., X, y, is_synthetic, group_id)
+        if isinstance(val, np.ndarray) and val.ndim > 0 and val.shape[0] == n_samples:
+            cv_data[key] = val[cv_idx]
+        else:
+            # Preserve 1D feature metadata like 'wavelengths' (shape: 10000,)
+            cv_data[key] = val
+
+    element_weights = torch.tensor(
+        [ELEMENT_WEIGHTS_REFERENCE[n.encode() if isinstance(n, str) else n] for n in cv_data['names']], 
+        dtype=torch.float32
+    )
+
+    results = []
+    for k in (folds if folds is not None else range(num_folds)):
+        fold_ckpt = save_path.with_name(f"{save_path.stem}_fold{k}.pt")
+        res = train_one_fold(
+            cv_data, cv_fold_id, k, master_table_path, fold_ckpt, logger, device_obj,
+            element_weights, epochs, batch_size, lr, weight_decay, use_compile=use_compile
+        )
+        np.savez(save_path.with_name(f"{save_path.stem}_oof_fold{k}.npz"), val_idx=res['val_idx'], pred=res['pred'])
+        log(logger=logger, msg=f"[F{k}] done: best epoch {res['best_epoch']}, val {res['best_val']:.4f}")
+        results.append((k, res['best_epoch'], res['best_val']))
+
+    return results
+ 
 if __name__ == "__main__":
     print('Starting run')
     loop_time_start = time.perf_counter()
@@ -984,16 +1015,19 @@ if __name__ == "__main__":
     # Evaluate Model
     # --------------------------------------------------
     # model_prefix = str(model_save_path.with_suffix(""))  # Strips .pt extension to match saved files
-    model_prefix = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261007_181657"
-    evaluate_and_plot_kfold(
-        h5_path=h5_file,
-        master_table_path=master_table_path,
-        model_prefix=model_prefix,
-        num_folds=k,
-        output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots",
-        device="cpu",
-    )
+    # model_prefix = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261007_181657"
+    # evaluate_and_plot_kfold(
+    #     h5_path=h5_file,
+    #     master_table_path=master_table_path,
+    #     model_prefix=model_prefix,
+    #     num_folds=k,
+    #     output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots",
+    #     device="cpu",
+    # )
 
+    a = np.load('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261007_160225_test_idx.npy') 
+    b = np.load('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261007_181657_test_idx.npy')
+    print(np.array_equal(a, b))   # True means the lockbox is stable between those runs
 
     loop_time_end = time.perf_counter()
     print(f"Run completed in {(loop_time_end - loop_time_start) / 60:.2f} minutes.")
@@ -1004,4 +1038,16 @@ if __name__ == "__main__":
     #       - general idea
     #       - approach
     #       - initial results
-    # Transfer to FLiNaK.
+    # Transfer to FLiNaK
+    # 
+    # 
+    # Where I left off:
+        # - I am trying to make it so that the folds don't change every time I run them, they
+        #   should be consistant from run to run so that I don't make any decisions based on
+        #   test data that gets mixed in from run to run.
+        # - fix that a different num_folds means a different lockbox.
+        # - check on seed_everything to actually understand what the freak is going on and
+        #   if it is doing the thing it is supposed to.
+        # - SCALING!!!!!!!!! need to save the scales so that when I predict things out I can
+        #   unscale them so that the measurements actually mean something useful.
+        # .
