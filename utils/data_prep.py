@@ -2922,6 +2922,64 @@ def xandy_to_crossval(
 # =============================================================================
 # region: Debug
 # =============================================================================
+
+def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
+                       n_splits=5, n_trials=2000, min_groups_per_dopant=1, seed=42, verbose=True):
+    exp = np.where(is_synthetic == 0)[0]
+    groups, inv = np.unique(group_id[exp], return_inverse=True)
+    inv = inv.ravel()
+    n_groups = len(groups)
+    shots = np.bincount(inv, minlength=n_groups)
+
+    first = np.zeros(n_groups, dtype=int)                 # one representative row per group
+    first[inv[::-1]] = np.arange(len(inv))[::-1]
+    present = X[exp[first]][:, dopant_idx] > 0            # (n_groups, n_dopants)
+    total_g_per_dopant = present.sum(axis = 0)
+    active_dopant_mask = total_g_per_dopant > 0
+    present = present[:, active_dopant_mask]
+    active_dopant_idx = [d for i, d in enumerate(dopant_idx) if active_dopant_mask[i]]
+    sig = (present.astype(int) * (1 << np.arange(len(active_dopant_idx)))).sum(axis=1)
+    classes = np.unique(sig)
+
+    best_fog, best_score = None, None
+    for t in range(n_trials):
+        rng = np.random.default_rng(seed + t)
+        fog = np.empty(n_groups, dtype=int)
+        offset = int(rng.integers(n_splits))
+        for s in rng.permutation(classes):
+            members = rng.permutation(np.where(sig == s)[0])
+            fog[members] = (offset + np.arange(len(members))) % n_splits
+            offset += len(members)
+        fold_shots = np.bincount(fog, weights=shots, minlength=n_splits)
+        imbalance = np.abs(fold_shots / shots.sum() - 1.0 / n_splits).max()
+        cov = np.array([present[fog == k].sum(axis=0) for k in range(n_splits)])
+        score = (-min(int(cov.min()), min_groups_per_dopant), imbalance)
+        if best_score is None or score < best_score:
+            best_fog, best_score = fog, score
+
+    if best_fog is None or best_score is None:
+        raise ValueError("Failed to assign fold groups: n_trials must be > 0.")
+
+    if -best_score[0] < 1:
+        raise ValueError(
+            f"A dopant has no groups in at least one fold (min={-best_score[0]}). "
+            "Lower n_splits, raise n_trials, or assign the rare groups by hand."
+        )
+
+    fold_id = np.full(len(X), -1, dtype=np.int32)
+    fold_id[exp] = best_fog[inv]
+
+    if verbose:
+        names = elem_names or [str(i) for i in range(X.shape[1])]
+        print(f"{n_groups} groups | min groups/dopant/fold={-best_score[0]} | "
+              f"worst shot-fraction deviation={best_score[1]:.3f}")
+        print(f"{'fold':<5}{'groups':>7}{'shots':>9}  " + "  ".join(f"{names[j]:>11}" for j in active_dopant_idx) + "  (groups/shots)")
+        for k in range(n_splits):
+            g = best_fog == k
+            cells = [f"{int(present[g, j].sum())}/{int(shots[g & present[:, j]].sum())}" for j in range(len(active_dopant_idx))]
+            print(f"{k:<5}{g.sum():>7}{shots[g].sum():>9}  " + "  ".join(f"{c:>11}" for c in cells))
+    return fold_id
+
 def generate_comp_labels(
     comp_data,
     elem_names=None,
@@ -3058,6 +3116,66 @@ def log(logger: logging.Logger, msg: str) -> None:
     else:
         print(msg)
 
+def stamp_lockbox_to_h5(
+    h5_path: str | Path,
+    n_splits: int = 6,               # e.g., 6 splits -> ~16.7% lockbox test set
+    min_groups_per_dopant: int = 2,  # Ensures >= 2 composition groups per active dopant
+    seed: int = 42,
+    host_elements: set = {'Li', 'K', 'Cl'}
+):
+    with h5py.File(h5_path, 'a') as hf:
+        if 'is_lockbox' in hf:
+            print("⚠️ 'is_lockbox' dataset already exists in HDF5 file!")
+            return
+
+        # 1. Load data arrays directly from HDF5
+        X = hf['X'][:]          # type: ignore
+        group_id = hf['group_id'][:]          # type: ignore
+        is_synth = hf['is_synthetic'][:]          # type: ignore
+        names = [
+            n.decode('utf-8') if isinstance(n, bytes) else str(n) 
+            for n in hf['feature_cols'][:]          # type: ignore
+        ]
+
+        # 2. Dynamically identify all active dopants (excluding matrix elements)
+        dopant_idx = [
+            i for i, name in enumerate(names) 
+            if name not in host_elements and (X[:, i] > 0).any()          # type: ignore
+        ]
+
+        # 3. Use assign_group_folds to split groups across n_splits bins
+        # This guarantees at least min_groups_per_dopant in EVERY fold (including Fold 0)
+        fold_ids = assign_group_folds(
+            X=X,
+            group_id=group_id,
+            is_synthetic=is_synth,
+            dopant_idx=dopant_idx,
+            elem_names=names,
+            n_splits=n_splits,
+            min_groups_per_dopant=min_groups_per_dopant,
+            seed=seed,
+            verbose=True
+        )
+
+        # 4. Bin 0 becomes the permanent lockbox set (excluding synthetic samples)
+        exp_mask = (is_synth == 0)
+        is_lockbox = (fold_ids == 0) & exp_mask
+
+        # 5. Write the boolean array directly into the .h5 file
+        hf.create_dataset('is_lockbox', data=is_lockbox, dtype=bool)
+
+        print(f"\n Successfully stamped 'is_lockbox' into {h5_path}")
+        print(f"Total dataset rows: {len(is_lockbox)} | Lockbox test samples: {is_lockbox.sum()}")
+
+        # 6. Verification: Check composition group count per dopant in lockbox
+        lockbox_exp_indices = np.where(is_lockbox)[0]
+        lb_groups, first_idx = np.unique(group_id[lockbox_exp_indices], return_index=True)          # type: ignore
+        lb_dopant_counts = (X[lockbox_exp_indices[first_idx]][:, dopant_idx] > 0).sum(axis=0)          # type: ignore
+
+        print("\n--- Lockbox Dopant Group Coverage Verification ---")
+        for idx, count in zip(dopant_idx, lb_dopant_counts):
+            print(f"Element {names[idx]:<5}: {count} composition groups in lockbox")
+
 def summarize_compositions_in_h5(
     file_path: str | Path,
     label: str
@@ -3190,6 +3308,9 @@ if __name__ == "__main__":
     xandy_path = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_xandy.h5"
     crossval_path = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5"
 
+    h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5"
+    stamp_lockbox_to_h5(h5_file, n_splits=6, min_groups_per_dopant=2, seed=42)
+
     # xandy_to_crossval(input_file=xandy_path, output_file=crossval_path)
 
     # with h5py.File(crossval_path, 'r') as hf:
@@ -3205,7 +3326,7 @@ if __name__ == "__main__":
     #     print(np.unique(group_id[~exp]).size)       # type: ignore                       # roughly 162,948 if the IDs are disjoint
 
     # Example composition summarization run
-    path = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5'
-    summarize_compositions_in_h5(file_path=path, label='train (experimental only)')
-    summarize_compositions_in_h5(file_path=path, label='val')
-    summarize_compositions_in_h5(file_path=path, label='test')
+    # path = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5'
+    # summarize_compositions_in_h5(file_path=path, label='train (experimental only)')
+    # summarize_compositions_in_h5(file_path=path, label='val')
+    # summarize_compositions_in_h5(file_path=path, label='test')
