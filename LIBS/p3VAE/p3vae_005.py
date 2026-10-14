@@ -904,15 +904,6 @@ def find_spike_rows(y, group_id, is_synth, thresh=3.0, chunk=20000):
     bad = np.where(rm > thresh)[0]
     print(f"{len(bad)} rows with a pixel > {thresh}; groups:", np.unique(group_id[bad], return_counts=True))
 
-# def fold_range_check(X, fold_id, is_synth, names, dopants=('Ce', 'Gd', 'Sm', 'U')):
-#     exp = is_synth == 0
-#     for k in np.unique(fold_id[fold_id >= 0]):
-#         val = fold_id == k
-#         tr = exp & ~val                       # experimental training rows only (stricter)
-#         row = [f"{e}: val {X[val, names.index(e)].max():.3f} / train {X[tr, names.index(e)].max():.3f}"
-#                for e in dopants]
-#         print(f"fold {k}: " + " | ".join(row))
-
 def fold_range_check(X, fold_id, is_synth, names, dopants=('Ce', 'Gd', 'Sm', 'U'), logger=None):
     # Convert PyTorch tensors to NumPy arrays if necessary
     X_np = X.cpu().numpy() if hasattr(X, 'cpu') else np.asarray(X)
@@ -1044,11 +1035,11 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
     # Fit scaler strictly on training fold
     train_y_slice = cv_data['y'][train_idx]
     # spec_scaler = SpectralScaler(mode='global_max').fit(train_y_slice)
-    spec_scaler = SpectralScaler(mode='none').fit(train_y_slice)
-    # spec_scaler = SpectralScaler(mode='robust_max', q=99.9)                             # gemini recommendation
-    # spec_scaler.fit(train_y_slice)                                                      # gemini recommendation
-    # scale_gpu = spec_scaler.scale_.to(device_obj)   # type: ignore                                    # gemini recommendation
-    # log(logger=logger, msg=f'[F{fold}] spec_scaler scale_ = {scale_gpu.item():.4f}')    # gemini recommendation
+    # spec_scaler = SpectralScaler(mode='none').fit(train_y_slice)
+    spec_scaler = SpectralScaler(mode='robust_max', q=99.9)                             # gemini recommendation
+    spec_scaler.fit(train_y_slice)                                                      # gemini recommendation
+    scale_gpu = spec_scaler.scale_.to(device_obj)   # type: ignore                                    # gemini recommendation
+    log(logger=logger, msg=f'[F{fold}] spec_scaler scale_ = {scale_gpu.item():.4f}')    # gemini recommendation
     sub = train_idx[::200]
     ys, sy = cv_data['y'][sub], cv_data['is_synth'][sub]
     # log(logger=logger, msg=f"[F{fold}] scale_={spec_scaler.scale_.item():.4g} | "   # type: ignore
@@ -1115,8 +1106,8 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
         tr_loss = 0.0
         for batch in tqdm(train_loader, desc=f"F{fold} E{epoch:02d}", mininterval=5, leave=False):
             # Scale baseline spectra on GPU
-            # spectra = batch['spectrum'].to(device_obj, non_blocking=True) / scale_gpu
-            spectra = batch['spectrum'].to(device_obj, non_blocking=True)
+            spectra = batch['spectrum'].to(device_obj, non_blocking=True) / scale_gpu
+            # spectra = batch['spectrum'].to(device_obj, non_blocking=True)
             targets = batch['targets'].to(device_obj, non_blocking=True)
 
             # # --- SPECTRAL JITTER (Augmentation) ---
@@ -1150,8 +1141,8 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
         va_loss, va_sup = 0.0, 0.0
         with torch.no_grad():
             for batch in val_loader:
-                # spectra = batch['spectrum'].to(device_obj, non_blocking=True) / scale_gpu
-                spectra = batch['spectrum'].to(device_obj, non_blocking=True)
+                spectra = batch['spectrum'].to(device_obj, non_blocking=True) / scale_gpu
+                # spectra = batch['spectrum'].to(device_obj, non_blocking=True)
                 targets = batch['targets'].to(device_obj, non_blocking=True)
                 batch_gpu = {'spectrum': spectra, 'targets': targets}
 
@@ -1171,7 +1162,7 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
             torch.save({
                 'epoch': epoch, 
                 'model_state_dict': raw_model.state_dict(), 
-                # 'scaler_state_dict': spec_scaler.state_dict(),                          # gemini recommendation
+                'scaler_state_dict': spec_scaler.state_dict(),                          # gemini recommendation
                 'val_loss': best_val
             }, save_path)
 
@@ -1186,8 +1177,8 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
     preds = []
     with torch.no_grad():
         for batch in val_loader:
-            # spectra = batch['spectrum'].to(device_obj, non_blocking=True) / scale_gpu
-            spectra = batch['spectrum'].to(device_obj, non_blocking=True)
+            spectra = batch['spectrum'].to(device_obj, non_blocking=True) / scale_gpu
+            # spectra = batch['spectrum'].to(device_obj, non_blocking=True)
             preds.append(raw_model(spectra)['concentrations'].float().cpu().numpy())
     pred = np.concatenate(preds, axis=0)
 
@@ -1290,17 +1281,6 @@ def train_kfold_physics_vae(
         )
 
     return results
-
-# def worst_groups(true, pred, gid, names, dopants=('Ce', 'Gd', 'Sm', 'U'), top=3):
-#     j = [names.index(e) for e in dopants]
-#     err = ((np.log1p(pred[:, j]) - np.log1p(true[:, j])) ** 2).mean(1)
-#     ug, inv = np.unique(gid, return_inverse=True); inv = inv.ravel()
-#     cnt = np.bincount(inv)
-#     ge = np.bincount(inv, weights=err) / cnt
-#     for o in np.argsort(-ge)[:top]:
-#         m = inv == o
-#         print(f"group {ug[o]}: shots {cnt[o]}, err {ge[o]:.4f}, "
-#               f"true {np.round(true[m][0, j], 3)}, mean pred {np.round(pred[m][:, j].mean(0), 3)}")
 
 def worst_groups(true, pred, gid, names, dopants=('Ce', 'Gd', 'Sm', 'U'), top=3, logger=None):
     true_np = true.cpu().numpy() if hasattr(true, 'cpu') else np.asarray(true)

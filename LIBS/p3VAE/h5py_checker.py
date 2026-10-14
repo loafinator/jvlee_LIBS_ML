@@ -519,41 +519,115 @@ file_paths = [
 # ---------------------------------------------------------------------------------------
 # CHECK HOW .H5 FILE WAS SCALLED
 # ---------------------------------------------------------------------------------------
-def inspect_h5_scaling(h5_path):
-    print(f"=== Inspecting HDF5 Scaling: {h5_path} ===") 
-    with h5py.File(h5_path, 'r') as hf: # Load spectra (y) and concentrations (X) 
-        if 'y' in hf: 
-            y = hf['y'][:]  # type: ignore
-            X = hf['X'][:]  # type: ignore
-        elif 'y_train' in hf: 
-            y = np.vstack([hf['y_train'][:], hf['y_val'][:], hf['y_test'][:]])  # type: ignore
-            X = np.vstack([hf['X_train'][:], hf['X_val'][:], hf['X_test'][:]])  # type: ignore
-        else: 
-            raise KeyError("Could not locate spectral dataset keys.") 
-    print(f"\\n--- SPECTRA (y) MATRIX STATS --- Shape: {y.shape}")  # type: ignore
-    print(f"Global Min: {y.min():.6f} | Global Max: {y.max():.6f} | Mean: {y.mean():.6f}")  # type: ignore
+# def inspect_h5_scaling(h5_path):
+#     print(f"=== Inspecting HDF5 Scaling: {h5_path} ===") 
+#     with h5py.File(h5_path, 'r') as hf: # Load spectra (y) and concentrations (X) 
+#         if 'y' in hf: 
+#             y = hf['y'][:]  # type: ignore
+#             X = hf['X'][:]  # type: ignore
+#         elif 'y_train' in hf: 
+#             y = np.vstack([hf['y_train'][:], hf['y_val'][:], hf['y_test'][:]])  # type: ignore
+#             X = np.vstack([hf['X_train'][:], hf['X_val'][:], hf['X_test'][:]])  # type: ignore
+#         else: 
+#             raise KeyError("Could not locate spectral dataset keys.") 
+#     print(f"\\n--- SPECTRA (y) MATRIX STATS --- Shape: {y.shape}")  # type: ignore
+#     print(f"Global Min: {y.min():.6f} | Global Max: {y.max():.6f} | Mean: {y.mean():.6f}")  # type: ignore
     
-    # Check 1: Shot-by-Shot Normalization Check 
-    shot_maxes = y.max(axis=1)  # type: ignore
-    if np.allclose(shot_maxes, 1.0, atol=1e-3):
-        print("⚠️ SPECTRA WARNING: Every shot has a max of 1.0! (Per-shot normalization was applied)") 
-    else: 
-        print(f"✅ Shot maxes vary across samples (Min shot max: {shot_maxes.min():.4f}, Max shot max: {shot_maxes.max():.4f})") 
+#     # Check 1: Shot-by-Shot Normalization Check 
+#     shot_maxes = y.max(axis=1)  # type: ignore
+#     if np.allclose(shot_maxes, 1.0, atol=1e-3):
+#         print("⚠️ SPECTRA WARNING: Every shot has a max of 1.0! (Per-shot normalization was applied)") 
+#     else: 
+#         print(f"✅ Shot maxes vary across samples (Min shot max: {shot_maxes.min():.4f}, Max shot max: {shot_maxes.max():.4f})") 
         
-    # Check 2: Wavelength-by-Wavelength Normalization Check 
-    wavelength_maxes = y.max(axis=0)  # type: ignore
-    if np.allclose(wavelength_maxes, 1.0, atol=1e-2): 
-        print("⚠️ SPECTRA WARNING: Every wavelength channel has a max of ~1.0! (Column-wise MinMaxScaler was applied)") 
-    else: 
-        print(f"✅ Wavelength maxes preserve line ratios (Min channel max: {wavelength_maxes.min():.4f}, Max channel max: {wavelength_maxes.max():.4f})") 
-        print(f"\\n--- CONCENTRATION (X) MATRIX STATS --- Shape: {X.shape}")  # type: ignore
-    print(f"Global Min: {X.min():.6f} | Global Max: {X.max():.6f}")  # type: ignore
+#     # Check 2: Wavelength-by-Wavelength Normalization Check 
+#     wavelength_maxes = y.max(axis=0)  # type: ignore
+#     if np.allclose(wavelength_maxes, 1.0, atol=1e-2): 
+#         print("⚠️ SPECTRA WARNING: Every wavelength channel has a max of ~1.0! (Column-wise MinMaxScaler was applied)") 
+#     else: 
+#         print(f"✅ Wavelength maxes preserve line ratios (Min channel max: {wavelength_maxes.min():.4f}, Max channel max: {wavelength_maxes.max():.4f})") 
+#         print(f"\\n--- CONCENTRATION (X) MATRIX STATS --- Shape: {X.shape}")  # type: ignore
+#     print(f"Global Min: {X.min():.6f} | Global Max: {X.max():.6f}")  # type: ignore
         
-    # Check concentrations per element 
-    elem_maxes = X.max(axis=0)  # type: ignore
-    print("Element Max Values across matrix:") 
-    for col_idx, max_val in enumerate(elem_maxes): 
-        print(f" Col {col_idx:02d}: Max = {max_val:.4f}") 
+#     # Check concentrations per element 
+#     elem_maxes = X.max(axis=0)  # type: ignore
+#     print("Element Max Values across matrix:") 
+#     for col_idx, max_val in enumerate(elem_maxes): 
+#         print(f" Col {col_idx:02d}: Max = {max_val:.4f}") 
 
-h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5" 
-inspect_h5_scaling(h5_file)
+# h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5" 
+# inspect_h5_scaling(h5_file)
+
+
+files = [
+    "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261014_121049_test_idx.npy",
+    "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261014_101645_test_idx.npy",
+    "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261014_101143_test_idx.npy",
+    "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261014_100359_test_idx.npy",
+    "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261013_170021_test_idx.npy"
+]
+
+
+def compare_test_indices(file_list):
+    print("=" * 70)
+    print(" CHECKING TEST INDEX FILE CONSISTENCY")
+    print("=" * 70)
+
+    loaded_arrays = []
+    file_names = []
+
+    # 1. Load files
+    for filepath in file_list:
+        p = Path(filepath)
+        if not p.exists():
+            print(f"❌ File not found: {p.name}")
+            return
+        arr = np.load(p)
+        loaded_arrays.append(arr)
+        file_names.append(p.name)
+        print(f"Loaded {p.name:<45} | Shape: {arr.shape} | Dtype: {arr.dtype}")
+
+    print("-" * 70)
+
+    # 2. Compare against reference (first file)
+    ref_arr = loaded_arrays[0]
+    ref_name = file_names[0]
+    all_identical = True
+
+    for i in range(1, len(loaded_arrays)):
+        curr_arr = loaded_arrays[i]
+        curr_name = file_names[i]
+
+        # Check exact equality (handles shape + values)
+        is_exact_match = np.array_equal(ref_arr, curr_arr)
+
+        if is_exact_match:
+            print(f"✅ {curr_name} matches {ref_name} EXACTLY.")
+        else:
+            all_identical = False
+            print(f"❌ {curr_name} DOES NOT match {ref_name}!")
+
+            # Additional diagnostic details if they differ
+            if ref_arr.shape != curr_arr.shape:
+                print(
+                    f"   └─ Shape mismatch: {ref_arr.shape} vs {curr_arr.shape}"
+                )
+            else:
+                diff_count = np.sum(ref_arr != curr_arr)
+                overlap = len(np.intersect1d(ref_arr, curr_arr))
+                print(
+                    f"   ├─ Mismatched elements (element-wise order): {diff_count} / {len(ref_arr)}"
+                )
+                print(
+                    f"   └─ Set overlap (order-independent matching elements): {overlap} / {len(ref_arr)}"
+                )
+
+    print("=" * 70)
+    if all_identical:
+        print("🎉 SUCCESS: All test set index files are 100% IDENTICAL!")
+    else:
+        print("⚠️ WARNING: Differences detected between test set index files.")
+    print("=" * 70)
+
+if __name__ == "__main__":
+    compare_test_indices(files)

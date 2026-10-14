@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005.py", line 1376, in <module>
+    # model_prefix = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261013_170021"
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005.py", line 1232, in train_kfold_physics_vae
+    names=cv_data['names'],
+IndexError: index 383797 is out of bounds for dimension 0 with size 383732
