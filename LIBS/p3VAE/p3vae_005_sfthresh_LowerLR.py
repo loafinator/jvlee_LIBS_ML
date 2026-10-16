@@ -38,7 +38,8 @@ from utils import (
     log,
     logging,
     get_h5_ds,
-    check_h5_compositions
+    check_h5_compositions,
+    evaluate_and_plot_kfold
 )
 # endregion
 
@@ -698,7 +699,7 @@ def diagnose_spike_geometry(y, group_id, thresh=2.5):
         print(f"  Normal shots mean intensity across all channels: {norm_mean_intensity:.5f}")
         print(f"  Bad shots mean intensity across all channels:    {bad_mean_intensity:.5f}")
 
-def evaluate_and_plot_kfold(
+def old_evaluate_and_plot_kfold(
     h5_path: str | Path,
     master_table_path: str | Path,
     model_prefix: str | Path,
@@ -1392,21 +1393,26 @@ if __name__ == "__main__":
     print(results)              # (fold, best_epoch, best_val_loss)
     # endregion
 
+
     # --------------------------------------------------
     # region Evaluate Model
     # --------------------------------------------------
-    # model_prefix = str(model_save_path.with_suffix(""))  # Strips .pt extension to match saved files
-    # model_prefix = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261015_133024"
-    # evaluate_and_plot_kfold(
-    #     h5_path=h5_file,
-    #     master_table_path=master_table_path,
-    #     model_prefix=model_prefix,
-    #     num_folds=k,
-    #     output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots",
-    #     device="cuda",
-    #     model_tag='20261015_133024',
-    #     max_wt_percent=12.0
-    # )
+    model_prefix = str(model_save_path.with_suffix(""))
+    evaluate_and_plot_kfold(
+        h5_path=h5_file,
+        master_table_path=master_table_path,
+        model_prefix=model_prefix,
+        model_cls=PhysicsInformedVAE,
+        scaler_cls=SpectralScaler,
+        dataset_cls=LIBSSpectraDataset,
+        load_data_fn=load_crossval_data,
+        num_folds=k,
+        batch_size=BATCH_SIZE,
+        output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots/kfold/sfthresh",
+        device="cuda",
+        model_tag=f'LowerLR_{timestamp}',
+        max_wt_percent=12.0
+    )
     # endregion
 
     loop_time_end = time.perf_counter()

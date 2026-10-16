@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 """
-jvlee_LIBS_ML > LIBS > p3VAE > p3vae_005_sfthresh_LowerLr.py
+jvlee_LIBS_ML > LIBS > p3VAE > p3vae_005_sfthresh_DecoderFreezing.py
 """
 
 # region Imports
@@ -38,7 +38,8 @@ from utils import (
     log,
     logging,
     get_h5_ds,
-    check_h5_compositions
+    check_h5_compositions,
+    evaluate_and_plot_kfold
 )
 # endregion
 
@@ -79,7 +80,7 @@ ELEMENT_WEIGHTS = torch.tensor([
 h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5"
 master_table_path = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv').resolve()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_sfthresh_LowerLr_{timestamp}.pt').resolve()
+model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_sfthresh_DecoderFreezing_{timestamp}.pt').resolve()
 model_save_path.parent.mkdir(parents=True, exist_ok=True)
 # endregion
 
@@ -359,7 +360,6 @@ class PhysicsInformedVAE(nn.Module):
 
 
 class PhysicsVAELoss(nn.Module):
-
     def __init__(
         self,
         element_weights: torch.Tensor | None = None,
@@ -367,12 +367,20 @@ class PhysicsVAELoss(nn.Module):
         beta_sup: float = 10.0,
         gamma_kl: float = 1e-4,
         use_log_conc: bool = True,
+        sm_index: int | None = None,
+        sm_threshold: float = 0.3,
+        sm_alpha: float = 3.0,
+        sm_gamma: float = 1.0,
     ):
         super().__init__()
         self.alpha_recon = alpha_recon
         self.beta_sup = beta_sup
         self.gamma_kl = gamma_kl
         self.use_log_conc = use_log_conc
+        self.sm_index = sm_index
+        self.sm_threshold = sm_threshold
+        self.sm_alpha = sm_alpha
+        self.sm_gamma = sm_gamma
 
         if element_weights is not None:
             if not isinstance(element_weights, torch.Tensor):
@@ -381,12 +389,13 @@ class PhysicsVAELoss(nn.Module):
         else:
             self.element_weights = None
 
+    def update_weights(self, alpha_recon: float, beta_sup: float):
+        """Allows dynamic loss weight adjustments during training transitions."""
+        self.alpha_recon = alpha_recon
+        self.beta_sup = beta_sup
+
     @staticmethod
-    def _kl_divergence(
-        mu: torch.Tensor,
-        logvar: torch.Tensor
-    ) -> torch.Tensor:
-        """Computes KL divergence between standard Gaussian N(0, I) and N(mu, std^2)."""
+    def _kl_divergence(mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
         return -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1).mean()
 
     def forward(
@@ -403,13 +412,25 @@ class PhysicsVAELoss(nn.Module):
         # 1. Spectral Reconstruction Loss
         recon_loss = F.mse_loss(x_recon, x_target, reduction="mean")
 
-        # 2. Dopant-Focused Concentration Loss
+        # 2. Concentration Supervision Loss
         if self.use_log_conc:
             diff = torch.log1p(pred_conc) - torch.log1p(true_conc)
         else:
             diff = pred_conc - true_conc
 
-        element_errors = diff**2  # [Batch, N_elements]
+        element_errors = diff**2
+
+        # Sm focal weighting option
+        if self.sm_index is not None and self.sm_index < pred_conc.shape[1]:
+            sm_true = true_conc[:, self.sm_index]
+            sm_pred = pred_conc[:, self.sm_index]
+            sm_abs_error = torch.abs(sm_true - sm_pred)
+
+            range_mask = 1.0 + self.sm_alpha * (sm_true >= self.sm_threshold).float()
+            focal_weight = torch.pow(sm_abs_error, self.sm_gamma)
+
+            element_errors = element_errors.clone()
+            element_errors[:, self.sm_index] = range_mask * focal_weight * element_errors[:, self.sm_index]
 
         if self.element_weights is not None:
             element_errors = element_errors * self.element_weights
@@ -417,22 +438,15 @@ class PhysicsVAELoss(nn.Module):
         sup_loss = element_errors.mean()
 
         # 3. KL Divergence
-        kl_phys = self._kl_divergence(
-            model_outputs["mu_p"], model_outputs["logvar_p"]
-        )
-        kl_matrix = self._kl_divergence(
-            model_outputs["mu_m"], model_outputs["logvar_m"]
-        )
+        kl_phys = self._kl_divergence(model_outputs["mu_p"], model_outputs["logvar_p"])
+        kl_matrix = self._kl_divergence(model_outputs["mu_m"], model_outputs["logvar_m"])
         kl_loss = kl_phys + kl_matrix
-
-        # l1_residual = model_outputs["matrix_residual"].abs().mean()
 
         total_loss = (
             (self.alpha_recon * recon_loss)
             + (self.beta_sup * sup_loss)
             + (self.gamma_kl * kl_loss)
         )
-        # total_loss = total_loss + 0.001 * l1_residual
 
         return {
             "loss": total_loss,
@@ -698,7 +712,7 @@ def diagnose_spike_geometry(y, group_id, thresh=2.5):
         print(f"  Normal shots mean intensity across all channels: {norm_mean_intensity:.5f}")
         print(f"  Bad shots mean intensity across all channels:    {bad_mean_intensity:.5f}")
 
-def evaluate_and_plot_kfold(
+def old_evaluate_and_plot_kfold(
     h5_path: str | Path,
     master_table_path: str | Path,
     model_prefix: str | Path,
@@ -1036,72 +1050,55 @@ def seed_everything(seed=42):
     torch.cuda.manual_seed_all(seed)
  
 def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger, device_obj,
-                   element_weights, epochs, batch_size, lr, weight_decay, lr_patience=5, stop_patience = 10, use_compile=True):
+                   element_weights, epochs, batch_size, lr, weight_decay, lr_patience=5, stop_patience=10, use_compile=False):
     torch._dynamo.reset()
     train_idx = np.where(fold_id != fold)[0]
     val_idx = np.where(fold_id == fold)[0]
     pin = device_obj.type == 'cuda'
     
-    # Fit scaler strictly on training fold
     train_y_slice = cv_data['y'][train_idx]
-    # spec_scaler = SpectralScaler(mode='global_max').fit(train_y_slice)
-    # spec_scaler = SpectralScaler(mode='none').fit(train_y_slice)
-    spec_scaler = SpectralScaler(mode='robust_max', q=99.9)                             # gemini recommendation
-    spec_scaler.fit(train_y_slice)                                                      # gemini recommendation
-    scale_gpu = spec_scaler.scale_.to(device_obj)   # type: ignore                                    # gemini recommendation
-    log(logger=logger, msg=f'[F{fold}] spec_scaler scale_ = {scale_gpu.item():.4f}')    # gemini recommendation
-    sub = train_idx[::200]
-    ys, sy = cv_data['y'][sub], cv_data['is_synth'][sub]
-    # log(logger=logger, msg=f"[F{fold}] scale_={spec_scaler.scale_.item():.4g} | "   # type: ignore
-    #     f"exp max/mean {ys[sy==0].max():.4g}/{ys[sy==0].mean():.4g} | "
-    #     f"syn max/mean {ys[sy==1].max():.4g}/{ys[sy==1].mean():.4g}")
-    log(logger=logger, msg= f"exp max/mean {ys[sy==0].max():.4g}/{ys[sy==0].mean():.4g} | "
-        f"syn max/mean {ys[sy==1].max():.4g}/{ys[sy==1].mean():.4g}")
-    # scale_gpu = spec_scaler.scale_.to(device_obj)   # type: ignore
-
-    # Reclaim temporary slice memory before DataLoader initialization
+    spec_scaler = SpectralScaler(mode='robust_max', q=99.9)
+    spec_scaler.fit(train_y_slice)
+    scale_gpu = spec_scaler.scale_.to(device_obj)   # type: ignore
+    
     del train_y_slice
     gc.collect()
 
-    # 2. Pass data to Dataset
     train_ds = LIBSSpectraDataset(cv_data['y'], cv_data['X'], cv_data['is_synth'], train_idx)
     val_ds = LIBSSpectraDataset(cv_data['y'], cv_data['X'], cv_data['is_synth'], val_idx)
 
-    # 3. Enable multi-worker data loading + drop_last=True to prevent CUDA Graph recompilation
     train_loader = DataLoader(
-        train_ds, 
-        batch_size=batch_size, 
-        shuffle=True, 
-        num_workers=NUM_WORKERS,          # Uses 6 CPU worker threads
-        pin_memory=pin,
-        persistent_workers=(NUM_WORKERS > 0), # Keeps workers alive across epochs
-        drop_last=True,                    # Guarantees identical batch shapes for CUDA Graphs
+        train_ds, batch_size=batch_size, shuffle=True, num_workers=NUM_WORKERS,
+        pin_memory=pin, persistent_workers=(NUM_WORKERS > 0), drop_last=True
     )
     val_loader = DataLoader(
-        val_ds, 
-        batch_size=batch_size, 
-        shuffle=False, 
-        num_workers=NUM_WORKERS,
-        pin_memory=pin,
-        persistent_workers=(NUM_WORKERS > 0)
+        val_ds, batch_size=batch_size, shuffle=False, num_workers=NUM_WORKERS,
+        pin_memory=pin, persistent_workers=(NUM_WORKERS > 0)
     )
-    
-    log(logger=logger, msg=f"=== Fold {fold}: train {len(train_ds)} | val {len(val_ds)} "
-                           f"({len(np.unique(cv_data['group_id'][val_idx]))} compositions) ===")
 
     wl_grid = torch.from_numpy(cv_data['wavelengths']).to(device_obj)
-    raw_model = PhysicsInformedVAE(input_dim=cv_data['y'].shape[1], n_elements=cv_data['X'].shape[1],
-                                   wl_grid=wl_grid, master_table_path=master_table_path,
-                                   n_broadening=1).to(device_obj)
-    
-    # 4. Use mode='default' or disable compile if graph breaks occur
-    if use_compile:
-        model = cast(nn.Module, torch.compile(raw_model, mode='default'))
-    else:
-        model = raw_model
+    raw_model = PhysicsInformedVAE(
+        input_dim=cv_data['y'].shape[1], n_elements=cv_data['X'].shape[1],
+        wl_grid=wl_grid, master_table_path=master_table_path, n_broadening=1
+    ).to(device_obj)
 
-    criterion = PhysicsVAELoss(element_weights=element_weights, alpha_recon=1.0, beta_sup=10.0,
-                               gamma_kl=1e-4, use_log_conc=True).to(device_obj)
+    model = raw_model  # Uncompiled model allows toggling requires_grad dynamically
+
+    sm_idx = cv_data['names'].index('Sm') if 'Sm' in cv_data['names'] else None
+
+    # Instantiate loss criterion (Phase 1 high supervision mode)
+    criterion = PhysicsVAELoss(
+        element_weights=element_weights,
+        alpha_recon=1.0,
+        beta_sup=100.0,
+        gamma_kl=1e-4,
+        use_log_conc=True,
+        sm_index=sm_idx,
+        sm_threshold=0.3,
+        sm_alpha=3.0,
+        sm_gamma=1.0
+    ).to(device_obj)
+
     optimizer = torch.optim.AdamW(raw_model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=lr_patience, min_lr=MIN_LR)
     use_amp = device_obj.type == 'cuda'
@@ -1110,32 +1107,41 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
     early_stopper = EarlyStopping(patience=stop_patience)
     best_val, best_epoch = float('inf'), 0
 
+    phase1_epochs = 30
+    matrix_unfrozen = False
+
+    # Freeze matrix decoder for Phase 1
+    for param in raw_model.matrix_decoder.parameters():
+        param.requires_grad = False
+    log(logger=logger, msg=f"[F{fold}] PHASE 1 START: Matrix Decoder FROZEN | beta_sup = 100.0")
+
     for epoch in range(1, epochs + 1):
+        # --- PHASE TRANSITION CONTROL ---
+        if epoch > phase1_epochs and not matrix_unfrozen:
+            matrix_unfrozen = True
+            # Unfreeze matrix decoder for Phase 2
+            for param in raw_model.matrix_decoder.parameters():
+                param.requires_grad = True
+            
+            # Re-instantiate optimizer to include un-frozen matrix_decoder parameters
+            optimizer = torch.optim.AdamW(raw_model.parameters(), lr=lr * 0.5, weight_decay=weight_decay)
+            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=lr_patience, min_lr=MIN_LR)
+            
+            # Lower supervised weight to allow joint spectral refinement
+            criterion.update_weights(alpha_recon=1.0, beta_sup=10.0)
+            log(logger=logger, msg=f"[F{fold}] PHASE 2 TRANSITION: Matrix Decoder UNFROZEN | beta_sup = 10.0 | LR reset to {lr * 0.5}")
+
         t0 = time.time()
         model.train()
         tr_loss = 0.0
         for batch in tqdm(train_loader, desc=f"F{fold} E{epoch:02d}", mininterval=5, leave=False):
-            # Scale baseline spectra on GPU
             spectra = batch['spectrum'].to(device_obj, non_blocking=True) / scale_gpu
-            # spectra = batch['spectrum'].to(device_obj, non_blocking=True)
             targets = batch['targets'].to(device_obj, non_blocking=True)
-
-            # # --- SPECTRAL JITTER (Augmentation) ---
-            # # Random gain jitter per sample (±2% overall shot intensity fluctuation)
-            # gain = 1.0 + torch.randn(spectra.size(0), 1, device=device_obj) * 0.01
-            # # Additive Gaussian noise (0.5% intensity scale)
-            # noise = torch.randn_like(spectra) * 0.0005
-            # spectra_aug = torch.clamp(spectra * gain + noise, min=0.0)
-
-            # Target dictionary uses clean un-augmented spectra for reconstruction target
             batch_gpu = {'spectrum': spectra, 'targets': targets}
 
             optimizer.zero_grad()
             with amp.autocast(enabled=use_amp, dtype=torch.float16):
-                # Model encodes the noisy/jittered spectrum
-                # out = model(spectra_aug)
                 out = model(spectra)
-                # Loss forces model to reconstruct the CLEAN target spectrum
                 ld = criterion(out, batch_gpu)
 
             if torch.isnan(ld['loss']):
@@ -1152,7 +1158,6 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
         with torch.no_grad():
             for batch in val_loader:
                 spectra = batch['spectrum'].to(device_obj, non_blocking=True) / scale_gpu
-                # spectra = batch['spectrum'].to(device_obj, non_blocking=True)
                 targets = batch['targets'].to(device_obj, non_blocking=True)
                 batch_gpu = {'spectrum': spectra, 'targets': targets}
 
@@ -1172,7 +1177,7 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
             torch.save({
                 'epoch': epoch, 
                 'model_state_dict': raw_model.state_dict(), 
-                'scaler_state_dict': spec_scaler.state_dict(),                          # gemini recommendation
+                'scaler_state_dict': spec_scaler.state_dict(),
                 'val_loss': best_val
             }, save_path)
 
@@ -1180,7 +1185,6 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
             log(logger=logger, msg=f"[F{fold}] early stop at epoch {epoch}")
             break
 
-    # ---- Out-of-fold predictions from BEST epoch ----
     ckpt = torch.load(save_path, map_location=device_obj)
     raw_model.load_state_dict(ckpt['model_state_dict'])
     raw_model.eval()
@@ -1188,14 +1192,13 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
     with torch.no_grad():
         for batch in val_loader:
             spectra = batch['spectrum'].to(device_obj, non_blocking=True) / scale_gpu
-            # spectra = batch['spectrum'].to(device_obj, non_blocking=True)
             preds.append(raw_model(spectra)['concentrations'].float().cpu().numpy())
     pred = np.concatenate(preds, axis=0)
 
     del model, raw_model, optimizer, amp_scaler, train_loader, val_loader
     gc.collect(); torch.cuda.empty_cache()
     return dict(fold=fold, val_idx=val_idx, pred=pred, best_epoch=best_epoch, best_val=best_val)
- 
+
 def train_kfold_physics_vae(
     h5_path, master_table_path, log_path=None, save_path=None,
     epochs=MAX_EPOCHS, batch_size=BATCH_SIZE, lr=learning_rate,
@@ -1220,7 +1223,7 @@ def train_kfold_physics_vae(
     # Save test set indices so they can be re-loaded for final lockbox evaluation
     test_idx_path = save_path.with_name(f"{save_path.stem}_test_idx.npy")
     np.save(test_idx_path, test_idx)
-    log(logger=logger, msg='This is the sfthresh LowerLr experiment')
+    log(logger=logger, msg='This is the sfthresh DecoderFreezing experiment')
     log(logger=logger, msg=f"Saved test holdout indices ({len(test_idx)} samples) → {test_idx_path.name}")
 
     # Slice sample-level entries for Cross-Validation data
@@ -1379,7 +1382,7 @@ if __name__ == "__main__":
     results = train_kfold_physics_vae(
         h5_path=h5_file,
         master_table_path=master_table_path,
-        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/005_sfthresh_LowerLr_log.txt',
+        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/005_sfthresh_DecoderFreezing_log.txt',
         save_path=model_save_path,
         num_folds=k,
         folds=None,              # [0] smoke test first, then None for all five
@@ -1392,21 +1395,26 @@ if __name__ == "__main__":
     print(results)              # (fold, best_epoch, best_val_loss)
     # endregion
 
+
     # --------------------------------------------------
     # region Evaluate Model
     # --------------------------------------------------
-    # model_prefix = str(model_save_path.with_suffix(""))  # Strips .pt extension to match saved files
-    # model_prefix = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261015_133024"
-    # evaluate_and_plot_kfold(
-    #     h5_path=h5_file,
-    #     master_table_path=master_table_path,
-    #     model_prefix=model_prefix,
-    #     num_folds=k,
-    #     output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots",
-    #     device="cuda",
-    #     model_tag='20261015_133024',
-    #     max_wt_percent=12.0
-    # )
+    model_prefix = str(model_save_path.with_suffix(""))
+    evaluate_and_plot_kfold(
+        h5_path=h5_file,
+        master_table_path=master_table_path,
+        model_prefix=model_prefix,
+        model_cls=PhysicsInformedVAE,
+        scaler_cls=SpectralScaler,
+        dataset_cls=LIBSSpectraDataset,
+        load_data_fn=load_crossval_data,
+        num_folds=k,
+        batch_size=BATCH_SIZE,
+        output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots/kfold/sfthresh",
+        device="cuda",
+        model_tag=f'DecoderFreezing_{timestamp}',
+        max_wt_percent=12.0
+    )
     # endregion
 
     loop_time_end = time.perf_counter()

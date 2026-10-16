@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 """
-jvlee_LIBS_ML > LIBS > p3VAE > p3vae_005_sfthresh_LowerLr.py
+jvlee_LIBS_ML > LIBS > p3VAE > p3vae_005_sfthresh_NoHardZero.py
 """
 
 # region Imports
@@ -38,7 +38,8 @@ from utils import (
     log,
     logging,
     get_h5_ds,
-    check_h5_compositions
+    check_h5_compositions,
+    evaluate_and_plot_kfold
 )
 # endregion
 
@@ -79,7 +80,7 @@ ELEMENT_WEIGHTS = torch.tensor([
 h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5"
 master_table_path = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv').resolve()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_sfthresh_LowerLr_{timestamp}.pt').resolve()
+model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_sfthresh_NoHardZero_{timestamp}.pt').resolve()
 model_save_path.parent.mkdir(parents=True, exist_ok=True)
 # endregion
 
@@ -318,7 +319,8 @@ class PhysicsInformedVAE(nn.Module):
         gamma_raw = z_phys[:, self.n_elements:]
 
         # concentrations = torch.clamp(F.softplus(concs_raw), min=1e-5, max=100.0)
-        concentrations = F.relu(concs_raw - 0.05)
+        # concentrations = F.relu(concs_raw - 0.05)
+        concentrations = F.softplus(concs_raw)
         broadening = torch.clamp(F.softplus(gamma_raw), min=1e-3, max=10.0)
 
         return concentrations, broadening
@@ -698,7 +700,7 @@ def diagnose_spike_geometry(y, group_id, thresh=2.5):
         print(f"  Normal shots mean intensity across all channels: {norm_mean_intensity:.5f}")
         print(f"  Bad shots mean intensity across all channels:    {bad_mean_intensity:.5f}")
 
-def evaluate_and_plot_kfold(
+def old_evaluate_and_plot_kfold(
     h5_path: str | Path,
     master_table_path: str | Path,
     model_prefix: str | Path,
@@ -1220,7 +1222,7 @@ def train_kfold_physics_vae(
     # Save test set indices so they can be re-loaded for final lockbox evaluation
     test_idx_path = save_path.with_name(f"{save_path.stem}_test_idx.npy")
     np.save(test_idx_path, test_idx)
-    log(logger=logger, msg='This is the sfthresh LowerLr experiment')
+    log(logger=logger, msg='This is the sfthresh NoHardZero experiment')
     log(logger=logger, msg=f"Saved test holdout indices ({len(test_idx)} samples) → {test_idx_path.name}")
 
     # Slice sample-level entries for Cross-Validation data
@@ -1379,7 +1381,7 @@ if __name__ == "__main__":
     results = train_kfold_physics_vae(
         h5_path=h5_file,
         master_table_path=master_table_path,
-        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/005_sfthresh_LowerLr_log.txt',
+        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/005_sfthresh_NoHardZero_log.txt',
         save_path=model_save_path,
         num_folds=k,
         folds=None,              # [0] smoke test first, then None for all five
@@ -1392,21 +1394,26 @@ if __name__ == "__main__":
     print(results)              # (fold, best_epoch, best_val_loss)
     # endregion
 
+
     # --------------------------------------------------
     # region Evaluate Model
     # --------------------------------------------------
-    # model_prefix = str(model_save_path.with_suffix(""))  # Strips .pt extension to match saved files
-    # model_prefix = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261015_133024"
-    # evaluate_and_plot_kfold(
-    #     h5_path=h5_file,
-    #     master_table_path=master_table_path,
-    #     model_prefix=model_prefix,
-    #     num_folds=k,
-    #     output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots",
-    #     device="cuda",
-    #     model_tag='20261015_133024',
-    #     max_wt_percent=12.0
-    # )
+    model_prefix = str(model_save_path.with_suffix(""))
+    evaluate_and_plot_kfold(
+        h5_path=h5_file,
+        master_table_path=master_table_path,
+        model_prefix=model_prefix,
+        model_cls=PhysicsInformedVAE,
+        scaler_cls=SpectralScaler,
+        dataset_cls=LIBSSpectraDataset,
+        load_data_fn=load_crossval_data,
+        num_folds=k,
+        batch_size=BATCH_SIZE,
+        output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots/kfold/sfthresh",
+        device="cuda",
+        model_tag=f'NoHardZero_{timestamp}',
+        max_wt_percent=12.0
+    )
     # endregion
 
     loop_time_end = time.perf_counter()

@@ -38,7 +38,8 @@ from utils import (
     log,
     logging,
     get_h5_ds,
-    check_h5_compositions
+    check_h5_compositions,
+    evaluate_and_plot_kfold
 )
 # endregion
 
@@ -624,49 +625,36 @@ def create_group_stratified_dataloader(
     group_ids: np.ndarray, 
     batch_size: int = 64, 
     power: float = 0.5, 
-    num_workers: int = 4
+    num_workers: int = 4,
+    pin_memory: bool = True,
+    persistent_workers: bool = False,
+    drop_last: bool = True
 ) -> DataLoader:
-    """
-    Constructs a PyTorch DataLoader using WeightedRandomSampler to balance 
-    low-shot composition group representation per mini-batch.
-    
-    Args:
-        dataset (Dataset): PyTorch Dataset instance.
-        group_ids (np.ndarray): Array of group identifier tags corresponding to dataset indices.
-        batch_size (int): Mini-batch size.
-        power (float): Exponent power for group frequency smoothing (0.5 = square root scaling).
-        num_workers (int): Number of subprocesses for data loading.
-        
-    Returns:
-        DataLoader: PyTorch DataLoader configured with stratified mini-batch oversampling.
-    """
-    # 1. Compute instance counts per unique group ID
-    unique_groups, counts = np.unique(group_ids, return_counts=True)
+    group_ids_np = np.asarray(group_ids)
+    unique_groups, counts = np.unique(group_ids_np, return_counts=True)
     group_count_dict = dict(zip(unique_groups, counts))
 
-    # 2. Compute sample-level weights w_i = 1 / (N_g ^ power)
-    sample_weights = np.array([
-        1.0 / (group_count_dict[gid] ** power) for gid in group_ids
-    ], dtype=np.float32)
+    # 1. Compute sample-level weights as a Python list of floats (satisfies Sequence[float])
+    sample_weights: list[float] = [
+        float(1.0 / (group_count_dict[gid] ** power)) for gid in group_ids_np
+    ]
 
-    # Convert array of weights into a PyTorch DoubleTensor (required by WeightedRandomSampler)
-    sampler_weights = torch.from_numpy(sample_weights).double()
-
-    # 3. Instantiate WeightedRandomSampler with replacement
+    # 2. Instantiate WeightedRandomSampler with replacement
     sampler = WeightedRandomSampler(
-        weights=sampler_weights,
-        num_samples=len(sampler_weights),
+        weights=sample_weights,
+        num_samples=len(sample_weights),
         replacement=True
     )
 
-    # 4. Construct DataLoader (Note: 'shuffle' must be False when 'sampler' is assigned)
+    # 3. Construct DataLoader
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,
         sampler=sampler,
         num_workers=num_workers,
-        pin_memory=True,
-        drop_last=False
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers if num_workers > 0 else False,
+        drop_last=drop_last
     )
 
     return dataloader
@@ -750,7 +738,7 @@ def diagnose_spike_geometry(y, group_id, thresh=2.5):
         print(f"  Normal shots mean intensity across all channels: {norm_mean_intensity:.5f}")
         print(f"  Bad shots mean intensity across all channels:    {bad_mean_intensity:.5f}")
 
-def evaluate_and_plot_kfold(
+def old_evaluate_and_plot_kfold(
     h5_path: str | Path,
     master_table_path: str | Path,
     model_prefix: str | Path,
@@ -1119,17 +1107,17 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
     train_ds = LIBSSpectraDataset(cv_data['y'], cv_data['X'], cv_data['is_synth'], train_idx)
     val_ds = LIBSSpectraDataset(cv_data['y'], cv_data['X'], cv_data['is_synth'], val_idx)
 
-    # 3. Enable multi-worker data loading + drop_last=True to prevent CUDA Graph recompilation
-    # Usage snippet inside model training setup
-    train_dataset = CompositionDataset(X_train, y_train)
-
-    # Create stratified dataloader using group assignment vector
+    # 3. Enable multi-worker group-stratified data loading for low-shot oversampling
+    group_ids_train = cv_data['group_id'][train_idx]
     train_loader = create_group_stratified_dataloader(
-        dataset=train_dataset,
+        dataset=train_ds,
         group_ids=group_ids_train,
-        batch_size=64,
-        power=0.5  # Square-root smooth
-        ed sampling
+        batch_size=batch_size,
+        power=0.5,  # Square-root smoothed sampling
+        num_workers=NUM_WORKERS,
+        pin_memory=pin,
+        persistent_workers=(NUM_WORKERS > 0),
+        drop_last=True
     )
     val_loader = DataLoader(
         val_ds, 
@@ -1446,21 +1434,26 @@ if __name__ == "__main__":
     print(results)              # (fold, best_epoch, best_val_loss)
     # endregion
 
+
     # --------------------------------------------------
     # region Evaluate Model
     # --------------------------------------------------
-    # model_prefix = str(model_save_path.with_suffix(""))  # Strips .pt extension to match saved files
-    # model_prefix = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261015_133024"
-    # evaluate_and_plot_kfold(
-    #     h5_path=h5_file,
-    #     master_table_path=master_table_path,
-    #     model_prefix=model_prefix,
-    #     num_folds=k,
-    #     output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots",
-    #     device="cuda",
-    #     model_tag='20261015_133024',
-    #     max_wt_percent=12.0
-    # )
+    model_prefix = str(model_save_path.with_suffix(""))
+    evaluate_and_plot_kfold(
+        h5_path=h5_file,
+        master_table_path=master_table_path,
+        model_prefix=model_prefix,
+        model_cls=PhysicsInformedVAE,
+        scaler_cls=SpectralScaler,
+        dataset_cls=LIBSSpectraDataset,
+        load_data_fn=load_crossval_data,
+        num_folds=k,
+        batch_size=BATCH_SIZE,
+        output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots/kfold/sfthresh",
+        device="cuda",
+        model_tag=f'LowShotOversampling_{timestamp}',
+        max_wt_percent=12.0
+    )
     # endregion
 
     loop_time_end = time.perf_counter()

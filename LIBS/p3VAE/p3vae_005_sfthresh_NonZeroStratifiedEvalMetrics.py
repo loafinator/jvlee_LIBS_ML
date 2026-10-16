@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 """
-jvlee_LIBS_ML > LIBS > p3VAE > p3vae_005_sfthresh_LowerLr.py
+jvlee_LIBS_ML > LIBS > p3VAE > p3vae_005_sfthresh_NonZeroStratifiedEvalMetrics.py
 """
 
 # region Imports
@@ -24,6 +24,7 @@ import torch.cuda.amp as amp
 
 from datetime import datetime
 from pathlib import Path
+from sklearn.metrics import r2_score, mean_squared_error
 from typing import Any, Dict, cast
 from torch.utils.data import DataLoader, Dataset, get_worker_info
 from torch.utils.checkpoint import checkpoint
@@ -38,34 +39,31 @@ from utils import (
     log,
     logging,
     get_h5_ds,
-    check_h5_compositions
+    check_h5_compositions,
+    evaluate_and_plot_kfold
 )
 # endregion
 
 # region Global Variables
-    # B 32, C 16, no compile wrape --> 47 min/epoch
-BATCH_SIZE = 128         # Prevents GPU OOM on your local GPU
-CHUNK_SIZE = 128         # Keeps broadcast tensor overhead tiny
-MAX_EPOCHS = 200          # Fast execution loop
+BATCH_SIZE = 128         # Prevents GPU OOM on local/cluster GPUs
+CHUNK_SIZE = 128         # Keeps broadcast tensor overhead small
+MAX_EPOCHS = 200         # Execution loop max epochs
 MIN_LR = 1e-06
-# ****************************************************************************************************
-cpus_per_task = 8   # TODO: MUST UPDATE FOR ANY CHANGE IN SLURM/SRUN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# ****************************************************************************************************
+
+cpus_per_task = 8
 NUM_WORKERS = cpus_per_task - 2
-subset_size = 500       # NOTE: not currently using
-# learning_rate = 5e-04
-# weight_decay = 3e-04
+
 learning_rate = 1e-03
 weight_decay = 1e-04
 NUM_FOLDS = 5
 DROPOUT = 0.15
-THRESH = 2.8 # Any lower and it cuts out valid Sm data, don't go higher than 3.2 cuz then you won't get all the faulty peaks
+THRESH = 2.8 
 
 ELEMENT_WEIGHTS_REFERENCE = {
     b'Ba': 5.0, b'Ca': 5.0, b'Ce': 5.0, b'Cr': 5.0, b'Cs': 5.0,
     b'Fe': 5.0, b'Gd': 5.0, b'K':  0.2, b'La': 5.0, b'Li': 0.2,
     b'Mg': 5.0, b'Mn': 5.0, b'Nd': 5.0, b'Ni': 5.0, b'Sm': 5.0, 
-    b'Sr': 5.0, b'U':  5.0, b'Y':  5.0, b'Cl':0.2,
+    b'Sr': 5.0, b'U':  5.0, b'Y':  5.0, b'Cl': 0.2,
 }
 
 ELEMENT_WEIGHTS = torch.tensor([
@@ -75,13 +73,13 @@ ELEMENT_WEIGHTS = torch.tensor([
     5.0, 5.0, 5.0, 0.2,
 ], dtype=torch.float32)
 
-
 h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5"
 master_table_path = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv').resolve()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_sfthresh_LowerLr_{timestamp}.pt').resolve()
+model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_sfthresh_NonZeroStratifiedEvalMetrics_{timestamp}.pt').resolve()
 model_save_path.parent.mkdir(parents=True, exist_ok=True)
 # endregion
+
 
 class BankedPhysicsDecoder(nn.Module):
     def __init__(self, wl_grid, master_table_path, n_elements,
@@ -139,7 +137,7 @@ class EarlyStopping:
 
 
 class LIBSSpectraDataset(Dataset):
-    def __init__(self, spectra, targets, is_synth, indices):   # tensors loaded ONCE outside
+    def __init__(self, spectra, targets, is_synth, indices):
         self.spectra, self.targets, self.is_synth = spectra, targets, is_synth
         self.idx = np.asarray(indices)
     def __len__(self): return len(self.idx)
@@ -197,12 +195,9 @@ class PhysicsSpectralDecoder(nn.Module):
             broadening = broadening.unsqueeze(1)
         gammas = torch.clamp(broadening.unsqueeze(2), min=0.01, max=5.0)
 
-        # Match precision across all input tensors for AMP/Checkpoint compatibility
         target_dtype = concentrations.dtype
         grid_in = self.grid.to(dtype=target_dtype)
         centers_in = self.line_centers.to(dtype=target_dtype)
-        # amps_all = amps_all.to(dtype=target_dtype)
-        # gammas = gammas.to(dtype=target_dtype)
 
         total_lines = centers_in.size(1)
         recon_spectrum = torch.zeros(
@@ -249,28 +244,6 @@ class PhysicsInformedVAE(nn.Module):
         self.n_broadening = n_broadening
         self.matrix_latent_dim = matrix_latent_dim
 
-        # Smoother feature extraction funnel: 10,000 -> 4096 -> 1024 -> 256 -> 128
-        # self.encoder = nn.Sequential(
-        #     nn.Linear(input_dim, 4096),
-        #     nn.LayerNorm(4096),
-        #     nn.ReLU(),
-        #     nn.Dropout(p=0.15),
-
-        #     nn.Linear(4096, 1024),
-        #     nn.LayerNorm(1024),
-        #     nn.ReLU(),
-        #     nn.Dropout(p=0.15),
-
-        #     nn.Linear(1024, 256),
-        #     nn.LayerNorm(256),
-        #     nn.ReLU(),
-        #     nn.Dropout(p=0.15),
-
-        #     nn.Linear(256, 128),
-        #     nn.LayerNorm(128),
-        #     nn.ReLU(),
-        #     nn.Dropout(p=0.15)
-        # )
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, 256),
             nn.ReLU(),
@@ -290,7 +263,6 @@ class PhysicsInformedVAE(nn.Module):
             n_elements=n_elements, n_gamma=32, g_min=0.01, g_max=5.0,
         )
 
-        # Keep matrix decoder small (128 hidden units) to limit unphysical cheating
         self.matrix_decoder = nn.Sequential(
             nn.Linear(self.matrix_latent_dim, 128),
             nn.ReLU(),
@@ -298,8 +270,8 @@ class PhysicsInformedVAE(nn.Module):
             nn.Sigmoid()
         )
 
-        # Initialize residual scale smaller (0.1) so physics decoder handles primary line fitting
-        # self.residual_scale = nn.Parameter(torch.tensor([0.5]))
+        # Restrict residual scale capacity to prevent physics decoder bypass
+        self.residual_scale = nn.Parameter(torch.tensor([0.05]))
 
         nn.init.constant_(self.fc_logvar_phys.weight, 0.0)
         nn.init.constant_(self.fc_logvar_phys.bias, 0.0)
@@ -317,8 +289,8 @@ class PhysicsInformedVAE(nn.Module):
         concs_raw = z_phys[:, :self.n_elements]
         gamma_raw = z_phys[:, self.n_elements:]
 
-        # concentrations = torch.clamp(F.softplus(concs_raw), min=1e-5, max=100.0)
-        concentrations = F.relu(concs_raw - 0.05)
+        # Smooth Softplus activation prevents hard ReLU zero-gradient traps
+        concentrations = F.softplus(concs_raw)
         broadening = torch.clamp(F.softplus(gamma_raw), min=1e-3, max=10.0)
 
         return concentrations, broadening
@@ -340,8 +312,7 @@ class PhysicsInformedVAE(nn.Module):
         z_matrix = self.reparameterize(mu_m, logvar_m)
 
         ideal_physics_spectrum = self.physics_decoder(concentrations, broadening, chunk_size=CHUNK_SIZE)
-        # matrix_residual = self.matrix_decoder(z_matrix) * self.residual_scale
-        matrix_residual = self.matrix_decoder(z_matrix)
+        matrix_residual = self.matrix_decoder(z_matrix) * self.residual_scale
         
         reconstructed_spectrum = ideal_physics_spectrum + matrix_residual
 
@@ -359,7 +330,6 @@ class PhysicsInformedVAE(nn.Module):
 
 
 class PhysicsVAELoss(nn.Module):
-
     def __init__(
         self,
         element_weights: torch.Tensor | None = None,
@@ -386,7 +356,6 @@ class PhysicsVAELoss(nn.Module):
         mu: torch.Tensor,
         logvar: torch.Tensor
     ) -> torch.Tensor:
-        """Computes KL divergence between standard Gaussian N(0, I) and N(mu, std^2)."""
         return -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1).mean()
 
     def forward(
@@ -400,23 +369,20 @@ class PhysicsVAELoss(nn.Module):
         pred_conc = model_outputs["concentrations"]
         true_conc = batch["targets"]
 
-        # 1. Spectral Reconstruction Loss
         recon_loss = F.mse_loss(x_recon, x_target, reduction="mean")
 
-        # 2. Dopant-Focused Concentration Loss
         if self.use_log_conc:
             diff = torch.log1p(pred_conc) - torch.log1p(true_conc)
         else:
             diff = pred_conc - true_conc
 
-        element_errors = diff**2  # [Batch, N_elements]
+        element_errors = diff**2
 
         if self.element_weights is not None:
             element_errors = element_errors * self.element_weights
 
         sup_loss = element_errors.mean()
 
-        # 3. KL Divergence
         kl_phys = self._kl_divergence(
             model_outputs["mu_p"], model_outputs["logvar_p"]
         )
@@ -425,14 +391,11 @@ class PhysicsVAELoss(nn.Module):
         )
         kl_loss = kl_phys + kl_matrix
 
-        # l1_residual = model_outputs["matrix_residual"].abs().mean()
-
         total_loss = (
             (self.alpha_recon * recon_loss)
             + (self.beta_sup * sup_loss)
             + (self.gamma_kl * kl_loss)
         )
-        # total_loss = total_loss + 0.001 * l1_residual
 
         return {
             "loss": total_loss,
@@ -451,13 +414,10 @@ class SpectralScaler:
 
     def fit(self, y_train: torch.Tensor):
         if self.mode == "global_max":
-            # Derived strictly from training fold spectra
             self.scale_ = torch.clamp(y_train.max(), min=1e-6)
         elif self.mode == "mean_max":
-            # Mean peak intensity across training fold
             self.scale_ = torch.clamp(y_train.max(dim=1).values.mean(), min=1e-6)
         elif self.mode == "robust_max":
-            # Uses 99.9th percentile of row maxima to ignore single-pixel spikes
             row_maxes = y_train.max(dim=1).values.numpy()
             scale_val = np.percentile(row_maxes, self.q)
             self.scale_ = torch.tensor(scale_val, dtype=torch.float32).clamp(min=1e-6)
@@ -470,7 +430,7 @@ class SpectralScaler:
         return y / self.scale_.to(y.device)
 
     def inverse_transform(self, y_scaled: torch.Tensor | np.ndarray) -> torch.Tensor | np.ndarray:
-        scale_val = self.scale_.cpu().numpy() if isinstance(y_scaled, np.ndarray) else self.scale_.to(y_scaled.device)  # type: ignore
+        scale_val = self.scale_.cpu().numpy() if isinstance(y_scaled, np.ndarray) else self.scale_.to(y_scaled.device)   # type: ignore
         return y_scaled * scale_val
 
     def state_dict(self) -> dict:
@@ -489,10 +449,10 @@ def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
     n_groups = len(groups)
     shots = np.bincount(inv, minlength=n_groups)
 
-    first = np.zeros(n_groups, dtype=int)                 # one representative row per group
+    first = np.zeros(n_groups, dtype=int)
     first[inv[::-1]] = np.arange(len(inv))[::-1]
-    present = X[exp[first]][:, dopant_idx] > 0            # (n_groups, n_dopants)
-    total_g_per_dopant = present.sum(axis = 0)
+    present = X[exp[first]][:, dopant_idx] > 0
+    total_g_per_dopant = present.sum(axis=0)
     active_dopant_mask = total_g_per_dopant > 0
     present = present[:, active_dopant_mask]
     active_dopant_idx = [d for i, d in enumerate(dopant_idx) if active_dopant_mask[i]]
@@ -538,12 +498,14 @@ def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
             print(f"{k:<5}{g.sum():>7}{shots[g].sum():>9}  " + "  ".join(f"{c:>11}" for c in cells))
     return fold_id
 
+
 def best_threshold(t, p, grid=np.linspace(0, 0.15, 151)):
     pres = t > 0
     def score(tau):
         pz = np.where(p < tau, 0.0, p)
         return 0.5 * (np.abs(t[pres] - pz[pres]).mean() + np.abs(pz[~pres]).mean())
     return grid[np.argmin([score(tau) for tau in grid])]
+
 
 def build_splits_once(data, split_path, num_folds, seed=42, min_groups_per_dopant=1):
     split_path = Path(split_path).with_suffix('.npz')
@@ -560,19 +522,19 @@ def build_splits_once(data, split_path, num_folds, seed=42, min_groups_per_dopan
              num_folds=num_folds, seed=seed)
     return test_idx, cv_idx, cv_fold_id
 
+
 def check_bad_row_compositions(h5_path: str, thresh: float = 2.5):
     with h5py.File(h5_path, 'r') as hf:
-        y = hf['y'][:]      # type: ignore
-        X = hf['X'][:]      # type: ignore
-        is_synth = hf['is_synthetic'][:]      # type: ignore
-        group_id = hf['group_id'][:]      # type: ignore
+        y = hf['y'][:]   # type: ignore
+        X = hf['X'][:]   # type: ignore
+        is_synth = hf['is_synthetic'][:]   # type: ignore
+        group_id = hf['group_id'][:]   # type: ignore
         names = [
             n.decode('utf-8') if isinstance(n, bytes) else str(n) 
-            for n in hf['feature_cols'][:]      # type: ignore
+            for n in hf['feature_cols'][:]   # type: ignore
         ]
 
-    # Identify bad rows exceeding the saturation/spike threshold
-    row_maxes = y.max(axis=1)      # type: ignore
+    row_maxes = y.max(axis=1)   # type: ignore
     bad_mask = row_maxes > thresh
     bad_indices = np.where(bad_mask)[0]
 
@@ -580,44 +542,43 @@ def check_bad_row_compositions(h5_path: str, thresh: float = 2.5):
     if len(bad_indices) == 0:
         return
 
-    X_bad = X[bad_indices]      # type: ignore
-    gid_bad = group_id[bad_indices]      # type: ignore
-    synth_bad = is_synth[bad_indices]      # type: ignore
+    X_bad = X[bad_indices]   # type: ignore
+    gid_bad = group_id[bad_indices]   # type: ignore
+    synth_bad = is_synth[bad_indices]   # type: ignore
 
-    # 1. Summary of non-zero elements across ALL bad rows
     print("=========================================================================")
     print(" Element Concentration Summary Across All Bad Rows")
     print("=========================================================================")
     for j, elem in enumerate(names):
-        vals = X_bad[:, j]      # type: ignore
-        non_zero = vals[vals > 0]      # type: ignore
-        if len(non_zero) > 0:      # type: ignore
+        vals = X_bad[:, j]   # type: ignore
+        non_zero = vals[vals > 0]   # type: ignore
+        if len(non_zero) > 0:   # type: ignore
             print(
-                f"Element {elem:<5} | Non-Zero Shots: {len(non_zero):<4}/{len(bad_indices)} | "      # type: ignore
-                f"Min: {non_zero.min():.4f}% | Max: {non_zero.max():.4f}% | Mean: {non_zero.mean():.4f}%"      # type: ignore
+                f"Element {elem:<5} | Non-Zero Shots: {len(non_zero):<4}/{len(bad_indices)} | "   # type: ignore
+                f"Min: {non_zero.min():.4f}% | Max: {non_zero.max():.4f}% | Mean: {non_zero.mean():.4f}%"   # type: ignore
             )
         else:
             print(f"Element {elem:<5} | 0 non-zero entries (Absent)")
 
-    # 2. Composition per Group ID
-    unique_groups = np.unique(gid_bad)      # type: ignore
+    unique_groups = np.unique(gid_bad)   # type: ignore
     print("\n=========================================================================")
     print(f" Composition Breakdown by Group ID ({len(unique_groups)} unique group(s))")
     print("=========================================================================")
     for g in unique_groups:
         g_mask = (gid_bad == g)
-        sample_x = X_bad[g_mask][0]      # type: ignore
-        is_s = "Synthetic" if synth_bad[g_mask][0] == 1 else "Experimental"      # type: ignore
+        sample_x = X_bad[g_mask][0]   # type: ignore
+        is_s = "Synthetic" if synth_bad[g_mask][0] == 1 else "Experimental"   # type: ignore
         
         non_zero_str = ", ".join([
-            f"{names[j]}: {sample_x[j]:.3f} wt%"       # type: ignore
-            for j in range(len(names)) if sample_x[j] > 0      # type: ignore
+            f"{names[j]}: {sample_x[j]:.3f} wt%"   # type: ignore
+            for j in range(len(names)) if sample_x[j] > 0   # type: ignore
         ])
         print(f"Group {g:<3} [{is_s}] | Count: {np.sum(g_mask):<3} shots | Compositions: {non_zero_str}")
 
+
 def clean_spectral_spikes(y, thresh=THRESH):
-    # Clamp extreme cosmic ray / saturation spikes to the upper valid limit
     return torch.clamp(y, max=thresh)
+
 
 def create_test_and_cv_folds(
     data: Dict[str, Any], 
@@ -625,45 +586,37 @@ def create_test_and_cv_folds(
     min_groups_per_dopant: int = 1, 
     seed: int = 42
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Retrieves the frozen Lockbox test set from data['is_lockbox'],
-    and splits the remaining CV pool into `num_folds` balanced folds.
-    """
-    # 1. Lockbox Test Indices (frozen directly from .h5)
     test_mask = data['is_lockbox']
     test_idx = np.where(test_mask)[0]
 
-    # 2. CV Pool Indices (all non-lockbox experimental samples + all synthetic samples)
     cv_mask = ~data['is_lockbox']
     cv_idx = np.where(cv_mask)[0]
 
-    # 3. Slice the CV pool data
     X_cv = data['X'][cv_idx]
     X_cv_np = X_cv.numpy() if hasattr(X_cv, 'numpy') else X_cv
     is_synth_cv = data['is_synth'][cv_idx]
     is_synth_cv_np = is_synth_cv.numpy() if hasattr(is_synth_cv, 'numpy') else is_synth_cv
 
-    # Dynamically identify active dopants inside the CV pool
     host_elements = {'Li', 'K', 'Cl'}
     dopant_idx = [
         i for i, name in enumerate(data['names']) 
         if name not in host_elements and (X_cv_np[:, i] > 0).any()
     ]
 
-    # 4. Assign CV fold IDs (0 .. num_folds - 1) ONLY across the CV pool
     cv_fold_id = assign_group_folds(
         X=X_cv_np,
         group_id=data['group_id'][cv_idx],
         is_synthetic=is_synth_cv_np,
         dopant_idx=dopant_idx,
         elem_names=data['names'],
-        n_splits=num_folds,  # Exactly K folds (e.g. 5, 7, 10)
+        n_splits=num_folds,
         min_groups_per_dopant=min_groups_per_dopant,
         seed=seed,
         verbose=True
     )
 
     return test_idx, cv_idx, cv_fold_id
+
 
 def diagnose_spike_geometry(y, group_id, thresh=2.5):
     y_np = y.cpu().numpy() if hasattr(y, 'cpu') else np.asarray(y)
@@ -686,7 +639,6 @@ def diagnose_spike_geometry(y, group_id, thresh=2.5):
     print(f"  Max channels:  {spike_counts.max()}")
     print(f"  Mean channels: {spike_counts.mean():.2f}")
 
-    # Inspect a normal row in Group 30 vs a bad row in Group 30
     g30_normal = np.where((gid_np == 30) & (row_max <= thresh))[0]
     g30_bad = np.where((gid_np == 30) & (row_max > thresh))[0]
 
@@ -698,211 +650,6 @@ def diagnose_spike_geometry(y, group_id, thresh=2.5):
         print(f"  Normal shots mean intensity across all channels: {norm_mean_intensity:.5f}")
         print(f"  Bad shots mean intensity across all channels:    {bad_mean_intensity:.5f}")
 
-def evaluate_and_plot_kfold(
-    h5_path: str | Path,
-    master_table_path: str | Path,
-    model_prefix: str | Path,
-    num_folds: int = 5,
-    output_dir: str | Path = "plots",
-    log_path: str | Path | None = None,
-    device: str = "cuda",
-    model_tag: str = "20261015_133024",
-    max_wt_percent: float = 12.0,  # Unscales 0.0-1.0 matrix back to physical wt%
-):
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    if log_path is None:
-        log_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/default.txt").resolve()
-    logger = get_worker_logger(Path(log_path).stem)
-
-    device_obj = torch.device(device if torch.cuda.is_available() else "cpu")
-    log(logger=logger, msg=f"Running K-Fold Ensemble Evaluation on: {device_obj}")
-
-    data = load_crossval_data(str(h5_path))
-    test_idx_path = Path(f"{model_prefix}_test_idx.npy")
-    if not test_idx_path.exists():
-        raise FileNotFoundError(f"Could not locate test holdout indices file at: {test_idx_path}")
-
-    test_idx = np.load(test_idx_path)
-    log(logger=logger, msg=f"Loaded lockbox test set: {len(test_idx)} samples")
-
-    wl_grid = torch.from_numpy(data["wavelengths"]).to(device_obj)
-    target_names = [n.decode("utf-8") if isinstance(n, bytes) else str(n) for n in data["names"]]
-
-    input_dim = data["y"].shape[-1]
-    n_elements = data["X"].shape[-1]
-    N_test = len(test_idx)
-
-    # Pre-allocate single running sum accumulators in memory
-    avg_pred_conc = np.zeros((N_test, n_elements), dtype=np.float32)
-    avg_recon_spec = np.zeros((N_test, input_dim), dtype=np.float32)
-    avg_phys_spec = np.zeros((N_test, input_dim), dtype=np.float32)
-    avg_res_spec = np.zeros((N_test, input_dim), dtype=np.float32)
-
-    loaded_folds = 0
-
-    for k in range(num_folds):
-        ckpt_path = Path(f"{model_prefix}_fold{k}.pt")
-        if not ckpt_path.exists():
-            log(logger=logger, msg=f"⚠️ Warning: Checkpoint for fold {k} not found ({ckpt_path.name}). Skipping fold.")
-            continue
-
-        log(logger=logger, msg=f"Running inference for Fold {k} model...")
-        checkpoint = torch.load(ckpt_path, map_location=device_obj)
-
-        model = PhysicsInformedVAE(
-            input_dim=input_dim,
-            n_elements=n_elements,
-            wl_grid=wl_grid,
-            master_table_path=master_table_path,
-            n_broadening=1,
-        ).to(device_obj)
-
-        if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
-            model.load_state_dict(checkpoint["model_state_dict"])
-        else:
-            model.load_state_dict(checkpoint)
-
-        model.eval()
-
-        scaler = SpectralScaler()
-        scaler.load_state_dict(checkpoint["scaler_state_dict"])
-
-        test_spectra_scaled = scaler.transform(data["y"][test_idx])
-        test_ds = LIBSSpectraDataset(
-            test_spectra_scaled, 
-            data["X"][test_idx], 
-            data["is_synth"][test_idx], 
-            np.arange(len(test_idx))
-        )
-        test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
-
-        fold_c, fold_r, fold_p, fold_res = [], [], [], []
-        with torch.no_grad():
-            for batch in test_loader:
-                spectra = batch["spectrum"].to(device_obj)
-                out = model(spectra)
-                
-                fold_c.append(out["concentrations"].cpu().numpy())
-                fold_r.append(scaler.inverse_transform(out["reconstructed_spectrum"].cpu().numpy()))
-                fold_p.append(scaler.inverse_transform(out["ideal_physics_spectrum"].cpu().numpy()))
-                fold_res.append(scaler.inverse_transform(out["matrix_residual"].cpu().numpy()))
-
-        # Immediately accumulate into running totals
-        avg_pred_conc += np.concatenate(fold_c, axis=0)
-        avg_recon_spec += np.concatenate(fold_r, axis=0)
-        avg_phys_spec += np.concatenate(fold_p, axis=0)
-        avg_res_spec += np.concatenate(fold_res, axis=0)
-        loaded_folds += 1
-
-        del model, checkpoint, fold_c, fold_r, fold_p, fold_res, test_spectra_scaled, test_loader
-        gc.collect()
-        if device_obj.type == 'cuda':
-            torch.cuda.empty_cache()
-
-    if loaded_folds == 0:
-        raise RuntimeError("No valid model checkpoints were found for evaluation!")
-
-    # Normalize sums by the actual number of loaded folds
-    avg_pred_conc /= loaded_folds
-    avg_recon_spec /= loaded_folds
-    avg_phys_spec /= loaded_folds
-    avg_res_spec /= loaded_folds
-
-    # --- UNSCALE CONCENTRATIONS (Convert 0.0 - 1.0 back to physical wt%) ---
-    true_conc_wt = np.asarray(data["X"][test_idx]) * max_wt_percent
-    pred_conc_wt = avg_pred_conc * max_wt_percent
-
-    true_spectra = np.asarray(data["y"][test_idx])
-    wl = data["wavelengths"]
-
-    log(logger=logger, msg=f"Successfully ensembled predictions across {loaded_folds} fold models.")
-
-    # =========================================================================
-    # PLOT 1: Concentration Parity Grid (Pred vs True wt%)
-    # =========================================================================
-    active_elem_idx = [j for j in range(n_elements) if true_conc_wt[:, j].max() > 1e-5]
-    n_active = len(active_elem_idx)
-    cols = 4
-    rows = int(np.ceil(n_active / cols)) if n_active > 0 else 1
-
-    fig, axes = plt.subplots(rows, cols, figsize=(cols * 3.8, rows * 3.4))
-    axes_flat = np.atleast_1d(axes).flatten()
-
-    for idx_plot, j in enumerate(active_elem_idx):
-        ax = axes_flat[idx_plot]
-        name = target_names[j]
-        y_true = true_conc_wt[:, j]
-        y_pred = pred_conc_wt[:, j]
-
-        ss_res = np.sum((y_true - y_pred) ** 2)
-        ss_tot = np.sum((y_true - np.mean(y_true)) ** 2) + 1e-8
-        r2 = 1.0 - (ss_res / ss_tot)
-        mae = np.mean(np.abs(y_true - y_pred))
-        rmse = np.sqrt(np.mean((y_true - y_pred) ** 2))
-
-        ax.scatter(y_true, y_pred, alpha=0.35, s=10, color="#1f77b4", edgecolors="none")
-        max_v = max(np.max(y_true), np.max(y_pred))
-        min_v = min(np.min(y_true), np.min(y_pred))
-        ax.plot([min_v, max_v], [min_v, max_v], "k--", alpha=0.7, lw=1)
-        ax.set_title(f"{name}\n$R^2$: {r2:.3f} | RMSE: {rmse:.3f} wt% | MAE: {mae:.3f} wt%", fontsize=9, fontweight="bold")
-        ax.set_xlabel("True wt%", fontsize=8)
-        ax.set_ylabel("Pred wt%", fontsize=8)
-        ax.grid(True, linestyle=":", alpha=0.6)
-
-    for idx_plot in range(n_active, len(axes_flat)):
-        fig.delaxes(axes_flat[idx_plot])
-
-    plt.tight_layout()
-    parity_path = output_dir / f"{model_tag}_kfold_concentration_parity_grid.png"
-    plt.savefig(parity_path, dpi=300)
-    plt.close()
-    log(logger=logger, msg=f"Saved Concentration Parity Plot to: {parity_path}")
-
-    # =========================================================================
-    # PLOT 2: Spectral Reconstruction & Physics Breakdown Overlay
-    # =========================================================================
-    sample_idx = np.random.randint(0, len(true_spectra))
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
-
-    ax1.plot(wl, true_spectra[sample_idx], label="Measured Spectrum", color="black", alpha=0.7, lw=1)
-    ax1.plot(wl, avg_recon_spec[sample_idx], label="Ensemble Model Reconstruction", color="crimson", alpha=0.8, lw=1)
-    ax1.set_ylabel("Intensity (a.u.)", fontsize=10)
-    ax1.set_title(f"Lockbox Test Sample #{sample_idx} - Full Spectrum Reconstruction", fontsize=12, fontweight="bold")
-    ax1.legend(loc="upper right")
-    ax1.grid(True, alpha=0.3)
-
-    ax2.plot(wl, avg_phys_spec[sample_idx], label="Ensemble Physics Component (NIST Lines)", color="forestgreen", lw=1)
-    ax2.plot(wl, avg_res_spec[sample_idx], label="Ensemble Matrix Residual Component", color="orange", lw=1)
-    ax2.set_xlabel("Wavelength (nm)", fontsize=10)
-    ax2.set_ylabel("Intensity (a.u.)", fontsize=10)
-    ax2.set_title("P3VAE Decoded Physics vs. Residual Breakdown", fontsize=11)
-    ax2.legend(loc="upper right")
-    ax2.grid(True, alpha=0.3)
-
-    plt.tight_layout()
-    spec_path = output_dir / f"{model_tag}_kfold_sample_{sample_idx}_spectral_breakdown.png"
-    plt.savefig(spec_path, dpi=300)
-    plt.close()
-    log(logger=logger, msg=f"Saved Spectral Breakdown Plot to: {spec_path}")
-
-    print("\n========================================================")
-    print(f" Ensemble Test Set Performance Across {loaded_folds} Folds ({len(test_idx)} Shots)")
-    print("========================================================")
-    for j in active_elem_idx:
-        name = target_names[j]
-        y_true = true_conc_wt[:, j]
-        y_pred = pred_conc_wt[:, j]
-        mae = np.mean(np.abs(y_true - y_pred))
-        rmse = np.sqrt(np.mean((y_true - y_pred) ** 2))
-        
-        ss_res = np.sum((y_true - y_pred) ** 2)
-        ss_tot = np.sum((y_true - np.mean(y_true)) ** 2) + 1e-8
-        r2 = 1.0 - (ss_res / ss_tot)
-        
-        print(f"Element {name:<5} | R^2: {r2:7.3f} | MAE: {mae:.4f} wt% | RMSE: {rmse:.4f} wt% | Max True: {y_true.max():.3f} wt%")
-    print("========================================================\n")
 
 def find_spike_rows(y, group_id, is_synth, thresh=3.0, chunk=20000):
     row_max = torch.empty(len(y))
@@ -914,8 +661,8 @@ def find_spike_rows(y, group_id, is_synth, thresh=3.0, chunk=20000):
     bad = np.where(rm > thresh)[0]
     print(f"{len(bad)} rows with a pixel > {thresh}; groups:", np.unique(group_id[bad], return_counts=True))
 
+
 def fold_range_check(X, fold_id, is_synth, names, dopants=('Ce', 'Gd', 'Sm', 'U'), logger=None):
-    # Convert PyTorch tensors to NumPy arrays if necessary
     X_np = X.cpu().numpy() if hasattr(X, 'cpu') else np.asarray(X)
     is_synth_np = is_synth.cpu().numpy() if hasattr(is_synth, 'cpu') else np.asarray(is_synth)
     fold_id_np = fold_id.cpu().numpy() if hasattr(fold_id, 'cpu') else np.asarray(fold_id)
@@ -923,7 +670,7 @@ def fold_range_check(X, fold_id, is_synth, names, dopants=('Ce', 'Gd', 'Sm', 'U'
     exp = (is_synth_np == 0)
     for k in np.unique(fold_id_np[fold_id_np >= 0]):
         val = (fold_id_np == k)
-        tr = exp & ~val  # Experimental training rows only
+        tr = exp & ~val
 
         row = []
         for e in dopants:
@@ -939,23 +686,25 @@ def fold_range_check(X, fold_id, is_synth, names, dopants=('Ce', 'Gd', 'Sm', 'U'
         else:
             print(msg)
 
+
 def get_fold_ids(cv_data, num_folds, h5_path, dopants=('Ce', 'Gd', 'Sm', 'U'), seed=42):
     fold_path = Path(h5_path).with_name(f"{Path(h5_path).stem}_folds{num_folds}_seed{seed}.npy")
     if fold_path.exists():
-        return np.load(fold_path)                      # reuse -> identical folds on every run
+        return np.load(fold_path)
     dop = [cv_data['names'].index(e) for e in dopants]
     fold_id = assign_group_folds(cv_data['X'].numpy(), cv_data['group_id'], cv_data['is_synth'].numpy(),
                                  dop, cv_data['names'], n_splits=num_folds, seed=seed)
     np.save(fold_path, fold_id)
     return fold_id
 
+
 def group_mean(arr, gid):
     ug, inv = np.unique(gid, return_inverse=True); inv = inv.ravel()
     cnt = np.bincount(inv)
     return np.stack([np.bincount(inv, weights=arr[:, j]) / cnt for j in range(arr.shape[1])], 1), ug
 
+
 def load_crossval_data(h5_path: str, spike_thresh: float = THRESH) -> Dict[str, Any]:
-    """Loads dataset once from HDF5 file and filters corrupted saturation rows."""
     with h5py.File(h5_path, 'r') as hf:
         y = torch.from_numpy(get_h5_ds(hf, 'y')[:]).float()
         X = torch.from_numpy(get_h5_ds(hf, 'X')[:]).float()
@@ -968,7 +717,6 @@ def load_crossval_data(h5_path: str, spike_thresh: float = THRESH) -> Dict[str, 
             for n in get_h5_ds(hf, 'feature_cols')[:]
         ]
 
-    # --- FILTER OUT DETECTOR SATURATION SPIKES (> 2.5 max intensity) ---
     row_maxes = y.max(dim=1).values
     clean_mask = (row_maxes <= spike_thresh).numpy()
     
@@ -988,22 +736,12 @@ def load_crossval_data(h5_path: str, spike_thresh: float = THRESH) -> Dict[str, 
 
     return data
 
-def per_spectrum_norm(x, eps=1e-08):
-    """
-    Use this as a replacement for scale_gpu, it scales each shot independently from the 
-    others so that it gets rid of the shot to shot average brightness differences.
 
-    use:
-    spectra = per_spectrum_norm(batch['spectrum'].to(device_obj))
-    """
+def per_spectrum_norm(x, eps=1e-08):
     return x / (x.sum(dim=1, keepdim=True) + eps) * x.shape[1]
 
+
 def pull_test_holdout(data, test_ratio=0.15, seed=42):
-    """
-    Reserves a percentage of experimental composition groups for lockbox testing
-    and returns indices for cross-validation vs. test sets.
-    """
-    # Standardize array/tensor types safely
     is_synth = data['is_synth']
     if hasattr(is_synth, 'cpu'):
         is_synth = is_synth.cpu().numpy()
@@ -1012,96 +750,80 @@ def pull_test_holdout(data, test_ratio=0.15, seed=42):
     if hasattr(group_id, 'cpu'):
         group_id = group_id.cpu().numpy()
 
-    # 1. Identify unique experimental composition groups
     exp_mask = (is_synth == 0)
     exp_groups = np.unique(group_id[exp_mask])
 
-    # 2. Reserve composition groups for lockbox testing
     rng = np.random.default_rng(seed)
     test_groups = rng.choice(exp_groups, size=int(test_ratio * len(exp_groups)), replace=False)
 
-    # 3. Derive sample index masks
     test_mask = np.isin(group_id, test_groups) & exp_mask
-    cv_mask = ~np.isin(group_id, test_groups)  # Retains synthetic data + remaining experimental groups
+    cv_mask = ~np.isin(group_id, test_groups)
 
     test_idx = np.where(test_mask)[0]
     cv_idx = np.where(cv_mask)[0]
 
     return test_idx, cv_idx
 
+
 def seed_everything(seed=42):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
- 
+
+
 def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger, device_obj,
-                   element_weights, epochs, batch_size, lr, weight_decay, lr_patience=5, stop_patience = 10, use_compile=True):
+                   element_weights, epochs, batch_size, lr, weight_decay, lr_patience=5, stop_patience=10, use_compile=True):
     torch._dynamo.reset()
     train_idx = np.where(fold_id != fold)[0]
     val_idx = np.where(fold_id == fold)[0]
     pin = device_obj.type == 'cuda'
     
-    # Fit scaler strictly on training fold
     train_y_slice = cv_data['y'][train_idx]
-    # spec_scaler = SpectralScaler(mode='global_max').fit(train_y_slice)
-    # spec_scaler = SpectralScaler(mode='none').fit(train_y_slice)
-    spec_scaler = SpectralScaler(mode='robust_max', q=99.9)                             # gemini recommendation
-    spec_scaler.fit(train_y_slice)                                                      # gemini recommendation
-    scale_gpu = spec_scaler.scale_.to(device_obj)   # type: ignore                                    # gemini recommendation
-    log(logger=logger, msg=f'[F{fold}] spec_scaler scale_ = {scale_gpu.item():.4f}')    # gemini recommendation
+    spec_scaler = SpectralScaler(mode='robust_max', q=99.9)
+    spec_scaler.fit(train_y_slice)
+    scale_gpu = spec_scaler.scale_.to(device_obj)   # type: ignore
+    log(logger=logger, msg=f'[F{fold}] spec_scaler scale_ = {scale_gpu.item():.4f}')
+    
     sub = train_idx[::200]
     ys, sy = cv_data['y'][sub], cv_data['is_synth'][sub]
-    # log(logger=logger, msg=f"[F{fold}] scale_={spec_scaler.scale_.item():.4g} | "   # type: ignore
-    #     f"exp max/mean {ys[sy==0].max():.4g}/{ys[sy==0].mean():.4g} | "
-    #     f"syn max/mean {ys[sy==1].max():.4g}/{ys[sy==1].mean():.4g}")
-    log(logger=logger, msg= f"exp max/mean {ys[sy==0].max():.4g}/{ys[sy==0].mean():.4g} | "
-        f"syn max/mean {ys[sy==1].max():.4g}/{ys[sy==1].mean():.4g}")
-    # scale_gpu = spec_scaler.scale_.to(device_obj)   # type: ignore
+    log(logger=logger, msg=f"exp max/mean {ys[sy==0].max():.4g}/{ys[sy==0].mean():.4g} | "
+                           f"syn max/mean {ys[sy==1].max():.4g}/{ys[sy==1].mean():.4g}")
 
-    # Reclaim temporary slice memory before DataLoader initialization
     del train_y_slice
     gc.collect()
 
-    # 2. Pass data to Dataset
     train_ds = LIBSSpectraDataset(cv_data['y'], cv_data['X'], cv_data['is_synth'], train_idx)
     val_ds = LIBSSpectraDataset(cv_data['y'], cv_data['X'], cv_data['is_synth'], val_idx)
 
-    # 3. Enable multi-worker data loading + drop_last=True to prevent CUDA Graph recompilation
     train_loader = DataLoader(
-        train_ds, 
-        batch_size=batch_size, 
-        shuffle=True, 
-        num_workers=NUM_WORKERS,          # Uses 6 CPU worker threads
-        pin_memory=pin,
-        persistent_workers=(NUM_WORKERS > 0), # Keeps workers alive across epochs
-        drop_last=True,                    # Guarantees identical batch shapes for CUDA Graphs
+        train_ds, batch_size=batch_size, shuffle=True, num_workers=NUM_WORKERS,
+        pin_memory=pin, persistent_workers=(NUM_WORKERS > 0), drop_last=True
     )
     val_loader = DataLoader(
-        val_ds, 
-        batch_size=batch_size, 
-        shuffle=False, 
-        num_workers=NUM_WORKERS,
-        pin_memory=pin,
-        persistent_workers=(NUM_WORKERS > 0)
+        val_ds, batch_size=batch_size, shuffle=False, num_workers=NUM_WORKERS,
+        pin_memory=pin, persistent_workers=(NUM_WORKERS > 0)
     )
     
     log(logger=logger, msg=f"=== Fold {fold}: train {len(train_ds)} | val {len(val_ds)} "
                            f"({len(np.unique(cv_data['group_id'][val_idx]))} compositions) ===")
 
     wl_grid = torch.from_numpy(cv_data['wavelengths']).to(device_obj)
-    raw_model = PhysicsInformedVAE(input_dim=cv_data['y'].shape[1], n_elements=cv_data['X'].shape[1],
-                                   wl_grid=wl_grid, master_table_path=master_table_path,
-                                   n_broadening=1).to(device_obj)
-    
-    # 4. Use mode='default' or disable compile if graph breaks occur
+    raw_model = PhysicsInformedVAE(
+        input_dim=cv_data['y'].shape[1], n_elements=cv_data['X'].shape[1],
+        wl_grid=wl_grid, master_table_path=master_table_path, n_broadening=1
+    ).to(device_obj)
+
     if use_compile:
         model = cast(nn.Module, torch.compile(raw_model, mode='default'))
     else:
         model = raw_model
 
-    criterion = PhysicsVAELoss(element_weights=element_weights, alpha_recon=1.0, beta_sup=10.0,
-                               gamma_kl=1e-4, use_log_conc=True).to(device_obj)
+    criterion = PhysicsVAELoss(
+        element_weights=element_weights, alpha_recon=1.0, beta_sup=10.0,
+        gamma_kl=1e-4, use_log_conc=True
+    ).to(device_obj)
+
     optimizer = torch.optim.AdamW(raw_model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=lr_patience, min_lr=MIN_LR)
     use_amp = device_obj.type == 'cuda'
@@ -1115,27 +837,13 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
         model.train()
         tr_loss = 0.0
         for batch in tqdm(train_loader, desc=f"F{fold} E{epoch:02d}", mininterval=5, leave=False):
-            # Scale baseline spectra on GPU
             spectra = batch['spectrum'].to(device_obj, non_blocking=True) / scale_gpu
-            # spectra = batch['spectrum'].to(device_obj, non_blocking=True)
             targets = batch['targets'].to(device_obj, non_blocking=True)
-
-            # # --- SPECTRAL JITTER (Augmentation) ---
-            # # Random gain jitter per sample (±2% overall shot intensity fluctuation)
-            # gain = 1.0 + torch.randn(spectra.size(0), 1, device=device_obj) * 0.01
-            # # Additive Gaussian noise (0.5% intensity scale)
-            # noise = torch.randn_like(spectra) * 0.0005
-            # spectra_aug = torch.clamp(spectra * gain + noise, min=0.0)
-
-            # Target dictionary uses clean un-augmented spectra for reconstruction target
             batch_gpu = {'spectrum': spectra, 'targets': targets}
 
             optimizer.zero_grad()
             with amp.autocast(enabled=use_amp, dtype=torch.float16):
-                # Model encodes the noisy/jittered spectrum
-                # out = model(spectra_aug)
                 out = model(spectra)
-                # Loss forces model to reconstruct the CLEAN target spectrum
                 ld = criterion(out, batch_gpu)
 
             if torch.isnan(ld['loss']):
@@ -1152,7 +860,6 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
         with torch.no_grad():
             for batch in val_loader:
                 spectra = batch['spectrum'].to(device_obj, non_blocking=True) / scale_gpu
-                # spectra = batch['spectrum'].to(device_obj, non_blocking=True)
                 targets = batch['targets'].to(device_obj, non_blocking=True)
                 batch_gpu = {'spectrum': spectra, 'targets': targets}
 
@@ -1172,7 +879,7 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
             torch.save({
                 'epoch': epoch, 
                 'model_state_dict': raw_model.state_dict(), 
-                'scaler_state_dict': spec_scaler.state_dict(),                          # gemini recommendation
+                'scaler_state_dict': spec_scaler.state_dict(),
                 'val_loss': best_val
             }, save_path)
 
@@ -1180,7 +887,6 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
             log(logger=logger, msg=f"[F{fold}] early stop at epoch {epoch}")
             break
 
-    # ---- Out-of-fold predictions from BEST epoch ----
     ckpt = torch.load(save_path, map_location=device_obj)
     raw_model.load_state_dict(ckpt['model_state_dict'])
     raw_model.eval()
@@ -1188,20 +894,20 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
     with torch.no_grad():
         for batch in val_loader:
             spectra = batch['spectrum'].to(device_obj, non_blocking=True) / scale_gpu
-            # spectra = batch['spectrum'].to(device_obj, non_blocking=True)
             preds.append(raw_model(spectra)['concentrations'].float().cpu().numpy())
     pred = np.concatenate(preds, axis=0)
 
     del model, raw_model, optimizer, amp_scaler, train_loader, val_loader
     gc.collect(); torch.cuda.empty_cache()
     return dict(fold=fold, val_idx=val_idx, pred=pred, best_epoch=best_epoch, best_val=best_val)
- 
+
+
 def train_kfold_physics_vae(
     h5_path, master_table_path, log_path=None, save_path=None,
     epochs=MAX_EPOCHS, batch_size=BATCH_SIZE, lr=learning_rate,
     weight_decay=weight_decay, num_folds=NUM_FOLDS, folds=None,
-    device=None, lr_patience = 5, stop_patience = 10, use_compile=True
-    ):
+    device=None, lr_patience=5, stop_patience=10, use_compile=True
+):
     save_path = Path(save_path or model_save_path)
     save_path.parent.mkdir(parents=True, exist_ok=True)
     log_path = Path(log_path or f"/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/kfold_{timestamp}.txt").resolve()
@@ -1209,33 +915,26 @@ def train_kfold_physics_vae(
     logger = get_worker_logger(log_path.stem)
     device_obj = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
 
-    # Load dataset once
     data = load_crossval_data(h5_path)
 
-    # Generate test holdout + CV fold indices with full dopant coverage guarantees
     seed_everything(seed=42)
     split_path = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits') / f'max12_{num_folds}_folds_seed42.npz'
     test_idx, cv_idx, cv_fold_id = build_splits_once(data, split_path, num_folds, seed=42)
 
-    # Save test set indices so they can be re-loaded for final lockbox evaluation
     test_idx_path = save_path.with_name(f"{save_path.stem}_test_idx.npy")
     np.save(test_idx_path, test_idx)
-    log(logger=logger, msg='This is the sfthresh LowerLr experiment')
+    log(logger=logger, msg='This is the sfthresh NonZeroStratifiedEvalMetrics experiment')
     log(logger=logger, msg=f"Saved test holdout indices ({len(test_idx)} samples) → {test_idx_path.name}")
 
-    # Slice sample-level entries for Cross-Validation data
-    # Total sample count in the dataset
     n_samples = len(data['X'])  
 
     cv_data = {}
     for key, val in data.items():
-        # Supports both NumPy arrays and PyTorch Tensors
         if isinstance(val, (np.ndarray, torch.Tensor)) and val.ndim > 0 and val.shape[0] == n_samples:
             cv_data[key] = val[cv_idx]
         else:
             cv_data[key] = val
-            
-    # --- RUN RANGE CHECK ONCE ACROSS ALL FOLDS HERE ---
+
     fold_range_check(
         X=cv_data['X'],
         fold_id=cv_fold_id,
@@ -1244,12 +943,9 @@ def train_kfold_physics_vae(
         dopants=('Ce', 'Gd', 'Sm', 'U'),
         logger=logger
     )
-    # --------------------------------------------------
 
-    # --- ADD THESE LINES TO RECLAIM ~15 GB RAM ---
     del data
     gc.collect()
-    # ---------------------------------------------
 
     element_weights = torch.tensor(
         [ELEMENT_WEIGHTS_REFERENCE[n.encode() if isinstance(n, str) else n] for n in cv_data['names']], 
@@ -1267,7 +963,6 @@ def train_kfold_physics_vae(
         log(logger=logger, msg=f"[F{k}] done: best epoch {res['best_epoch']}, val {res['best_val']:.4f}")
         results.append((k, res['best_epoch'], res['best_val']))
 
-    # Assemble full Out-Of-Fold (OOF) predictions across all CV samples
     oof_preds = np.zeros_like(cv_data['X'].cpu().numpy() if hasattr(cv_data['X'], 'cpu') else cv_data['X'])
     evaluated_mask = np.zeros(len(cv_data['X']), dtype=bool)
     
@@ -1292,6 +987,7 @@ def train_kfold_physics_vae(
         )
 
     return results
+
 
 def worst_groups(true, pred, gid, names, dopants=('Ce', 'Gd', 'Sm', 'U'), top=3, logger=None):
     true_np = true.cpu().numpy() if hasattr(true, 'cpu') else np.asarray(true)
@@ -1322,56 +1018,11 @@ def worst_groups(true, pred, gid, names, dopants=('Ce', 'Gd', 'Sm', 'U'), top=3,
     else:
         print(full_msg)
 
+
 if __name__ == "__main__":
     print('Starting run')
     loop_time_start = time.perf_counter()
     k = 7
-
-
-    # --------------------------------------------------
-    # region Verify Synthetic Concentration Cap
-    # --------------------------------------------------
-    # with h5py.File("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5", 'r') as hf:
-    #     X = hf['X'][:]  # type: ignore
-    #     is_synth = hf['is_synthetic'][:]  # type: ignore
-    #     names = [n.decode('utf-8') if isinstance(n, bytes) else str(n) for n in hf['feature_cols'][:]]  # type: ignore
-
-    # print(dict(zip(names, X[is_synth == 1].max(axis=0).round(2))))  # type: ignore
-    # endregion
-
-    # --------------------------------------------------
-    # region Spike Diagnostics
-    # --------------------------------------------------
-    # data = load_crossval_data(h5_path=h5_file)
-    # print(f'threshold = {THRESH}')
-    # find_spike_rows(
-    #     y=data['y'],
-    #     group_id=data['group_id'],
-    #     is_synth=data['is_synth'],
-    #     thresh=THRESH
-    # )
-    # diagnose_spike_geometry(
-    #     y=data['y'],
-    #     group_id=data['group_id'],
-    #     thresh=THRESH
-    # )
-    # check_bad_row_compositions(
-    #     h5_path=h5_file,
-    #     thresh=THRESH
-    # )
-
-    # for t in [1.8, 2.0, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5]:
-    #     row_maxes = data['y'].max(dim=1).values.numpy()
-    #     bad_idx = np.where(row_maxes > t)[0]
-    #     bad_gids = data['group_id'][bad_idx]
-        
-    #     g0_count = np.sum(bad_gids == 0)
-    #     g30_count = np.sum(bad_gids == 30)
-        
-    #     print(f"Threshold {t:<4} -> Dropped Group 0 (Sm): {g0_count:<3} | Dropped Group 30 (Sat): {g30_count:<3}")
-    # endregion
-
-    # df_summary = check_h5_compositions(h5_path=h5_file)
 
     # --------------------------------------------------
     # region Train Model
@@ -1379,60 +1030,39 @@ if __name__ == "__main__":
     results = train_kfold_physics_vae(
         h5_path=h5_file,
         master_table_path=master_table_path,
-        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/005_sfthresh_LowerLr_log.txt',
+        log_path=f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/005_sfthresh_NonZeroStratifiedEvalMetrics_{timestamp}_log.txt',
         save_path=model_save_path,
         num_folds=k,
-        folds=None,              # [0] smoke test first, then None for all five
+        folds=None,
         device='cuda',
         lr_patience=4,
         stop_patience=20,
         use_compile=False
     )
     print("Training Results (fold, best_epoch, best_val_loss):")
-    print(results)              # (fold, best_epoch, best_val_loss)
+    print(results)
     # endregion
 
     # --------------------------------------------------
     # region Evaluate Model
     # --------------------------------------------------
-    # model_prefix = str(model_save_path.with_suffix(""))  # Strips .pt extension to match saved files
-    # model_prefix = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261015_133024"
-    # evaluate_and_plot_kfold(
-    #     h5_path=h5_file,
-    #     master_table_path=master_table_path,
-    #     model_prefix=model_prefix,
-    #     num_folds=k,
-    #     output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots",
-    #     device="cuda",
-    #     model_tag='20261015_133024',
-    #     max_wt_percent=12.0
-    # )
+    model_prefix = str(model_save_path.with_suffix(""))
+    evaluate_and_plot_kfold(
+        h5_path=h5_file,
+        master_table_path=master_table_path,
+        model_prefix=model_prefix,
+        model_cls=PhysicsInformedVAE,
+        scaler_cls=SpectralScaler,
+        dataset_cls=LIBSSpectraDataset,
+        load_data_fn=load_crossval_data,
+        num_folds=k,
+        batch_size=BATCH_SIZE,
+        output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots/kfold/sfthresh",
+        device="cuda",
+        model_tag=f'NonZeroStratifiedEvalMetrics_{timestamp}',
+        max_wt_percent=12.0
+    )
     # endregion
 
     loop_time_end = time.perf_counter()
     print(f"Run completed in {(loop_time_end - loop_time_start) / 60:.2f} minutes.")
-
-
-    # --------------------------------------------------
-    # region TODO
-    # --------------------------------------------------
-    # TODO: R^2 and RSME but also how reliable is it? Like error bars and band of error
-    # Write a technical note, short format paper to lock in idea (4 pages)
-    #       - general idea
-    #       - approach
-    #       - initial results
-    # Transfer to FLiNaK
-    # 
-    # 
-    # Where I left off:
-        # - I am trying to make it so that the folds don't change every time I run them, they
-        #   should be consistant from run to run so that I don't make any decisions based on
-        #   test data that gets mixed in from run to run.
-        # - fix that a different num_folds means a different lockbox.
-        # - check on seed_everything to actually understand what the freak is going on and
-        #   if it is doing the thing it is supposed to.
-        # - SCALING!!!!!!!!! need to save the scales so that when I predict things out I can
-        #   unscale them so that the measurements actually mean something useful.
-        # .
-
-    # endregion

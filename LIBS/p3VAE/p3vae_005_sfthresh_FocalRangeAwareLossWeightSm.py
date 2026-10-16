@@ -38,7 +38,8 @@ from utils import (
     log,
     logging,
     get_h5_ds,
-    check_h5_compositions
+    check_h5_compositions,
+    evaluate_and_plot_kfold
 )
 # endregion
 
@@ -359,7 +360,6 @@ class PhysicsInformedVAE(nn.Module):
 
 
 class PhysicsVAELoss(nn.Module):
-
     def __init__(
         self,
         element_weights: torch.Tensor | None = None,
@@ -367,12 +367,20 @@ class PhysicsVAELoss(nn.Module):
         beta_sup: float = 10.0,
         gamma_kl: float = 1e-4,
         use_log_conc: bool = True,
+        sm_index: int | None = None,
+        sm_threshold: float = 0.3,
+        sm_alpha: float = 3.0,
+        sm_gamma: float = 1.0,
     ):
         super().__init__()
         self.alpha_recon = alpha_recon
         self.beta_sup = beta_sup
         self.gamma_kl = gamma_kl
         self.use_log_conc = use_log_conc
+        self.sm_index = sm_index
+        self.sm_threshold = sm_threshold
+        self.sm_alpha = sm_alpha
+        self.sm_gamma = sm_gamma
 
         if element_weights is not None:
             if not isinstance(element_weights, torch.Tensor):
@@ -382,11 +390,7 @@ class PhysicsVAELoss(nn.Module):
             self.element_weights = None
 
     @staticmethod
-    def _kl_divergence(
-        mu: torch.Tensor,
-        logvar: torch.Tensor
-    ) -> torch.Tensor:
-        """Computes KL divergence between standard Gaussian N(0, I) and N(mu, std^2)."""
+    def _kl_divergence(mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
         return -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1).mean()
 
     def forward(
@@ -400,10 +404,8 @@ class PhysicsVAELoss(nn.Module):
         pred_conc = model_outputs["concentrations"]
         true_conc = batch["targets"]
 
-        # 1. Spectral Reconstruction Loss
         recon_loss = F.mse_loss(x_recon, x_target, reduction="mean")
 
-        # 2. Dopant-Focused Concentration Loss
         if self.use_log_conc:
             diff = torch.log1p(pred_conc) - torch.log1p(true_conc)
         else:
@@ -411,28 +413,32 @@ class PhysicsVAELoss(nn.Module):
 
         element_errors = diff**2  # [Batch, N_elements]
 
+        # Apply Range-Aware & Focal Weighting to Sm channel if specified
+        if self.sm_index is not None and self.sm_index < pred_conc.shape[1]:
+            sm_true = true_conc[:, self.sm_index]
+            sm_pred = pred_conc[:, self.sm_index]
+            sm_abs_error = torch.abs(sm_true - sm_pred)
+
+            range_mask = 1.0 + self.sm_alpha * (sm_true >= self.sm_threshold).float()
+            focal_weight = torch.pow(sm_abs_error, self.sm_gamma)
+
+            element_errors = element_errors.clone()
+            element_errors[:, self.sm_index] = range_mask * focal_weight * element_errors[:, self.sm_index]
+
         if self.element_weights is not None:
             element_errors = element_errors * self.element_weights
 
         sup_loss = element_errors.mean()
 
-        # 3. KL Divergence
-        kl_phys = self._kl_divergence(
-            model_outputs["mu_p"], model_outputs["logvar_p"]
-        )
-        kl_matrix = self._kl_divergence(
-            model_outputs["mu_m"], model_outputs["logvar_m"]
-        )
+        kl_phys = self._kl_divergence(model_outputs["mu_p"], model_outputs["logvar_p"])
+        kl_matrix = self._kl_divergence(model_outputs["mu_m"], model_outputs["logvar_m"])
         kl_loss = kl_phys + kl_matrix
-
-        # l1_residual = model_outputs["matrix_residual"].abs().mean()
 
         total_loss = (
             (self.alpha_recon * recon_loss)
             + (self.beta_sup * sup_loss)
             + (self.gamma_kl * kl_loss)
         )
-        # total_loss = total_loss + 0.001 * l1_residual
 
         return {
             "loss": total_loss,
@@ -484,6 +490,54 @@ class RangeAwareFocalMSELoss(nn.Module):
 
         # Average across mini-batch and target dimensions
         return torch.mean(weighted_loss_matrix)
+
+
+class SmRangeAwareFocalMSELoss(nn.Module):
+    """
+    Computes MSE loss across elemental targets, applying range-aware and 
+    focal error scaling specifically to the Samarium (Sm) channel.
+    
+    Args:
+        sm_index (int): Column index corresponding to Sm in target matrix y.
+        threshold (float): Minimum Sm concentration (wt%) to trigger range weight boosting.
+        alpha (float): Multiplier boost applied when y_Sm >= threshold.
+        gamma (float): Focal exponent scaling loss by absolute error magnitude |y - y_hat|^gamma.
+    """
+    def __init__(self, sm_index: int, threshold: float = 0.3, alpha: float = 3.0, gamma: float = 1.0):
+        super().__init__()
+        self.sm_index = sm_index
+        self.threshold = threshold
+        self.alpha = alpha
+        self.gamma = gamma
+
+    def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+        # Standard element-wise squared error across all targets: shape (Batch, Channels)
+        squared_errors = (y_pred - y_true) ** 2
+
+        # Extract ground truth and predictions for the Sm channel: shape (Batch,)
+        sm_true = y_true[:, self.sm_index]
+        sm_pred = y_pred[:, self.sm_index]
+        
+        # Absolute error magnitude |y_Sm - y_hat_Sm|
+        sm_abs_error = torch.abs(sm_true - sm_pred)
+
+        # 1. Range Mask: (1.0 + alpha) for true Sm >= threshold, 1.0 otherwise
+        range_mask = torch.ones_like(sm_true)
+        range_mask += self.alpha * (sm_true >= self.threshold).float()
+
+        # 2. Focal Weight: |y - y_hat|^gamma
+        # Suppresses small zero-background errors (|error| ~ 0.005), amplifies large structural misses
+        focal_weight = torch.pow(sm_abs_error, self.gamma)
+
+        # Custom weighted loss for Sm
+        custom_sm_loss = range_mask * focal_weight * squared_errors[:, self.sm_index]
+
+        # Clone base squared error matrix and update only the Sm column
+        loss_matrix = squared_errors.clone()
+        loss_matrix[:, self.sm_index] = custom_sm_loss
+
+        # Mean loss across mini-batch and all target channels
+        return torch.mean(loss_matrix)
 
 
 class SpectralScaler:
@@ -742,7 +796,7 @@ def diagnose_spike_geometry(y, group_id, thresh=2.5):
         print(f"  Normal shots mean intensity across all channels: {norm_mean_intensity:.5f}")
         print(f"  Bad shots mean intensity across all channels:    {bad_mean_intensity:.5f}")
 
-def evaluate_and_plot_kfold(
+def old_evaluate_and_plot_kfold(
     h5_path: str | Path,
     master_table_path: str | Path,
     model_prefix: str | Path,
@@ -1144,8 +1198,21 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
     else:
         model = raw_model
 
-    criterion = PhysicsVAELoss(element_weights=element_weights, alpha_recon=1.0, beta_sup=10.0,
-                               gamma_kl=1e-4, use_log_conc=True).to(device_obj)
+    # Locate Samarium index dynamically
+    sm_idx = cv_data['names'].index('Sm') if 'Sm' in cv_data['names'] else None
+
+    criterion = PhysicsVAELoss(
+        element_weights=element_weights,
+        alpha_recon=1.0,
+        beta_sup=10.0,
+        gamma_kl=1e-4,
+        use_log_conc=True,
+        sm_index=sm_idx,
+        sm_threshold=0.3,
+        sm_alpha=3.0,
+        sm_gamma=1.0
+    ).to(device_obj)
+
     optimizer = torch.optim.AdamW(raw_model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=lr_patience, min_lr=MIN_LR)
     use_amp = device_obj.type == 'cuda'
@@ -1436,21 +1503,26 @@ if __name__ == "__main__":
     print(results)              # (fold, best_epoch, best_val_loss)
     # endregion
 
+
     # --------------------------------------------------
     # region Evaluate Model
     # --------------------------------------------------
-    # model_prefix = str(model_save_path.with_suffix(""))  # Strips .pt extension to match saved files
-    # model_prefix = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261015_133024"
-    # evaluate_and_plot_kfold(
-    #     h5_path=h5_file,
-    #     master_table_path=master_table_path,
-    #     model_prefix=model_prefix,
-    #     num_folds=k,
-    #     output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots",
-    #     device="cuda",
-    #     model_tag='20261015_133024',
-    #     max_wt_percent=12.0
-    # )
+    model_prefix = str(model_save_path.with_suffix(""))
+    evaluate_and_plot_kfold(
+        h5_path=h5_file,
+        master_table_path=master_table_path,
+        model_prefix=model_prefix,
+        model_cls=PhysicsInformedVAE,
+        scaler_cls=SpectralScaler,
+        dataset_cls=LIBSSpectraDataset,
+        load_data_fn=load_crossval_data,
+        num_folds=k,
+        batch_size=BATCH_SIZE,
+        output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots/kfold/sfthresh",
+        device="cuda",
+        model_tag=f'FocalRangeAwareLossWeightSm_{timestamp}',
+        max_wt_percent=12.0
+    )
     # endregion
 
     loop_time_end = time.perf_counter()
