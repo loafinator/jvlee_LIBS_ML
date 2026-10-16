@@ -2422,6 +2422,225 @@ def save_recombined_h5(
 # region: Training Splitting
 # =============================================================================
 
+def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
+                       n_splits=5, n_trials=2000, min_groups_per_dopant=1, seed=42, verbose=True):
+    exp = np.where(is_synthetic == 0)[0]
+    groups, inv = np.unique(group_id[exp], return_inverse=True)
+    inv = inv.ravel()
+    n_groups = len(groups)
+    shots = np.bincount(inv, minlength=n_groups)
+
+    first = np.zeros(n_groups, dtype=int)                 # one representative row per group
+    first[inv[::-1]] = np.arange(len(inv))[::-1]
+    present = X[exp[first]][:, dopant_idx] > 0            # (n_groups, n_dopants)
+    total_g_per_dopant = present.sum(axis = 0)
+    active_dopant_mask = total_g_per_dopant > 0
+    present = present[:, active_dopant_mask]
+    active_dopant_idx = [d for i, d in enumerate(dopant_idx) if active_dopant_mask[i]]
+    sig = (present.astype(int) * (1 << np.arange(len(active_dopant_idx)))).sum(axis=1)
+    classes = np.unique(sig)
+
+    best_fog, best_score = None, None
+    for t in range(n_trials):
+        rng = np.random.default_rng(seed + t)
+        fog = np.empty(n_groups, dtype=int)
+        offset = int(rng.integers(n_splits))
+        for s in rng.permutation(classes):
+            members = rng.permutation(np.where(sig == s)[0])
+            fog[members] = (offset + np.arange(len(members))) % n_splits
+            offset += len(members)
+        fold_shots = np.bincount(fog, weights=shots, minlength=n_splits)
+        imbalance = np.abs(fold_shots / shots.sum() - 1.0 / n_splits).max()
+        cov = np.array([present[fog == k].sum(axis=0) for k in range(n_splits)])
+        score = (-min(int(cov.min()), min_groups_per_dopant), imbalance)
+        if best_score is None or score < best_score:
+            best_fog, best_score = fog, score
+
+    if best_fog is None or best_score is None:
+        raise ValueError("Failed to assign fold groups: n_trials must be > 0.")
+
+    if -best_score[0] < 1:
+        raise ValueError(
+            f"A dopant has no groups in at least one fold (min={-best_score[0]}). "
+            "Lower n_splits, raise n_trials, or assign the rare groups by hand."
+        )
+
+    fold_id = np.full(len(X), -1, dtype=np.int32)
+    fold_id[exp] = best_fog[inv]
+
+    if verbose:
+        names = elem_names or [str(i) for i in range(X.shape[1])]
+        print(f"{n_groups} groups | min groups/dopant/fold={-best_score[0]} | "
+              f"worst shot-fraction deviation={best_score[1]:.3f}")
+        print(f"{'fold':<5}{'groups':>7}{'shots':>9}  " + "  ".join(f"{names[j]:>11}" for j in active_dopant_idx) + "  (groups/shots)")
+        for k in range(n_splits):
+            g = best_fog == k
+            cells = [f"{int(present[g, j].sum())}/{int(shots[g & present[:, j]].sum())}" for j in range(len(active_dopant_idx))]
+            print(f"{k:<5}{g.sum():>7}{shots[g].sum():>9}  " + "  ".join(f"{c:>11}" for c in cells))
+    return fold_id
+
+def generate_comp_labels(
+    comp_data,
+    elem_names=None,
+    host_elems=('Li', 'K', 'Cl'),
+    round_decimals=4,
+    conc_threshold=0.001
+):
+    """
+    Labels unique elemental compositions with system letters, short alphanumeric codes, 
+    integer group IDs, and full descriptive strings. 
+    """
+    # 1. Standardize input data into a Pandas DataFrame
+    if isinstance(comp_data, pd.DataFrame):
+        df_comp = comp_data.copy()
+    else:
+        if elem_names is None:
+            raise ValueError("elem_names must be provided if comp_data is a NumPy array.")
+        # Clean byte strings if loaded directly from h5
+        clean_names = [e.decode('utf-8') if isinstance(e, bytes) else str(e) for e in elem_names]
+        df_comp = pd.DataFrame(comp_data, columns=clean_names)
+
+    # 2. Round values to eliminate tiny floating-point variations
+    df_rounded = df_comp.round(round_decimals)
+
+    # 3. Find unique compositions across all shots
+    unique_comps, inverse_indices = np.unique(df_rounded.values, axis=0, return_inverse=True)
+
+    all_elems = list(df_comp.columns)
+    dopant_cols = [col for col in all_elems if col not in host_elems]
+    dopant_cols.sort()
+
+    # 4. First Pass: Categorize chemical systems (Pure Host, Ce, Ce-Gd, etc.)
+    raw_groups = []
+    for g_id, comp_row in enumerate(unique_comps):
+        row_s = pd.Series(comp_row, index=all_elems)
+        active_dopants = []
+        dopant_strings = []
+
+        for dopant in dopant_cols:
+            wt = row_s[dopant]
+            if wt > conc_threshold:
+                active_dopants.append(dopant)
+                dopant_strings.append(f"{dopant}({wt:.2f}%)")
+
+        if not active_dopants:
+            system_key = "PureHost"
+            num_dopants = 0
+        else:
+            system_key = "-".join(active_dopants)
+            num_dopants = len(active_dopants)
+
+        raw_groups.append({
+            'orig_g_id': g_id, 
+            'comp_row': comp_row, 
+            'num_dopants': num_dopants, 
+            'system_key': system_key, 
+            'active_dopants': active_dopants, 
+            'dopant_strings': dopant_strings
+        })
+
+    # 5. Sort chemical systems: Pure Host (A) -> Single Dopants (B, C) -> Binary (E, F) -> Ternary
+    unique_systems = sorted(
+        list(set(g['system_key'] for g in raw_groups)),
+        key=lambda s: (0 if s == 'PureHost' else len(s.split('-')), s)
+    )
+    # Map each chemical system to a letter code
+    system_letter_map = {sys_key: get_system_letter(idx) for idx, sys_key in enumerate(unique_systems)}
+
+    # 6. Second Pass: Build label table
+    system_counts = {}
+    group_info = []
+    
+    for item in raw_groups:
+        g_id = item['orig_g_id']
+        system_key = item['system_key']
+        sys_letter = system_letter_map[system_key]
+
+        system_counts[system_key] = system_counts.get(system_key, 0) + 1
+        sys_num = system_counts[system_key]
+        short_label = f"{sys_letter}{sys_num}"
+
+        if not item['dopant_strings']:
+            full_label = f"{g_id:02d}_{sys_letter}_PureHost"
+        else:
+            full_label = f"{g_id:02d}_{sys_letter}_" + "_".join(item['dopant_strings'])
+
+        group_info.append({
+            'group_id': g_id, 
+            'system_key': system_key, 
+            'system_code': sys_letter, 
+            'label_short': short_label, 
+            'label_full': full_label
+        })
+
+    # Convert group info into DataFrame after completing loop over all raw_groups
+    df_group_lookup = pd.DataFrame(group_info)
+
+    # Map group labels back to all original dataset shots
+    shot_labels = df_group_lookup.iloc[inverse_indices].reset_index(drop=True)
+
+    return shot_labels, df_group_lookup
+
+def stamp_lockbox_to_h5(
+    h5_path: str | Path,
+    n_splits: int = 6,               # e.g., 6 splits -> ~16.7% lockbox test set
+    min_groups_per_dopant: int = 2,  # Ensures >= 2 composition groups per active dopant
+    seed: int = 42,
+    host_elements: set = {'Li', 'K', 'Cl'}
+):
+    with h5py.File(h5_path, 'a') as hf:
+        if 'is_lockbox' in hf:
+            print("⚠️ 'is_lockbox' dataset already exists in HDF5 file!")
+            return
+
+        # 1. Load data arrays directly from HDF5
+        X = hf['X'][:]          # type: ignore
+        group_id = hf['group_id'][:]          # type: ignore
+        is_synth = hf['is_synthetic'][:]          # type: ignore
+        names = [
+            n.decode('utf-8') if isinstance(n, bytes) else str(n) 
+            for n in hf['feature_cols'][:]          # type: ignore
+        ]
+
+        # 2. Dynamically identify all active dopants (excluding matrix elements)
+        dopant_idx = [
+            i for i, name in enumerate(names) 
+            if name not in host_elements and (X[:, i] > 0).any()          # type: ignore
+        ]
+
+        # 3. Use assign_group_folds to split groups across n_splits bins
+        # This guarantees at least min_groups_per_dopant in EVERY fold (including Fold 0)
+        fold_ids = assign_group_folds(
+            X=X,
+            group_id=group_id,
+            is_synthetic=is_synth,
+            dopant_idx=dopant_idx,
+            elem_names=names,
+            n_splits=n_splits,
+            min_groups_per_dopant=min_groups_per_dopant,
+            seed=seed,
+            verbose=True
+        )
+
+        # 4. Bin 0 becomes the permanent lockbox set (excluding synthetic samples)
+        exp_mask = (is_synth == 0)
+        is_lockbox = (fold_ids == 0) & exp_mask
+
+        # 5. Write the boolean array directly into the .h5 file
+        hf.create_dataset('is_lockbox', data=is_lockbox, dtype=bool)
+
+        print(f"\n Successfully stamped 'is_lockbox' into {h5_path}")
+        print(f"Total dataset rows: {len(is_lockbox)} | Lockbox test samples: {is_lockbox.sum()}")
+
+        # 6. Verification: Check composition group count per dopant in lockbox
+        lockbox_exp_indices = np.where(is_lockbox)[0]
+        lb_groups, first_idx = np.unique(group_id[lockbox_exp_indices], return_index=True)          # type: ignore
+        lb_dopant_counts = (X[lockbox_exp_indices[first_idx]][:, dopant_idx] > 0).sum(axis=0)          # type: ignore
+
+        print("\n--- Lockbox Dopant Group Coverage Verification ---")
+        for idx, count in zip(dopant_idx, lb_dopant_counts):
+            print(f"Element {names[idx]:<5}: {count} composition groups in lockbox")
+
 def train_val_test_splitter_HDF5(
     h5_path: str | Path,
     output_path: str | Path | None = None,        # If None, appends '_split.h5' suffix
@@ -2923,165 +3142,6 @@ def xandy_to_crossval(
 # region: Debug
 # =============================================================================
 
-def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
-                       n_splits=5, n_trials=2000, min_groups_per_dopant=1, seed=42, verbose=True):
-    exp = np.where(is_synthetic == 0)[0]
-    groups, inv = np.unique(group_id[exp], return_inverse=True)
-    inv = inv.ravel()
-    n_groups = len(groups)
-    shots = np.bincount(inv, minlength=n_groups)
-
-    first = np.zeros(n_groups, dtype=int)                 # one representative row per group
-    first[inv[::-1]] = np.arange(len(inv))[::-1]
-    present = X[exp[first]][:, dopant_idx] > 0            # (n_groups, n_dopants)
-    total_g_per_dopant = present.sum(axis = 0)
-    active_dopant_mask = total_g_per_dopant > 0
-    present = present[:, active_dopant_mask]
-    active_dopant_idx = [d for i, d in enumerate(dopant_idx) if active_dopant_mask[i]]
-    sig = (present.astype(int) * (1 << np.arange(len(active_dopant_idx)))).sum(axis=1)
-    classes = np.unique(sig)
-
-    best_fog, best_score = None, None
-    for t in range(n_trials):
-        rng = np.random.default_rng(seed + t)
-        fog = np.empty(n_groups, dtype=int)
-        offset = int(rng.integers(n_splits))
-        for s in rng.permutation(classes):
-            members = rng.permutation(np.where(sig == s)[0])
-            fog[members] = (offset + np.arange(len(members))) % n_splits
-            offset += len(members)
-        fold_shots = np.bincount(fog, weights=shots, minlength=n_splits)
-        imbalance = np.abs(fold_shots / shots.sum() - 1.0 / n_splits).max()
-        cov = np.array([present[fog == k].sum(axis=0) for k in range(n_splits)])
-        score = (-min(int(cov.min()), min_groups_per_dopant), imbalance)
-        if best_score is None or score < best_score:
-            best_fog, best_score = fog, score
-
-    if best_fog is None or best_score is None:
-        raise ValueError("Failed to assign fold groups: n_trials must be > 0.")
-
-    if -best_score[0] < 1:
-        raise ValueError(
-            f"A dopant has no groups in at least one fold (min={-best_score[0]}). "
-            "Lower n_splits, raise n_trials, or assign the rare groups by hand."
-        )
-
-    fold_id = np.full(len(X), -1, dtype=np.int32)
-    fold_id[exp] = best_fog[inv]
-
-    if verbose:
-        names = elem_names or [str(i) for i in range(X.shape[1])]
-        print(f"{n_groups} groups | min groups/dopant/fold={-best_score[0]} | "
-              f"worst shot-fraction deviation={best_score[1]:.3f}")
-        print(f"{'fold':<5}{'groups':>7}{'shots':>9}  " + "  ".join(f"{names[j]:>11}" for j in active_dopant_idx) + "  (groups/shots)")
-        for k in range(n_splits):
-            g = best_fog == k
-            cells = [f"{int(present[g, j].sum())}/{int(shots[g & present[:, j]].sum())}" for j in range(len(active_dopant_idx))]
-            print(f"{k:<5}{g.sum():>7}{shots[g].sum():>9}  " + "  ".join(f"{c:>11}" for c in cells))
-    return fold_id
-
-def generate_comp_labels(
-    comp_data,
-    elem_names=None,
-    host_elems=('Li', 'K', 'Cl'),
-    round_decimals=4,
-    conc_threshold=0.001
-):
-    """
-    Labels unique elemental compositions with system letters, short alphanumeric codes, 
-    integer group IDs, and full descriptive strings. 
-    """
-    # 1. Standardize input data into a Pandas DataFrame
-    if isinstance(comp_data, pd.DataFrame):
-        df_comp = comp_data.copy()
-    else:
-        if elem_names is None:
-            raise ValueError("elem_names must be provided if comp_data is a NumPy array.")
-        # Clean byte strings if loaded directly from h5
-        clean_names = [e.decode('utf-8') if isinstance(e, bytes) else str(e) for e in elem_names]
-        df_comp = pd.DataFrame(comp_data, columns=clean_names)
-
-    # 2. Round values to eliminate tiny floating-point variations
-    df_rounded = df_comp.round(round_decimals)
-
-    # 3. Find unique compositions across all shots
-    unique_comps, inverse_indices = np.unique(df_rounded.values, axis=0, return_inverse=True)
-
-    all_elems = list(df_comp.columns)
-    dopant_cols = [col for col in all_elems if col not in host_elems]
-    dopant_cols.sort()
-
-    # 4. First Pass: Categorize chemical systems (Pure Host, Ce, Ce-Gd, etc.)
-    raw_groups = []
-    for g_id, comp_row in enumerate(unique_comps):
-        row_s = pd.Series(comp_row, index=all_elems)
-        active_dopants = []
-        dopant_strings = []
-
-        for dopant in dopant_cols:
-            wt = row_s[dopant]
-            if wt > conc_threshold:
-                active_dopants.append(dopant)
-                dopant_strings.append(f"{dopant}({wt:.2f}%)")
-
-        if not active_dopants:
-            system_key = "PureHost"
-            num_dopants = 0
-        else:
-            system_key = "-".join(active_dopants)
-            num_dopants = len(active_dopants)
-
-        raw_groups.append({
-            'orig_g_id': g_id, 
-            'comp_row': comp_row, 
-            'num_dopants': num_dopants, 
-            'system_key': system_key, 
-            'active_dopants': active_dopants, 
-            'dopant_strings': dopant_strings
-        })
-
-    # 5. Sort chemical systems: Pure Host (A) -> Single Dopants (B, C) -> Binary (E, F) -> Ternary
-    unique_systems = sorted(
-        list(set(g['system_key'] for g in raw_groups)),
-        key=lambda s: (0 if s == 'PureHost' else len(s.split('-')), s)
-    )
-    # Map each chemical system to a letter code
-    system_letter_map = {sys_key: get_system_letter(idx) for idx, sys_key in enumerate(unique_systems)}
-
-    # 6. Second Pass: Build label table
-    system_counts = {}
-    group_info = []
-    
-    for item in raw_groups:
-        g_id = item['orig_g_id']
-        system_key = item['system_key']
-        sys_letter = system_letter_map[system_key]
-
-        system_counts[system_key] = system_counts.get(system_key, 0) + 1
-        sys_num = system_counts[system_key]
-        short_label = f"{sys_letter}{sys_num}"
-
-        if not item['dopant_strings']:
-            full_label = f"{g_id:02d}_{sys_letter}_PureHost"
-        else:
-            full_label = f"{g_id:02d}_{sys_letter}_" + "_".join(item['dopant_strings'])
-
-        group_info.append({
-            'group_id': g_id, 
-            'system_key': system_key, 
-            'system_code': sys_letter, 
-            'label_short': short_label, 
-            'label_full': full_label
-        })
-
-    # Convert group info into DataFrame after completing loop over all raw_groups
-    df_group_lookup = pd.DataFrame(group_info)
-
-    # Map group labels back to all original dataset shots
-    shot_labels = df_group_lookup.iloc[inverse_indices].reset_index(drop=True)
-
-    return shot_labels, df_group_lookup
-
 def get_system_letter(index):
     """
     Generates letter codes: 0->A, 1->B, ..., 25->Z, 26-AA, ...
@@ -3115,66 +3175,6 @@ def log(logger: logging.Logger, msg: str) -> None:
         logger.info(msg)
     else:
         print(msg)
-
-def stamp_lockbox_to_h5(
-    h5_path: str | Path,
-    n_splits: int = 6,               # e.g., 6 splits -> ~16.7% lockbox test set
-    min_groups_per_dopant: int = 2,  # Ensures >= 2 composition groups per active dopant
-    seed: int = 42,
-    host_elements: set = {'Li', 'K', 'Cl'}
-):
-    with h5py.File(h5_path, 'a') as hf:
-        if 'is_lockbox' in hf:
-            print("⚠️ 'is_lockbox' dataset already exists in HDF5 file!")
-            return
-
-        # 1. Load data arrays directly from HDF5
-        X = hf['X'][:]          # type: ignore
-        group_id = hf['group_id'][:]          # type: ignore
-        is_synth = hf['is_synthetic'][:]          # type: ignore
-        names = [
-            n.decode('utf-8') if isinstance(n, bytes) else str(n) 
-            for n in hf['feature_cols'][:]          # type: ignore
-        ]
-
-        # 2. Dynamically identify all active dopants (excluding matrix elements)
-        dopant_idx = [
-            i for i, name in enumerate(names) 
-            if name not in host_elements and (X[:, i] > 0).any()          # type: ignore
-        ]
-
-        # 3. Use assign_group_folds to split groups across n_splits bins
-        # This guarantees at least min_groups_per_dopant in EVERY fold (including Fold 0)
-        fold_ids = assign_group_folds(
-            X=X,
-            group_id=group_id,
-            is_synthetic=is_synth,
-            dopant_idx=dopant_idx,
-            elem_names=names,
-            n_splits=n_splits,
-            min_groups_per_dopant=min_groups_per_dopant,
-            seed=seed,
-            verbose=True
-        )
-
-        # 4. Bin 0 becomes the permanent lockbox set (excluding synthetic samples)
-        exp_mask = (is_synth == 0)
-        is_lockbox = (fold_ids == 0) & exp_mask
-
-        # 5. Write the boolean array directly into the .h5 file
-        hf.create_dataset('is_lockbox', data=is_lockbox, dtype=bool)
-
-        print(f"\n Successfully stamped 'is_lockbox' into {h5_path}")
-        print(f"Total dataset rows: {len(is_lockbox)} | Lockbox test samples: {is_lockbox.sum()}")
-
-        # 6. Verification: Check composition group count per dopant in lockbox
-        lockbox_exp_indices = np.where(is_lockbox)[0]
-        lb_groups, first_idx = np.unique(group_id[lockbox_exp_indices], return_index=True)          # type: ignore
-        lb_dopant_counts = (X[lockbox_exp_indices[first_idx]][:, dopant_idx] > 0).sum(axis=0)          # type: ignore
-
-        print("\n--- Lockbox Dopant Group Coverage Verification ---")
-        for idx, count in zip(dopant_idx, lb_dopant_counts):
-            print(f"Element {names[idx]:<5}: {count} composition groups in lockbox")
 
 def summarize_compositions_in_h5(
     file_path: str | Path,
@@ -3305,11 +3305,54 @@ def check_h5_compositions(h5_path: str | Path):
 if __name__ == "__main__":
     print('Hi')
 
-    xandy_path = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_xandy.h5"
-    crossval_path = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5"
+    # 1. Define File Paths
+    raw_combined_h5 = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/combined_exp_syn_max12_12345s_dataset.h5")
+    split_h5        = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/max12_split.h5")
+    xandy_h5        = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/max12_xandy.h5")
+    final_crossval  = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5")
 
-    h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5"
-    stamp_lockbox_to_h5(h5_file, n_splits=6, min_groups_per_dopant=2, seed=42)
+    # Step 1: Split raw dataset into Train/Val/Test compositional groups
+    print("--- Step 1: Splitting train/val/test groups ---")
+    train_val_test_splitter_HDF5(
+        h5_path=raw_combined_h5,
+        output_path=split_h5,
+        val_frac=0.1,
+        test_frac=0.1,
+        random_state=42
+    )
+
+    # Step 2: Scale, clip, and structure into X and y split arrays
+    print("\n--- Step 2: Formatting to X and y features ---")
+    h5_to_xandy(
+        input_h5=split_h5,
+        output_h5=xandy_h5,
+        feature_selector=False,
+        conc_to_spec=True
+    )
+
+    # Step 3: Combine splits into unified matrices & generate group lookup tables
+    print("\n--- Step 3: Generating crossval groups and system codes ---")
+    xandy_to_crossval(
+        input_file=xandy_h5,
+        output_file=final_crossval
+    )
+
+    # Step 4: Stamp permanent lockbox test set mask
+    print("\n--- Step 4: Stamping lockbox mask ---")
+    stamp_lockbox_to_h5(
+        h5_path=final_crossval,
+        n_splits=7,
+        min_groups_per_dopant=2,
+        seed=42
+    )
+
+    print("\n Pipeline complete! Target crossval dataset generated successfully.")
+
+    # xandy_path = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_xandy.h5"
+    # crossval_path = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5"
+
+    # h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5"
+    # stamp_lockbox_to_h5(h5_file, n_splits=6, min_groups_per_dopant=2, seed=42)
 
     # xandy_to_crossval(input_file=xandy_path, output_file=crossval_path)
 

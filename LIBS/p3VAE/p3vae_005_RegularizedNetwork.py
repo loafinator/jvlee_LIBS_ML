@@ -76,7 +76,7 @@ ELEMENT_WEIGHTS = torch.tensor([
 ], dtype=torch.float32)
 
 
-h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5"
+h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5"
 master_table_path = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv').resolve()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/p3vae_RegularizedNetwork_{timestamp}.pt').resolve()
@@ -1206,13 +1206,13 @@ def train_kfold_physics_vae(
 
     # Generate test holdout + CV fold indices with full dopant coverage guarantees
     seed_everything(seed=42)
-    split_path = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits') / f'{num_folds}_folds_seed42.npz'
+    split_path = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits') / f'max12_{num_folds}_folds_seed42.npz'
     test_idx, cv_idx, cv_fold_id = build_splits_once(data, split_path, num_folds, seed=42)
 
     # Save test set indices so they can be re-loaded for final lockbox evaluation
     test_idx_path = save_path.with_name(f"{save_path.stem}_test_idx.npy")
     np.save(test_idx_path, test_idx)
-    log(logger=logger, msg="This is the RegularizedNetwork experimental run")
+    log(logger=logger, msg="This is the max12 RegularizedNetwork experimental run")
     log(logger=logger, msg=f"Saved test holdout indices ({len(test_idx)} samples) → {test_idx_path.name}")
 
     # Slice sample-level entries for Cross-Validation data
@@ -1359,13 +1359,13 @@ if __name__ == "__main__":
     results = train_kfold_physics_vae(
         h5_path=h5_file,
         master_table_path=master_table_path,
-        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/005_RegularizedNetwork_log.txt',
+        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/005_max12_RegularizedNetwork_log.txt',
         save_path=model_save_path,
         num_folds=k,
         folds=None,              # [0] smoke test first, then None for all five
         device='cuda',
         lr_patience=4,
-        stop_patience=12,
+        stop_patience=20,
         use_compile=False
     )
     print("Training Results (fold, best_epoch, best_val_loss):")

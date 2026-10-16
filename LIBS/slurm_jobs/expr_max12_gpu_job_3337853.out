@@ -1,0 +1,38 @@
+=== CUDA & SLURM DIAGNOSTICS ===
+CUDA_VISIBLE_DEVICES = 0
+Thu Oct 15 16:54:05 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 595.91.07              Driver Version: 595.91.07      CUDA Version: 13.2     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA H100 80GB HBM3          Off |   00000000:52:00.0 Off |                    0 |
+| N/A   55C    P0            357W /  700W |    3155MiB /  81559MiB |     78%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A         3772213      C   python                                 3146MiB |
++-----------------------------------------------------------------------------------------+
+CUDA Available: True
+Device Count: 1
+=================================
+==========================================================================
+ 🚀 STARTING EXPERIMENT: p3vae_005_max12.py
+==========================================================================
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+Starting run
+Running K-Fold Ensemble Evaluation on: cuda

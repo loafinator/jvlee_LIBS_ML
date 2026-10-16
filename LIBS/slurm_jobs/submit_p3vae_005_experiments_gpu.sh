@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=p3vae_005_experiments_r001_gpu
-#SBATCH --output=/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/slurm_jobs/expr_gpu_job_%j.out
-#SBATCH --error=/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/slurm_jobs/expr_gpu_job_%j.err
+#SBATCH --job-name=p3vae_005_max12_experiments_r001_gpu
+#SBATCH --output=/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/slurm_jobs/expr_max12_gpu_job_%j.out
+#SBATCH --error=/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/slurm_jobs/expr_max12_gpu_job_%j.err
 #SBATCH --partition=gpu
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -9,6 +9,7 @@
 #SBATCH --mem=64G
 #SBATCH --time=12:00:00
 #SBATCH --gres=gpu:1
+#SBATCH --exclude=athena522
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=leejv2@vcu.edu
 
@@ -21,6 +22,12 @@ set +e
 
 # Activate virtual environment
 source /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/.venv/bin/activate
+
+echo "=== CUDA & SLURM DIAGNOSTICS ==="
+echo "CUDA_VISIBLE_DEVICES = $CUDA_VISIBLE_DEVICES"
+nvidia-smi
+python3 -c "import torch; print('CUDA Available:', torch.cuda.is_available()); print('Device Count:', torch.cuda.device_count())"
+echo "================================="
 
 # Helper function to execute experiments safely
 run_experiment() {
@@ -43,6 +50,7 @@ run_experiment() {
 }
 
 # Run the experiments sequentially
+run_experiment "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_max12.py"
 run_experiment "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_PureGainJitter.py"
 run_experiment "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_RegularizedNetwork.py"
 run_experiment "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_SignalDependentNoise.py"

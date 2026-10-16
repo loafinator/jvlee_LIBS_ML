@@ -986,7 +986,7 @@ def per_spectrum_norm(x, eps=1e-08):
     use:
     spectra = per_spectrum_norm(batch['spectrum'].to(device_obj))
     """
-    return x / (x.sum(div=1, keepdim=True) + eps) * x.shape[1]
+    return x / (x.sum(dim=1, keepdim=True) + eps) * x.shape[1]
 
 def pull_test_holdout(data, test_ratio=0.15, seed=42):
     """
@@ -1316,6 +1316,18 @@ if __name__ == "__main__":
     loop_time_start = time.perf_counter()
     k = 7
 
+
+    # --------------------------------------------------
+    # region Verify Synthetic Concentration Cap
+    # --------------------------------------------------
+    with h5py.File("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5", 'r') as hf:
+        X = hf['X'][:]  # type: ignore
+        is_synth = hf['is_synthetic'][:]  # type: ignore
+        names = [n.decode('utf-8') if isinstance(n, bytes) else str(n) for n in hf['feature_cols'][:]]  # type: ignore
+
+    print(dict(zip(names, X[is_synth == 1].max(axis=0).round(2))))  # type: ignore
+    # endregion
+
     # --------------------------------------------------
     # region Spike Diagnostics
     # --------------------------------------------------
@@ -1353,20 +1365,20 @@ if __name__ == "__main__":
     # --------------------------------------------------
     # region Train Model
     # --------------------------------------------------
-    results = train_kfold_physics_vae(
-        h5_path=h5_file,
-        master_table_path=master_table_path,
-        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/005_log.txt',
-        save_path=model_save_path,
-        num_folds=k,
-        folds=None,              # [0] smoke test first, then None for all five
-        device='cuda',
-        lr_patience=4,
-        stop_patience=12,
-        use_compile=False
-    )
-    print("Training Results (fold, best_epoch, best_val_loss):")
-    print(results)              # (fold, best_epoch, best_val_loss)
+    # results = train_kfold_physics_vae(
+    #     h5_path=h5_file,
+    #     master_table_path=master_table_path,
+    #     log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/005_log.txt',
+    #     save_path=model_save_path,
+    #     num_folds=k,
+    #     folds=None,              # [0] smoke test first, then None for all five
+    #     device='cuda',
+    #     lr_patience=4,
+    #     stop_patience=12,
+    #     use_compile=False
+    # )
+    # print("Training Results (fold, best_epoch, best_val_loss):")
+    # print(results)              # (fold, best_epoch, best_val_loss)
     # endregion
 
     # --------------------------------------------------

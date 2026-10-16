@@ -1,0 +1,130 @@
+=== CUDA & SLURM DIAGNOSTICS ===
+CUDA_VISIBLE_DEVICES = 0
+Thu Oct 15 13:16:08 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 595.91.07              Driver Version: 595.91.07      CUDA Version: 13.2     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100-SXM4-80GB          On  |   00000000:41:00.0 N/A |                  N/A |
+|ERR!  ERR! ERR!             N/A  /  N/A  |   36877MiB /  81920MiB |     N/A      Default |
+|                                         |                        |                 ERR! |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+CUDA Available: False
+Device Count: 1
+=================================
+==========================================================================
+ 🚀 STARTING EXPERIMENT: p3vae_005_max12.py
+==========================================================================
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+Starting run
+🧹 Data Prep: Dropped 91 corrupted saturation shots (max intensity > 2.8).
+This is the max12 base experiment
+Saved test holdout indices (19308 samples) → best_p3vae_model_20261015_131618_test_idx.npy
+[Range Check] Fold 0: Ce: val 0.105 / train 0.237 | Gd: val 0.149 / train 0.245 | Sm: val 0.301 / train 0.488 | U: val 0.165 / train 0.289
+[Range Check] Fold 1: Ce: val 0.237 / train 0.142 | Gd: val 0.156 / train 0.245 | Sm: val 0.381 / train 0.488 | U: val 0.281 / train 0.289
+[Range Check] Fold 2: Ce: val 0.137 / train 0.237 | Gd: val 0.245 / train 0.227 | Sm: val 0.390 / train 0.488 | U: val 0.289 / train 0.281
+[Range Check] Fold 3: Ce: val 0.142 / train 0.237 | Gd: val 0.184 / train 0.245 | Sm: val 0.375 / train 0.488 | U: val 0.166 / train 0.289
+[Range Check] Fold 4: Ce: val 0.134 / train 0.237 | Gd: val 0.227 / train 0.245 | Sm: val 0.439 / train 0.488 | U: val 0.160 / train 0.289
+[Range Check] Fold 5: Ce: val 0.132 / train 0.237 | Gd: val 0.184 / train 0.245 | Sm: val 0.488 / train 0.439 | U: val 0.229 / train 0.289
+[Range Check] Fold 6: Ce: val 0.054 / train 0.237 | Gd: val 0.138 / train 0.245 | Sm: val 0.417 / train 0.488 | U: val 0.222 / train 0.289
+❌ FAILURE: p3vae_005_max12.py failed with exit code 1. Moving to next experiment...
+
+==========================================================================
+ 🚀 STARTING EXPERIMENT: p3vae_005_PureGainJitter.py
+==========================================================================
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+Starting run
+🧹 Data Prep: Dropped 91 corrupted saturation shots (max intensity > 2.8).
+This is the max12 PureGainJitter experimental run
+Saved test holdout indices (19308 samples) → p3vae_PureGainJitter_20261015_131741_test_idx.npy
+[Range Check] Fold 0: Ce: val 0.105 / train 0.237 | Gd: val 0.149 / train 0.245 | Sm: val 0.301 / train 0.488 | U: val 0.165 / train 0.289
+[Range Check] Fold 1: Ce: val 0.237 / train 0.142 | Gd: val 0.156 / train 0.245 | Sm: val 0.381 / train 0.488 | U: val 0.281 / train 0.289
+[Range Check] Fold 2: Ce: val 0.137 / train 0.237 | Gd: val 0.245 / train 0.227 | Sm: val 0.390 / train 0.488 | U: val 0.289 / train 0.281
+[Range Check] Fold 3: Ce: val 0.142 / train 0.237 | Gd: val 0.184 / train 0.245 | Sm: val 0.375 / train 0.488 | U: val 0.166 / train 0.289
+[Range Check] Fold 4: Ce: val 0.134 / train 0.237 | Gd: val 0.227 / train 0.245 | Sm: val 0.439 / train 0.488 | U: val 0.160 / train 0.289
+[Range Check] Fold 5: Ce: val 0.132 / train 0.237 | Gd: val 0.184 / train 0.245 | Sm: val 0.488 / train 0.439 | U: val 0.229 / train 0.289
+[Range Check] Fold 6: Ce: val 0.054 / train 0.237 | Gd: val 0.138 / train 0.245 | Sm: val 0.417 / train 0.488 | U: val 0.222 / train 0.289
+exp max/mean 1.614/0.01202 | syn max/mean 1/0.1686
+=== Fold 0: train 331962 | val 32462 (13 compositions) ===
+❌ FAILURE: p3vae_005_PureGainJitter.py failed with exit code 1. Moving to next experiment...
+
+==========================================================================
+ 🚀 STARTING EXPERIMENT: p3vae_005_RegularizedNetwork.py
+==========================================================================
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+Starting run
+🧹 Data Prep: Dropped 91 corrupted saturation shots (max intensity > 2.8).
+This is the max12 RegularizedNetwork experimental run
+Saved test holdout indices (19308 samples) → p3vae_RegularizedNetwork_20261015_131903_test_idx.npy
+[Range Check] Fold 0: Ce: val 0.105 / train 0.237 | Gd: val 0.149 / train 0.245 | Sm: val 0.301 / train 0.488 | U: val 0.165 / train 0.289
+[Range Check] Fold 1: Ce: val 0.237 / train 0.142 | Gd: val 0.156 / train 0.245 | Sm: val 0.381 / train 0.488 | U: val 0.281 / train 0.289
+[Range Check] Fold 2: Ce: val 0.137 / train 0.237 | Gd: val 0.245 / train 0.227 | Sm: val 0.390 / train 0.488 | U: val 0.289 / train 0.281
+[Range Check] Fold 3: Ce: val 0.142 / train 0.237 | Gd: val 0.184 / train 0.245 | Sm: val 0.375 / train 0.488 | U: val 0.166 / train 0.289
+[Range Check] Fold 4: Ce: val 0.134 / train 0.237 | Gd: val 0.227 / train 0.245 | Sm: val 0.439 / train 0.488 | U: val 0.160 / train 0.289
+[Range Check] Fold 5: Ce: val 0.132 / train 0.237 | Gd: val 0.184 / train 0.245 | Sm: val 0.488 / train 0.439 | U: val 0.229 / train 0.289
+[Range Check] Fold 6: Ce: val 0.054 / train 0.237 | Gd: val 0.138 / train 0.245 | Sm: val 0.417 / train 0.488 | U: val 0.222 / train 0.289
+exp max/mean 1.614/0.01202 | syn max/mean 1/0.1686
+=== Fold 0: train 331962 | val 32462 (13 compositions) ===
+❌ FAILURE: p3vae_005_RegularizedNetwork.py failed with exit code 1. Moving to next experiment...
+
+==========================================================================
+ 🚀 STARTING EXPERIMENT: p3vae_005_SignalDependentNoise.py
+==========================================================================
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+Starting run
+🧹 Data Prep: Dropped 91 corrupted saturation shots (max intensity > 2.8).
+This is the max12 SignalDependentNoise experimental run
+Saved test holdout indices (19308 samples) → p3vae_SignalDependentNoise_20261015_132026_test_idx.npy
+[Range Check] Fold 0: Ce: val 0.105 / train 0.237 | Gd: val 0.149 / train 0.245 | Sm: val 0.301 / train 0.488 | U: val 0.165 / train 0.289
+[Range Check] Fold 1: Ce: val 0.237 / train 0.142 | Gd: val 0.156 / train 0.245 | Sm: val 0.381 / train 0.488 | U: val 0.281 / train 0.289
+[Range Check] Fold 2: Ce: val 0.137 / train 0.237 | Gd: val 0.245 / train 0.227 | Sm: val 0.390 / train 0.488 | U: val 0.289 / train 0.281
+[Range Check] Fold 3: Ce: val 0.142 / train 0.237 | Gd: val 0.184 / train 0.245 | Sm: val 0.375 / train 0.488 | U: val 0.166 / train 0.289
+[Range Check] Fold 4: Ce: val 0.134 / train 0.237 | Gd: val 0.227 / train 0.245 | Sm: val 0.439 / train 0.488 | U: val 0.160 / train 0.289
+[Range Check] Fold 5: Ce: val 0.132 / train 0.237 | Gd: val 0.184 / train 0.245 | Sm: val 0.488 / train 0.439 | U: val 0.229 / train 0.289
+[Range Check] Fold 6: Ce: val 0.054 / train 0.237 | Gd: val 0.138 / train 0.245 | Sm: val 0.417 / train 0.488 | U: val 0.222 / train 0.289
+exp max/mean 1.614/0.01202 | syn max/mean 1/0.1686
+=== Fold 0: train 331962 | val 32462 (13 compositions) ===
+❌ FAILURE: p3vae_005_SignalDependentNoise.py failed with exit code 1. Moving to next experiment...
+
+==========================================================================
+ ALL EXPERIMENT RUNS COMPLETED
+==========================================================================

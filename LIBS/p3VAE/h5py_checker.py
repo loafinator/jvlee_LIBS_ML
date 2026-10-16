@@ -447,32 +447,65 @@ file_paths = [
     # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_spectra_200k.h5",
     # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/elemental_experimental.h5",
     # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset_clean.h5",
-    # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset.h5"
-    # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_xandy.h5"
-    # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/combined_exp_syn_dataset.h5"
+    # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/exp_syn_train_val_test_dataset.h5",
+    # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_xandy.h5",
+    # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/combined_exp_syn_dataset.h5",
+    # "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5",
+    "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/combined_exp_syn_max12_12345s_dataset.h5",
     "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5"
 ]
 
-# def print_h5_structure(g, indent=0):
-#     """Recursively print the contents/structure of an HDF5 group or file."""
-#     for key in g.keys():
-#         item = g[key]
-#         prefix = "  " * indent
-#         if isinstance(item, h5py.Group):
-#             print(f"{prefix}📁 [{key}] Group ({len(item)} items)")
-#             print_h5_structure(item, indent + 1)
-#         elif isinstance(item, h5py.Dataset):
-#             print(f"{prefix}📄 [{key}] Dataset: shape={item.shape}, dtype={item.dtype}")
+def print_h5_structure(g, indent=0):
+    """Recursively print the contents/structure of an HDF5 group or file."""
+    for key in g.keys():
+        item = g[key]
+        prefix = "  " * indent
+        if isinstance(item, h5py.Group):
+            print(f"{prefix}📁 [{key}] Group ({len(item)} items)")
+            print_h5_structure(item, indent + 1)
+        elif isinstance(item, h5py.Dataset):
+            preview = ""
+            # Automatically preview small 1D metadata arrays or string lists
+            if item.ndim == 1 and item.shape[0] <= 30:
+                try:
+                    vals = item[:]
+                    if isinstance(vals, np.ndarray) and vals.dtype.kind in ('S', 'U', 'O'):
+                        vals = [v.decode('utf-8') if isinstance(v, bytes) else str(v) for v in vals]
+                    preview = f" -> {list(vals)}"
+                except Exception:
+                    pass
+            print(f"{prefix}📄 [{key}] Dataset: shape={item.shape}, dtype={item.dtype}{preview}")
 
-# # Iterate over your files
-# for path in file_paths:
-#     print(f"=== File: {path} ===")
-#     with h5py.File(path, "r") as f:
-#         print_h5_structure(f)
-#     print("\n")
+def get_element_names_safely(f):
+    """Dynamically search common HDF5 paths for element or feature names."""
+    candidate_keys = [
+        'feature_cols',
+        'metadata/elem_names',
+        'elem_names',
+        'metadata/feature_cols',
+        'metadata/element_names'
+    ]
+    for key in candidate_keys:
+        if key in f:
+            try:
+                vals = f[key][:]
+                if isinstance(vals, np.ndarray) and vals.dtype.kind in ('S', 'U', 'O'):
+                    vals = [v.decode('utf-8') if isinstance(v, bytes) else str(v) for v in vals]
+                return f"Found at '{key}': {list(vals)}"
+            except Exception as e:
+                return f"Key '{key}' exists but failed to read: {e}"
+    return "No standard element name key found."
 
-    # with h5py.File(path, 'r') as f:
-    #     print(f"element names: {f['feature_cols'][:]}") # type: ignore
+# Iterate over files
+for path in file_paths:
+    print(f"=== File: {path} ===")
+    try:
+        with h5py.File(path, "r") as f:
+            print_h5_structure(f)
+            print(f"\nElement Names Info: {get_element_names_safely(f)}")
+    except Exception as e:
+        print(f"❌ Could not open or process file: {e}")
+    print("\n" + "="*50 + "\n")
 
 
 # ---------------------------------------------------------------------------------------
@@ -559,75 +592,75 @@ file_paths = [
 # inspect_h5_scaling(h5_file)
 
 
-files = [
-    "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261014_121049_test_idx.npy",
-    "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261014_101645_test_idx.npy",
-    "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261014_101143_test_idx.npy",
-    "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261014_100359_test_idx.npy",
-    "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261013_170021_test_idx.npy"
-]
+# files = [
+#     "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261014_121049_test_idx.npy",
+#     "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261014_101645_test_idx.npy",
+#     "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261014_101143_test_idx.npy",
+#     "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261014_100359_test_idx.npy",
+#     "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261013_170021_test_idx.npy"
+# ]
 
 
-def compare_test_indices(file_list):
-    print("=" * 70)
-    print(" CHECKING TEST INDEX FILE CONSISTENCY")
-    print("=" * 70)
+# def compare_test_indices(file_list):
+#     print("=" * 70)
+#     print(" CHECKING TEST INDEX FILE CONSISTENCY")
+#     print("=" * 70)
 
-    loaded_arrays = []
-    file_names = []
+#     loaded_arrays = []
+#     file_names = []
 
-    # 1. Load files
-    for filepath in file_list:
-        p = Path(filepath)
-        if not p.exists():
-            print(f"❌ File not found: {p.name}")
-            return
-        arr = np.load(p)
-        loaded_arrays.append(arr)
-        file_names.append(p.name)
-        print(f"Loaded {p.name:<45} | Shape: {arr.shape} | Dtype: {arr.dtype}")
+#     # 1. Load files
+#     for filepath in file_list:
+#         p = Path(filepath)
+#         if not p.exists():
+#             print(f"❌ File not found: {p.name}")
+#             return
+#         arr = np.load(p)
+#         loaded_arrays.append(arr)
+#         file_names.append(p.name)
+#         print(f"Loaded {p.name:<45} | Shape: {arr.shape} | Dtype: {arr.dtype}")
 
-    print("-" * 70)
+#     print("-" * 70)
 
-    # 2. Compare against reference (first file)
-    ref_arr = loaded_arrays[0]
-    ref_name = file_names[0]
-    all_identical = True
+#     # 2. Compare against reference (first file)
+#     ref_arr = loaded_arrays[0]
+#     ref_name = file_names[0]
+#     all_identical = True
 
-    for i in range(1, len(loaded_arrays)):
-        curr_arr = loaded_arrays[i]
-        curr_name = file_names[i]
+#     for i in range(1, len(loaded_arrays)):
+#         curr_arr = loaded_arrays[i]
+#         curr_name = file_names[i]
 
-        # Check exact equality (handles shape + values)
-        is_exact_match = np.array_equal(ref_arr, curr_arr)
+#         # Check exact equality (handles shape + values)
+#         is_exact_match = np.array_equal(ref_arr, curr_arr)
 
-        if is_exact_match:
-            print(f"✅ {curr_name} matches {ref_name} EXACTLY.")
-        else:
-            all_identical = False
-            print(f"❌ {curr_name} DOES NOT match {ref_name}!")
+#         if is_exact_match:
+#             print(f"✅ {curr_name} matches {ref_name} EXACTLY.")
+#         else:
+#             all_identical = False
+#             print(f"❌ {curr_name} DOES NOT match {ref_name}!")
 
-            # Additional diagnostic details if they differ
-            if ref_arr.shape != curr_arr.shape:
-                print(
-                    f"   └─ Shape mismatch: {ref_arr.shape} vs {curr_arr.shape}"
-                )
-            else:
-                diff_count = np.sum(ref_arr != curr_arr)
-                overlap = len(np.intersect1d(ref_arr, curr_arr))
-                print(
-                    f"   ├─ Mismatched elements (element-wise order): {diff_count} / {len(ref_arr)}"
-                )
-                print(
-                    f"   └─ Set overlap (order-independent matching elements): {overlap} / {len(ref_arr)}"
-                )
+#             # Additional diagnostic details if they differ
+#             if ref_arr.shape != curr_arr.shape:
+#                 print(
+#                     f"   └─ Shape mismatch: {ref_arr.shape} vs {curr_arr.shape}"
+#                 )
+#             else:
+#                 diff_count = np.sum(ref_arr != curr_arr)
+#                 overlap = len(np.intersect1d(ref_arr, curr_arr))
+#                 print(
+#                     f"   ├─ Mismatched elements (element-wise order): {diff_count} / {len(ref_arr)}"
+#                 )
+#                 print(
+#                     f"   └─ Set overlap (order-independent matching elements): {overlap} / {len(ref_arr)}"
+#                 )
 
-    print("=" * 70)
-    if all_identical:
-        print("🎉 SUCCESS: All test set index files are 100% IDENTICAL!")
-    else:
-        print("⚠️ WARNING: Differences detected between test set index files.")
-    print("=" * 70)
+#     print("=" * 70)
+#     if all_identical:
+#         print("🎉 SUCCESS: All test set index files are 100% IDENTICAL!")
+#     else:
+#         print("⚠️ WARNING: Differences detected between test set index files.")
+#     print("=" * 70)
 
-if __name__ == "__main__":
-    compare_test_indices(files)
+# if __name__ == "__main__":
+#     compare_test_indices(files)

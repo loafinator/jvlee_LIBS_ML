@@ -524,7 +524,7 @@ def gather_2_data(
         wt_dopant_2 = row[f"{dopant_2}_wt%"]
 
         filename = f"nist_libs_{wt_dopant_1}_wt_{dopant_1}_and_{wt_dopant_2}_wt_{dopant_2}.csv"
-        file_path = output_dir / filename
+        file_path = output_dir / filename   # type: ignore #TODO if you need this need to actually fix
 
         if file_path.exists():
             print(f"Skipping {filename}, already exists...")
@@ -1042,7 +1042,7 @@ def load_single_element_library(input_dir: Path):
 
     return element_spectra, np.array([float(w) for w in wavelength_cols], dtype=np.float32)        # type: ignore
 
-def synthetic_data_generator(
+def old_synthetic_data_generator(
     input_dir: str | Path,
     output_dir: str | Path,
     num_samples: int = 200000,
@@ -1200,23 +1200,187 @@ def synthetic_data_generator(
 
     print(f"Successfully generated and saved {num_samples} spectra array to {h5_file_path}")
     return compositions_df
+
+def synthetic_data_generator(
+    input_dir: str | Path,
+    output_dir: str | Path,
+    num_samples: int = 200000,
+    dopant_names: list = ['Ba', 'Ca', 'Ce', 'Cr', 'Cs', 'Fe', 'Gd', 'La', 'Mg', 'Mn', 'Nd', 'Ni', 'Sm', 'Sr', 'U', 'Y'],
+    host_sigma: float = 0.015,
+    max_dopant_wt: float = 12.0,  # Extended from 5% cap to 10% wt% per dopant
+    category_probs: Optional[Dict[int, float]] = None,
+):
+    """
+    Generates large-scale synthetic mixture LIBS spectra (N=200,000) with extended 
+    dopant concentration ranges (0.001 wt% to 10.0 wt%) and stochastic sparsity control.
+    """
+    output_dir = Path(output_dir).resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    input_path = Path(input_dir).resolve()
+
+    print("Extracting base spectra from CSV library...")
+    elem_library, wavelengths = load_single_element_library(input_path)
+    
+    all_target_elements = ['Li', 'K', 'Cl'] + dopant_names
+    missing_elems = [e for e in all_target_elements if e not in elem_library]
+    if missing_elems:
+        print(f"Warning: The following requested elements were not found in CSVs: {missing_elems}")
+        all_target_elements = [e for e in all_target_elements if e in elem_library]
+        dopant_names = [d for d in dopant_names if d in elem_library]
+
+    num_dopants = len(dopant_names)
+
+    # Default Stochastic Mixture Probabilities (Key 0 = Pure Host, 1 = Single, 2 = Binary, etc.)
+    if category_probs is None:
+        category_probs = {
+            0: 0.05,  # 5% Pure Host Salt (0 dopants)
+            1: 0.35,  # 35% Single-Dopant
+            2: 0.30,  # 30% Binary Mixtures
+            3: 0.15,  # 15% Ternary Mixtures
+            4: 0.10,  # 10% 4-Dopant Mixtures
+            5: 0.05,  # 5% 5-Dopant Mixtures
+        }
+
+    # Normalize category probabilities
+    k_options = list(category_probs.keys())
+    k_weights = np.array([category_probs[k] for k in k_options], dtype=np.float64)
+    k_weights /= np.sum(k_weights)
+
+    # Assign active dopant count (k) per sample
+    categories = np.random.choice(k_options, size=num_samples, p=k_weights)
+
+    # Chloride Stoichiometry Constants (Metal Cation Valency & Molar Mass in g/mol)
+    dopant_cl_valency: Dict[str, float] = {
+        'Ba': 2.0, 'Ca': 2.0, 'Ce': 3.0, 'Cr': 3.0, 'Cs': 1.0, 
+        'Fe': 2.0, 'Gd': 3.0, 'La': 3.0, 'Mg': 2.0, 'Mn': 2.0, 
+        'Nd': 3.0, 'Ni': 2.0, 'Sm': 3.0, 'Sr': 2.0, 'U': 3.0, 'Y': 3.0
+    }
+    
+    dopant_molar_mass: Dict[str, float] = {
+        'Ba': 137.33, 'Ca': 40.08, 'Ce': 140.12, 'Cr': 51.996, 'Cs': 132.91,
+        'Fe': 55.845, 'Gd': 157.25, 'La': 138.91, 'Mg': 24.305, 'Mn': 54.938,
+        'Nd': 144.24, 'Ni': 58.693, 'Sm': 150.36, 'Sr': 87.62, 'U': 238.03, 'Y': 88.906
+    }
+    
+    M_CL = 35.453  # Molar mass of Chlorine (g/mol)
+
+    # Grams of associated Chlorine required per gram of metal cation
+    cl_per_metal_mass = np.array([
+        (dopant_cl_valency[d] * M_CL) / dopant_molar_mass[d] for d in dopant_names
+    ], dtype=np.float64)
+
+    # Sample Metal Cation Weight Fractions per Active Dopant (Mass Fraction Basis: 0.0 to 0.10)
+    dopant_metal_wt = np.zeros((num_samples, num_dopants), dtype=np.float64)
+
+    for i in range(num_samples):
+        k = categories[i]
+        if k == 0:
+            continue
+        
+        active_indices = np.random.choice(num_dopants, size=k, replace=False)
+        
+        for d_idx in active_indices:
+            # Hybrid 50/50 Sampling Strategy:
+            # 50% chance: Log-uniform for trace/low sensitivity (0.001 wt% to 0.5 wt%)
+            # 50% chance: Linear-uniform for high concentration range (0.5 wt% to max_dopant_wt %)
+            if np.random.rand() < 0.5:
+                wt_val = 10**np.random.uniform(-3.0, np.log10(0.5))
+            else:
+                wt_val = np.random.uniform(0.5, max_dopant_wt)
+            
+            # Store as mass fraction (0.0 to 0.10)
+            dopant_metal_wt[i, d_idx] = wt_val / 100.0
+
+    # Stoichiometric Calculation of Extra Chlorine Contribution from Chloride Salts
+    dopant_cl_wt = np.sum(dopant_metal_wt * cl_per_metal_mass, axis=1, keepdims=True)
+    total_dopant_salt_wt = np.sum(dopant_metal_wt, axis=1, keepdims=True) + dopant_cl_wt
+    
+    # Safety Check: Guarantee host salt matrix remains positive
+    total_dopant_salt_wt = np.clip(total_dopant_salt_wt, 0.0, 0.85)
+    remaining_matrix_wt = 1.0 - total_dopant_salt_wt
+
+    # Host Salt Composition Perturbation (Gaussian fluctuation around eutectic ratio)
+    li_rel_target = 0.0966 / (0.0966 + 0.2150)
+    li_rel_perturbed = np.random.normal(loc=li_rel_target, scale=host_sigma, size=(num_samples, 1))
+    li_rel_perturbed = np.clip(li_rel_perturbed, 0.20, 0.45)
+    k_rel_perturbed = 1.0 - li_rel_perturbed
+
+    m_li = li_rel_perturbed * 6.94
+    m_k = k_rel_perturbed * 39.10
+    m_cl_host = 35.453
+    m_host_total = m_li + m_k + m_cl_host
+
+    host_li_wt = remaining_matrix_wt * (m_li / m_host_total)
+    host_k_wt = remaining_matrix_wt * (m_k / m_host_total)
+    host_cl_wt = remaining_matrix_wt * (m_cl_host / m_host_total)
+
+    total_cl_wt = host_cl_wt + dopant_cl_wt
+
+    # Build Composition Matrix DataFrame (wt%)
+    compositions_dict = {
+        'Li': host_li_wt.flatten() * 100.0,
+        'K': host_k_wt.flatten() * 100.0,
+        'Cl': total_cl_wt.flatten() * 100.0
+    }
+
+    for idx, name in enumerate(dopant_names):
+        compositions_dict[name] = dopant_metal_wt[:, idx] * 100.0
+
+    compositions_df = pd.DataFrame(compositions_dict)
+    compositions_df.to_csv(output_dir / "synthetic_compositions_wt_pct.csv", index=False)
+    print(f"Saved compositions manifest to: {output_dir / 'synthetic_compositions_wt_pct.csv'}")
+
+    # Chunked Matrix Multiplication & Compressed HDF5 Storage
+    print("Combining spectra and saving directly to HDF5 (.h5)...")
+    
+    basis_matrix = np.zeros((len(all_target_elements), len(wavelengths)), dtype=np.float32)
+    for row_idx, elem in enumerate(all_target_elements):
+        basis_matrix[row_idx, :] = elem_library[elem]
+
+    num_wavelengths = len(wavelengths)
+    h5_file_path = output_dir / "max12_12345s_synthetic_spectra_200k.h5"
+
+    with h5py.File(h5_file_path, "w") as hf:
+        hf.create_dataset("wavelengths", data=wavelengths)
+
+        spectra_ds = hf.create_dataset(
+            "spectra", 
+            shape=(num_samples, num_wavelengths), 
+            dtype=np.float32,
+            chunks=(2000, num_wavelengths),
+            compression="gzip",
+            compression_opts=3
+        )
+
+        chunk_size = 20000
+        for start_idx in range(0, num_samples, chunk_size):
+            end_idx = min(start_idx + chunk_size, num_samples)
+            
+            comp_chunk = (compositions_df.iloc[start_idx:end_idx][all_target_elements].values / 100.0).astype(np.float32)
+            # Dot product synthesis: [chunk_size, elements] x [elements, wavelengths] -> [chunk_size, wavelengths]
+            spectra_ds[start_idx:end_idx, :] = comp_chunk @ basis_matrix
+            
+            print(f"  Processed and saved chunk {start_idx} to {end_idx} / {num_samples}")
+
+    print(f"Successfully generated and saved {num_samples} spectra array to {h5_file_path}")
+    return compositions_df
 # endregion
 
 # ==============================================================================
 # region: EXPERIMENTAL & SYNTHETIC DATASET CONCATENATION
 # ==============================================================================
-def final_combo():
+def final_combo(
+    exp_h5_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/elemental_experimental.h5"),
+    syn_h5_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_spectra_200k.h5"),
+    syn_csv_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_compositions_wt_pct.csv") ,
+    formatted_syn_h5 = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/formatted_synthetic_200k.h5"),
+    merged_h5_out = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/combined_exp_syn_dataset.h5"),
+):
     """
     Loads experimental LIBS datasets and generated synthetic datasets, aligns 
     elemental column orderings, appends domain labels (`is_synthetic`: 0=Exp, 1=Syn), 
     and saves a unified consolidated HDF5 file for machine learning training.
     """
-    exp_h5_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/elemental_experimental.h5")
-    syn_h5_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_spectra_200k.h5")
-    syn_csv_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_compositions_wt_pct.csv") 
-
-    formatted_syn_h5 = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/formatted_synthetic_200k.h5")
-    merged_h5_out = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/combined_exp_syn_dataset.h5")
 
     # 1. Inspect Experimental Element Order
     with h5py.File(exp_h5_path, 'r') as hf_exp:
@@ -1283,4 +1447,24 @@ def final_combo():
 if __name__ == "__main__":
     print('Hi')
     # Generate line lookup master table for PyTorch model feature extraction
-    master_line_table()
+    # master_line_table()
+
+    # Generate synthetic data with representative ranges of dopant wt%'s
+    input_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_singles/Enriched'
+    output_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined'
+    synthetic_data_generator(
+        input_dir=input_dir,
+        output_dir=output_dir,
+        num_samples=200000,
+        host_sigma=0.015,
+        max_dopant_wt=12.0,
+        category_probs=None
+    )
+
+    final_combo(
+        exp_h5_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/elemental_experimental.h5"),
+        syn_h5_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_synthetic_spectra_200k.h5"),
+        syn_csv_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_compositions_wt_pct.csv") ,
+        formatted_syn_h5 = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_formatted_synthetic_200k.h5"),
+        merged_h5_out = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/combined_exp_syn_max12_12345s_dataset.h5"),
+    )
