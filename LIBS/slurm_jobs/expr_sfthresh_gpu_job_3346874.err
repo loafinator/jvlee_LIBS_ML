@@ -1,0 +1,104 @@
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_sfthresh.py", line 36, in <module>
+    from utils import (
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/__init__.py", line 8, in <module>
+    from .plotting import *
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/plotting.py", line 83, in <module>
+    h5_path: str | Path,
+TypeError: unsupported operand type(s) for |: 'type' and 'type'
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_sfthresh_50lambda.py", line 36, in <module>
+    from utils import (
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/__init__.py", line 8, in <module>
+    from .plotting import *
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/plotting.py", line 83, in <module>
+    h5_path: str | Path,
+TypeError: unsupported operand type(s) for |: 'type' and 'type'
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_sfthresh_75lambda.py", line 36, in <module>
+    from utils import (
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/__init__.py", line 8, in <module>
+    from .plotting import *
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/plotting.py", line 83, in <module>
+    h5_path: str | Path,
+TypeError: unsupported operand type(s) for |: 'type' and 'type'
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_sfthresh_DecoderFreezing.py", line 36, in <module>
+    from utils import (
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/__init__.py", line 8, in <module>
+    from .plotting import *
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/plotting.py", line 83, in <module>
+    h5_path: str | Path,
+TypeError: unsupported operand type(s) for |: 'type' and 'type'
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_sfthresh_FixedPerChannellambda.py", line 36, in <module>
+    from utils import (
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/__init__.py", line 8, in <module>
+    from .plotting import *
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/plotting.py", line 83, in <module>
+    h5_path: str | Path,
+TypeError: unsupported operand type(s) for |: 'type' and 'type'
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_sfthresh_FocalRangeAwareLossWeightSm.py", line 36, in <module>
+    from utils import (
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/__init__.py", line 8, in <module>
+    from .plotting import *
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/plotting.py", line 83, in <module>
+    h5_path: str | Path,
+TypeError: unsupported operand type(s) for |: 'type' and 'type'
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_sfthresh_Learnlambda.py", line 36, in <module>
+    from utils import (
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/__init__.py", line 8, in <module>
+    from .plotting import *
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/plotting.py", line 83, in <module>
+    h5_path: str | Path,
+TypeError: unsupported operand type(s) for |: 'type' and 'type'
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_sfthresh_LowerLR.py", line 36, in <module>
+    from utils import (
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/__init__.py", line 8, in <module>
+    from .plotting import *
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/plotting.py", line 83, in <module>
+    h5_path: str | Path,
+TypeError: unsupported operand type(s) for |: 'type' and 'type'
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_sfthresh_LowShotOversampling.py", line 36, in <module>
+    from utils import (
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/__init__.py", line 8, in <module>
+    from .plotting import *
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/plotting.py", line 83, in <module>
+    h5_path: str | Path,
+TypeError: unsupported operand type(s) for |: 'type' and 'type'
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_sfthresh_MatrixResidualConstraint.py", line 37, in <module>
+    from utils import (
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/__init__.py", line 8, in <module>
+    from .plotting import *
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/plotting.py", line 83, in <module>
+    h5_path: str | Path,
+TypeError: unsupported operand type(s) for |: 'type' and 'type'
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_sfthresh_NoHardZero.py", line 36, in <module>
+    from utils import (
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/__init__.py", line 8, in <module>
+    from .plotting import *
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/plotting.py", line 83, in <module>
+    h5_path: str | Path,
+TypeError: unsupported operand type(s) for |: 'type' and 'type'
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_sfthresh_NonZeroStratifiedEvalMetrics.py", line 37, in <module>
+    from utils import (
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/__init__.py", line 8, in <module>
+    from .plotting import *
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/plotting.py", line 83, in <module>
+    h5_path: str | Path,
+TypeError: unsupported operand type(s) for |: 'type' and 'type'
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/p3vae_005_sfthresh_RelativeLossWeightSchedule.py", line 36, in <module>
+    from utils import (
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/__init__.py", line 8, in <module>
+    from .plotting import *
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils/plotting.py", line 83, in <module>
+    h5_path: str | Path,
+TypeError: unsupported operand type(s) for |: 'type' and 'type'

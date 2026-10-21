@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 jvlee_LIBS_ML > utils > plotting.py
 
@@ -76,7 +78,18 @@ def animate_training(history, max_epochs, plot_animation=True):
 
     plt.show(block=False)  # non-blocking
 
-    return ani, update
+
+def r2_calcs(
+        y_true,
+        y_pred
+):
+    active_cols = [j for j in range(y_true.shape[1]) if np.var(y_true[:, j]) > 1e-6]
+    if not active_cols:
+        return 0.0
+    
+    # multioutput='raw_values' calculates R^2 per element column
+    r2_per_elem = r2_score(y_true[:, active_cols], y_pred[:, active_cols], multioutput='raw_values')
+    return float(np.mean(r2_per_elem))
 
 
 def evaluate_and_plot_kfold(

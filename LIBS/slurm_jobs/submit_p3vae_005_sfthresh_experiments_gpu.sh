@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=p3vae_005_max12_experiments_r001_gpu
-#SBATCH --output=/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/slurm_jobs/expr_max12_gpu_job_%j.out
-#SBATCH --error=/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/slurm_jobs/expr_max12_gpu_job_%j.err
+#SBATCH --job-name=p3vae_005_sfthresh_experiments_r001_gpu
+#SBATCH --output=/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/slurm_jobs/expr_sfthresh_gpu_job_%j.out
+#SBATCH --error=/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/slurm_jobs/expr_sfthresh_gpu_job_%j.err
 #SBATCH --partition=gpu
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
