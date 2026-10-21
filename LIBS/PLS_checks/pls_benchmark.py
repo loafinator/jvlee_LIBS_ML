@@ -3,9 +3,12 @@ from __future__ import annotations
 import sys
 import time
 import h5py
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+
+from joblib import Parallel, delayed
 from pathlib import Path
 from datetime import datetime
 from sklearn.cross_decomposition import PLSRegression
@@ -204,56 +207,69 @@ def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="PLS Benchmar
 # =============================================================================
 # Main Execution Pipeline
 # =============================================================================
+def _evaluate_single_fold(n_comp, k, cv_fold_id, X_cv_spec, Y_cv_conc):
+    """Helper function to run PLS on a single fold across workers."""
+    train_mask = (cv_fold_id != k)
+    val_mask = (cv_fold_id == k)
+
+    X_tr, Y_tr = X_cv_spec[train_mask], Y_cv_conc[train_mask]
+    X_va = X_cv_spec[val_mask]
+
+    scaler = StandardScaler()
+    X_tr_scaled = scaler.fit_transform(X_tr)
+    X_va_scaled = scaler.transform(X_va)
+
+    pls = PLSRegression(n_components=n_comp, scale=False)
+    pls.fit(X_tr_scaled, Y_tr)
+
+    val_pred = pls.predict(X_va_scaled)
+    return n_comp, k, val_mask, val_pred
+
+
 def main():
-    print("=== Starting PLS Benchmark Pipeline ===")
+    print("=== Starting Parallel PLS Benchmark Pipeline ===")
     t0_start = time.perf_counter()
+
+    # Set worker pool size from SLURM task allocation
+    N_JOBS = 8
 
     # 1. Load Data
     data = load_crossval_data(H5_FILE)
     split_path = SPLIT_DIR / f'max12_{NUM_FOLDS}_folds_seed{SEED}.npz'
     test_idx, cv_idx, cv_fold_id = build_splits_once(data, split_path, NUM_FOLDS, seed=SEED)
 
-    # Note: In ML notation: X = Spectral features, Y = Concentration targets
     X_cv_spec = data['y'][cv_idx]
     Y_cv_conc = data['X'][cv_idx]
-
     X_test_spec = data['y'][test_idx]
     Y_test_conc = data['X'][test_idx]
     target_names = data['names']
 
     print(f"Dataset Loaded | CV Pool: {len(cv_idx)} samples | Lockbox Test Set: {len(test_idx)} samples")
 
-    # 2. Hyperparameter Grid Search over `n_components`
-    print("\n--- Tuning PLS Components via Cross-Validation ---")
+    # 2. Parallel Hyperparameter Grid Search
+    print(f"\n--- Tuning PLS Components via Parallel CV ({N_JOBS} Workers) ---")
+    
+    # Generate all (n_components, fold) tasks
+    tasks = [(n_comp, k) for n_comp in N_COMPONENTS_GRID for k in range(NUM_FOLDS)]
+    
+    # Run all 63 tasks in parallel across 8 CPUs
+    cv_results = Parallel(n_jobs=N_JOBS)(
+        delayed(_evaluate_single_fold)(n_comp, k, cv_fold_id, X_cv_spec, Y_cv_conc)
+        for n_comp, k in tasks
+    )
+
+    # Reconstruct OOF predictions per n_component option
+    oof_by_ncomp = {n_comp: np.zeros_like(Y_cv_conc) for n_comp in N_COMPONENTS_GRID}
+    for n_comp, k, val_mask, val_pred in cv_results:    # type: ignore
+        oof_by_ncomp[n_comp][val_mask] = val_pred
+
+    # Identify optimal n_components
     best_n_comp = N_COMPONENTS_GRID[0]
     best_overall_r2 = -float('inf')
 
-    comp_scores = {}
     for n_comp in N_COMPONENTS_GRID:
-        oof_preds_temp = np.zeros_like(Y_cv_conc)
-        
-        for k in range(NUM_FOLDS):
-            train_mask = (cv_fold_id != k)
-            val_mask = (cv_fold_id == k)
-
-            X_tr, Y_tr = X_cv_spec[train_mask], Y_cv_conc[train_mask]
-            X_va = X_cv_spec[val_mask]
-
-            scaler = StandardScaler()
-            X_tr_scaled = scaler.fit_transform(X_tr)
-            X_va_scaled = scaler.transform(X_va)
-
-            pls = PLSRegression(n_components=n_comp, scale=False)
-            pls.fit(X_tr_scaled, Y_tr)
-
-            oof_preds_temp[val_mask] = pls.predict(X_va_scaled)
-
-        # Clip negative concentration predictions
-        oof_preds_temp = np.clip(oof_preds_temp, a_min=0.0, a_max=None)
-        
-        # Calculate OOF R^2 in physical wt% units
-        mean_r2 = r2_calcs(Y_cv_conc * MAX_WT_PERCENT, oof_preds_temp * MAX_WT_PERCENT)
-        comp_scores[n_comp] = mean_r2
+        oof_clipped = np.clip(oof_by_ncomp[n_comp], a_min=0.0, a_max=None)
+        mean_r2 = r2_calcs(Y_cv_conc * MAX_WT_PERCENT, oof_clipped * MAX_WT_PERCENT)
         print(f"n_components = {n_comp:2d} | OOF Mean R^2: {mean_r2:7.4f}")
 
         if mean_r2 > best_overall_r2:
@@ -262,45 +278,40 @@ def main():
 
     print(f"\nOptimal PLS Components: {best_n_comp} (Mean OOF R^2: {best_overall_r2:.4f})")
 
-    # 3. Final Out-Of-Fold Evaluation & Ensembling for Lockbox Test
-    print("\n--- Running Final K-Fold PLS Out-Of-Fold & Ensemble Lockbox Evaluation ---")
-    oof_preds = np.zeros_like(Y_cv_conc)
+    # 3. Final Evaluation & Lockbox Ensembling
+    print("\n--- Running Final Lockbox Evaluation ---")
+    oof_preds = np.clip(oof_by_ncomp[best_n_comp], a_min=0.0, a_max=None)
     lockbox_ensemble_preds = np.zeros((NUM_FOLDS, len(test_idx), Y_test_conc.shape[1]))
 
-    for k in range(NUM_FOLDS):
+    # Parallelize the 7 fold models for the lockbox prediction
+    def _train_and_predict_lockbox(k):
         train_mask = (cv_fold_id != k)
-        val_mask = (cv_fold_id == k)
-
         X_tr, Y_tr = X_cv_spec[train_mask], Y_cv_conc[train_mask]
-        X_va = X_cv_spec[val_mask]
 
         scaler = StandardScaler()
         X_tr_scaled = scaler.fit_transform(X_tr)
-        X_va_scaled = scaler.transform(X_va)
         X_test_scaled = scaler.transform(X_test_spec)
 
         pls = PLSRegression(n_components=best_n_comp, scale=False)
         pls.fit(X_tr_scaled, Y_tr)
+        return pls.predict(X_test_scaled)
 
-        # Validate OOF
-        val_pred = pls.predict(X_va_scaled)
-        oof_preds[val_mask] = val_pred
+    lockbox_preds_list = Parallel(n_jobs=N_JOBS)(
+        delayed(_train_and_predict_lockbox)(k) for k in range(NUM_FOLDS)
+    )
 
-        # Predict on Lockbox Test Set using fold model
-        lockbox_ensemble_preds[k] = pls.predict(X_test_scaled)
+    for k, pred in enumerate(lockbox_preds_list):
+        lockbox_ensemble_preds[k] = pred
 
-    # Apply physical lower bound constraint (no negative concentrations)
-    oof_preds = np.clip(oof_preds, a_min=0.0, a_max=None)
     lockbox_pred_avg = np.clip(lockbox_ensemble_preds.mean(axis=0), a_min=0.0, a_max=None)
 
-    # Scale 0.0 - 1.0 matrices back to physical wt%
+    # 4. Convert back to physical wt% and report metrics
     true_cv_wt = Y_cv_conc * MAX_WT_PERCENT
     pred_cv_wt = oof_preds * MAX_WT_PERCENT
 
     true_test_wt = Y_test_conc * MAX_WT_PERCENT
     pred_test_wt = lockbox_pred_avg * MAX_WT_PERCENT
 
-    # 4. Print Summary Performance Tables
     active_elem_idx = [j for j in range(true_test_wt.shape[1]) if true_test_wt[:, j].max() > 1e-5]
 
     print("\n" + "=" * 80)
@@ -338,7 +349,6 @@ def main():
                      title_tag=f"PLS Lockbox Ensemble (n_comp={best_n_comp})", save_path=lockbox_parity_path)
 
     print(f"Pipeline completed in {(time.perf_counter() - t0_start) / 60:.2f} minutes.")
-
 
 if __name__ == "__main__":
     main()
