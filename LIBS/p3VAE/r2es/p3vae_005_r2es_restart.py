@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 """
-jvlee_LIBS_ML > LIBS > p3VAE > p3vae_005_r2es_base.py
+jvlee_LIBS_ML > LIBS > p3VAE > p3vae_005_r2es_restart.py
 """
 
 # region Imports
@@ -29,7 +29,7 @@ from torch.utils.data import DataLoader, Dataset, get_worker_info
 from torch.utils.checkpoint import checkpoint
 from tqdm import tqdm
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from setup import add_project_root_to_path
 add_project_root_to_path(parent_generation=1)
 
@@ -77,11 +77,13 @@ ELEMENT_WEIGHTS = torch.tensor([
     5.0, 5.0, 5.0, 0.2,
 ], dtype=torch.float32)
 
+HOST_ELEMENTS = {'Li', 'K', 'Cl'}
+
 
 h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5"
 master_table_path = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv').resolve()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_r2es_base_{timestamp}.pt').resolve()
+model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/r2es/best_p3vae_model_r2es_restart_{timestamp}.pt').resolve()
 model_save_path.parent.mkdir(parents=True, exist_ok=True)
 # endregion
 
@@ -122,16 +124,27 @@ class BankedPhysicsDecoder(nn.Module):
 
 
 class EarlyStopping:
-    def __init__(self, patience: int = 8, min_delta: float = 1e-5):
+    def __init__(
+            self, 
+            patience: int = 8, 
+            min_delta: float = 1e-5,
+            mode: str = 'min'
+    ):
         self.patience = patience
         self.min_delta = min_delta
+        self.mode = mode
         self.counter = 0
-        self.best_r2 = -float('inf')
+        self.best_score = float('inf') if mode == 'min' else -float('inf')
         self.early_stop = False
 
-    def __call__(self, r2: float) -> bool:
-        if r2 > self.best_r2 + self.min_delta:
-            self.best_r2 = r2
+    def __call__(self, score: float) -> bool:
+        if self.mode == 'min':
+            improved = score < self.best_score - self.min_delta
+        else:
+            improved = score > self.best_score + self.min_delta
+
+        if improved:
+            self.best_score = score
             self.counter = 0
         else:
             self.counter += 1
@@ -700,211 +713,45 @@ def diagnose_spike_geometry(y, group_id, thresh=2.5):
         print(f"  Normal shots mean intensity across all channels: {norm_mean_intensity:.5f}")
         print(f"  Bad shots mean intensity across all channels:    {bad_mean_intensity:.5f}")
 
-def old_evaluate_and_plot_kfold(
-    h5_path: str | Path,
-    master_table_path: str | Path,
-    model_prefix: str | Path,
-    num_folds: int = 5,
-    output_dir: str | Path = "plots",
-    log_path: str | Path | None = None,
-    device: str = "cuda",
-    model_tag: str = "20261015_133024",
-    max_wt_percent: float = 12.0,  # Unscales 0.0-1.0 matrix back to physical wt%
+def evaluate_pooled_oof_metrics(
+    true_conc: np.ndarray, 
+    pred_conc: np.ndarray, 
+    names: list[str], 
+    host_elements: set[str] = {'Li', 'K', 'Cl'},
+    logger=None
 ):
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    if log_path is None:
-        log_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/default.txt").resolve()
-    logger = get_worker_logger(Path(log_path).stem)
-
-    device_obj = torch.device(device if torch.cuda.is_available() else "cpu")
-    log(logger=logger, msg=f"Running K-Fold Ensemble Evaluation on: {device_obj}")
-
-    data = load_crossval_data(str(h5_path))
-    test_idx_path = Path(f"{model_prefix}_test_idx.npy")
-    if not test_idx_path.exists():
-        raise FileNotFoundError(f"Could not locate test holdout indices file at: {test_idx_path}")
-
-    test_idx = np.load(test_idx_path)
-    log(logger=logger, msg=f"Loaded lockbox test set: {len(test_idx)} samples")
-
-    wl_grid = torch.from_numpy(data["wavelengths"]).to(device_obj)
-    target_names = [n.decode("utf-8") if isinstance(n, bytes) else str(n) for n in data["names"]]
-
-    input_dim = data["y"].shape[-1]
-    n_elements = data["X"].shape[-1]
-    N_test = len(test_idx)
-
-    # Pre-allocate single running sum accumulators in memory
-    avg_pred_conc = np.zeros((N_test, n_elements), dtype=np.float32)
-    avg_recon_spec = np.zeros((N_test, input_dim), dtype=np.float32)
-    avg_phys_spec = np.zeros((N_test, input_dim), dtype=np.float32)
-    avg_res_spec = np.zeros((N_test, input_dim), dtype=np.float32)
-
-    loaded_folds = 0
-
-    for k in range(num_folds):
-        ckpt_path = Path(f"{model_prefix}_fold{k}.pt")
-        if not ckpt_path.exists():
-            log(logger=logger, msg=f"⚠️ Warning: Checkpoint for fold {k} not found ({ckpt_path.name}). Skipping fold.")
-            continue
-
-        log(logger=logger, msg=f"Running inference for Fold {k} model...")
-        checkpoint = torch.load(ckpt_path, map_location=device_obj)
-
-        model = PhysicsInformedVAE(
-            input_dim=input_dim,
-            n_elements=n_elements,
-            wl_grid=wl_grid,
-            master_table_path=master_table_path,
-            n_broadening=1,
-        ).to(device_obj)
-
-        if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
-            model.load_state_dict(checkpoint["model_state_dict"])
-        else:
-            model.load_state_dict(checkpoint)
-
-        model.eval()
-
-        scaler = SpectralScaler()
-        scaler.load_state_dict(checkpoint["scaler_state_dict"])
-
-        test_spectra_scaled = scaler.transform(data["y"][test_idx])
-        test_ds = LIBSSpectraDataset(
-            test_spectra_scaled, 
-            data["X"][test_idx], 
-            data["is_synth"][test_idx], 
-            np.arange(len(test_idx))
+    """Computes global Pooled Out-Of-Fold R² and MAE across all combined validation sets."""
+    msg_lines = ["\n========================================================",
+                 " Pooled Out-Of-Fold (OOF) Performance (Dopants Only)",
+                 "================================================ research"]
+    
+    r2_scores = {}
+    for j, name in enumerate(names):
+        if name in host_elements:
+            continue  # Exclude host matrix elements
+            
+        y_t = true_conc[:, j]
+        y_p = pred_conc[:, j]
+        
+        ss_res = np.sum((y_t - y_p) ** 2)
+        ss_tot = np.sum((y_t - np.mean(y_t)) ** 2)
+        
+        mae = np.mean(np.abs(y_t - y_p))
+        rmse = np.sqrt(np.mean((y_t - y_p) ** 2))
+        r2 = 1.0 - (ss_res / (ss_tot + 1e-8)) if ss_tot > 1e-8 else 0.0
+        
+        r2_scores[name] = r2
+        msg_lines.append(
+            f"Element {name:<5} | Pooled R²: {r2:7.4f} | MAE: {mae:.5f} | RMSE: {rmse:.5f}"
         )
-        test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
-
-        fold_c, fold_r, fold_p, fold_res = [], [], [], []
-        with torch.no_grad():
-            for batch in test_loader:
-                spectra = batch["spectrum"].to(device_obj)
-                out = model(spectra)
-                
-                fold_c.append(out["concentrations"].cpu().numpy())
-                fold_r.append(scaler.inverse_transform(out["reconstructed_spectrum"].cpu().numpy()))
-                fold_p.append(scaler.inverse_transform(out["ideal_physics_spectrum"].cpu().numpy()))
-                fold_res.append(scaler.inverse_transform(out["matrix_residual"].cpu().numpy()))
-
-        # Immediately accumulate into running totals
-        avg_pred_conc += np.concatenate(fold_c, axis=0)
-        avg_recon_spec += np.concatenate(fold_r, axis=0)
-        avg_phys_spec += np.concatenate(fold_p, axis=0)
-        avg_res_spec += np.concatenate(fold_res, axis=0)
-        loaded_folds += 1
-
-        del model, checkpoint, fold_c, fold_r, fold_p, fold_res, test_spectra_scaled, test_loader
-        gc.collect()
-        if device_obj.type == 'cuda':
-            torch.cuda.empty_cache()
-
-    if loaded_folds == 0:
-        raise RuntimeError("No valid model checkpoints were found for evaluation!")
-
-    # Normalize sums by the actual number of loaded folds
-    avg_pred_conc /= loaded_folds
-    avg_recon_spec /= loaded_folds
-    avg_phys_spec /= loaded_folds
-    avg_res_spec /= loaded_folds
-
-    # --- UNSCALE CONCENTRATIONS (Convert 0.0 - 1.0 back to physical wt%) ---
-    true_conc_wt = np.asarray(data["X"][test_idx]) * max_wt_percent
-    pred_conc_wt = avg_pred_conc * max_wt_percent
-
-    true_spectra = np.asarray(data["y"][test_idx])
-    wl = data["wavelengths"]
-
-    log(logger=logger, msg=f"Successfully ensembled predictions across {loaded_folds} fold models.")
-
-    # =========================================================================
-    # PLOT 1: Concentration Parity Grid (Pred vs True wt%)
-    # =========================================================================
-    active_elem_idx = [j for j in range(n_elements) if true_conc_wt[:, j].max() > 1e-5]
-    n_active = len(active_elem_idx)
-    cols = 4
-    rows = int(np.ceil(n_active / cols)) if n_active > 0 else 1
-
-    fig, axes = plt.subplots(rows, cols, figsize=(cols * 3.8, rows * 3.4))
-    axes_flat = np.atleast_1d(axes).flatten()
-
-    for idx_plot, j in enumerate(active_elem_idx):
-        ax = axes_flat[idx_plot]
-        name = target_names[j]
-        y_true = true_conc_wt[:, j]
-        y_pred = pred_conc_wt[:, j]
-
-        ss_res = np.sum((y_true - y_pred) ** 2)
-        ss_tot = np.sum((y_true - np.mean(y_true)) ** 2) + 1e-8
-        r2 = 1.0 - (ss_res / ss_tot)
-        mae = np.mean(np.abs(y_true - y_pred))
-        rmse = np.sqrt(np.mean((y_true - y_pred) ** 2))
-
-        ax.scatter(y_true, y_pred, alpha=0.35, s=10, color="#1f77b4", edgecolors="none")
-        max_v = max(np.max(y_true), np.max(y_pred))
-        min_v = min(np.min(y_true), np.min(y_pred))
-        ax.plot([min_v, max_v], [min_v, max_v], "k--", alpha=0.7, lw=1)
-        ax.set_title(f"{name}\n$R^2$: {r2:.3f} | RMSE: {rmse:.3f} wt% | MAE: {mae:.3f} wt%", fontsize=9, fontweight="bold")
-        ax.set_xlabel("True wt%", fontsize=8)
-        ax.set_ylabel("Pred wt%", fontsize=8)
-        ax.grid(True, linestyle=":", alpha=0.6)
-
-    for idx_plot in range(n_active, len(axes_flat)):
-        fig.delaxes(axes_flat[idx_plot])
-
-    plt.tight_layout()
-    parity_path = output_dir / f"{model_tag}_kfold_concentration_parity_grid.png"
-    plt.savefig(parity_path, dpi=300)
-    plt.close()
-    log(logger=logger, msg=f"Saved Concentration Parity Plot to: {parity_path}")
-
-    # =========================================================================
-    # PLOT 2: Spectral Reconstruction & Physics Breakdown Overlay
-    # =========================================================================
-    sample_idx = np.random.randint(0, len(true_spectra))
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
-
-    ax1.plot(wl, true_spectra[sample_idx], label="Measured Spectrum", color="black", alpha=0.7, lw=1)
-    ax1.plot(wl, avg_recon_spec[sample_idx], label="Ensemble Model Reconstruction", color="crimson", alpha=0.8, lw=1)
-    ax1.set_ylabel("Intensity (a.u.)", fontsize=10)
-    ax1.set_title(f"Lockbox Test Sample #{sample_idx} - Full Spectrum Reconstruction", fontsize=12, fontweight="bold")
-    ax1.legend(loc="upper right")
-    ax1.grid(True, alpha=0.3)
-
-    ax2.plot(wl, avg_phys_spec[sample_idx], label="Ensemble Physics Component (NIST Lines)", color="forestgreen", lw=1)
-    ax2.plot(wl, avg_res_spec[sample_idx], label="Ensemble Matrix Residual Component", color="orange", lw=1)
-    ax2.set_xlabel("Wavelength (nm)", fontsize=10)
-    ax2.set_ylabel("Intensity (a.u.)", fontsize=10)
-    ax2.set_title("P3VAE Decoded Physics vs. Residual Breakdown", fontsize=11)
-    ax2.legend(loc="upper right")
-    ax2.grid(True, alpha=0.3)
-
-    plt.tight_layout()
-    spec_path = output_dir / f"{model_tag}_kfold_sample_{sample_idx}_spectral_breakdown.png"
-    plt.savefig(spec_path, dpi=300)
-    plt.close()
-    log(logger=logger, msg=f"Saved Spectral Breakdown Plot to: {spec_path}")
-
-    print("\n========================================================")
-    print(f" Ensemble Test Set Performance Across {loaded_folds} Folds ({len(test_idx)} Shots)")
-    print("========================================================")
-    for j in active_elem_idx:
-        name = target_names[j]
-        y_true = true_conc_wt[:, j]
-        y_pred = pred_conc_wt[:, j]
-        mae = np.mean(np.abs(y_true - y_pred))
-        rmse = np.sqrt(np.mean((y_true - y_pred) ** 2))
-        
-        ss_res = np.sum((y_true - y_pred) ** 2)
-        ss_tot = np.sum((y_true - np.mean(y_true)) ** 2) + 1e-8
-        r2 = 1.0 - (ss_res / ss_tot)
-        
-        print(f"Element {name:<5} | R^2: {r2:7.3f} | MAE: {mae:.4f} wt% | RMSE: {rmse:.4f} wt% | Max True: {y_true.max():.3f} wt%")
-    print("========================================================\n")
+    msg_lines.append("========================================================\n")
+    
+    full_msg = "\n".join(msg_lines)
+    if logger:
+        log(logger=logger, msg=full_msg)
+    else:
+        print(full_msg)
+    return r2_scores
 
 def find_spike_rows(y, group_id, is_synth, thresh=3.0, chunk=20000):
     row_max = torch.empty(len(y))
@@ -1049,20 +896,14 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
     
     # Fit scaler strictly on training fold
     train_y_slice = cv_data['y'][train_idx]
-    # spec_scaler = SpectralScaler(mode='global_max').fit(train_y_slice)
-    # spec_scaler = SpectralScaler(mode='none').fit(train_y_slice)
     spec_scaler = SpectralScaler(mode='robust_max', q=99.9)                             # gemini recommendation
     spec_scaler.fit(train_y_slice)                                                      # gemini recommendation
     scale_gpu = spec_scaler.scale_.to(device_obj)   # type: ignore                                    # gemini recommendation
     log(logger=logger, msg=f'[F{fold}] spec_scaler scale_ = {scale_gpu.item():.4f}')    # gemini recommendation
     sub = train_idx[::200]
     ys, sy = cv_data['y'][sub], cv_data['is_synth'][sub]
-    # log(logger=logger, msg=f"[F{fold}] scale_={spec_scaler.scale_.item():.4g} | "   # type: ignore
-    #     f"exp max/mean {ys[sy==0].max():.4g}/{ys[sy==0].mean():.4g} | "
-    #     f"syn max/mean {ys[sy==1].max():.4g}/{ys[sy==1].mean():.4g}")
     log(logger=logger, msg= f"exp max/mean {ys[sy==0].max():.4g}/{ys[sy==0].mean():.4g} | "
         f"syn max/mean {ys[sy==1].max():.4g}/{ys[sy==1].mean():.4g}")
-    # scale_gpu = spec_scaler.scale_.to(device_obj)   # type: ignore
 
     # Reclaim temporary slice memory before DataLoader initialization
     del train_y_slice
@@ -1071,6 +912,10 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
     # 2. Pass data to Dataset
     train_ds = LIBSSpectraDataset(cv_data['y'], cv_data['X'], cv_data['is_synth'], train_idx)
     val_ds = LIBSSpectraDataset(cv_data['y'], cv_data['X'], cv_data['is_synth'], val_idx)
+    dopant_indices = [
+        i for i, name in enumerate(cv_data['names'])
+        if name not in HOST_ELEMENTS
+    ]
 
     # 3. Enable multi-worker data loading + drop_last=True to prevent CUDA Graph recompilation
     train_loader = DataLoader(
@@ -1112,9 +957,9 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
     use_amp = device_obj.type == 'cuda'
     
     amp_scaler = amp.GradScaler(enabled=use_amp)
-    early_stopper = EarlyStopping(patience=stop_patience)
+    early_stopper = EarlyStopping(patience=stop_patience, mode='min')
     best_val, best_epoch = float('inf'), 0
-    best_r2 = -float('inf')
+    # best_r2 = -float('inf')
 
     for epoch in range(1, epochs + 1):
         t0 = time.time()
@@ -1123,7 +968,6 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
         for batch in tqdm(train_loader, desc=f"F{fold} E{epoch:02d}", mininterval=5, leave=False):
             # Scale baseline spectra on GPU
             spectra = batch['spectrum'].to(device_obj, non_blocking=True) / scale_gpu
-            # spectra = batch['spectrum'].to(device_obj, non_blocking=True)
             targets = batch['targets'].to(device_obj, non_blocking=True)
 
             # Target dictionary uses clean un-augmented spectra for reconstruction target
@@ -1153,34 +997,44 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
                 targets = batch['targets'].to(device_obj, non_blocking=True)
                 batch_gpu = {'spectrum': spectra, 'targets': targets}
                 out = model(spectra)
+
                 val_preds.append(out['concentrations'].cpu().numpy())
                 val_targets.append(targets.cpu().numpy())
 
                 with amp.autocast(enabled=use_amp, dtype=torch.float16):
                     ld = criterion(out, batch_gpu)
-                n = spectra.size(0)
-                val_loss += ld['loss'].item() * n
-                val_sup += ld['sup_loss'].item() * n
+                val_loss += ld['loss'].item() * spectra.size(0)
+
+        val_loss /= len(val_ds)
+        tr_loss /= len(train_ds)
         y_true = np.concatenate(val_targets, axis=0)
         y_pred = np.concatenate(val_preds, axis=0)
-        r2 = r2_calcs(y_true,y_pred)
 
-        tr_loss /= len(train_ds); val_loss /= len(val_ds); val_sup /= len(val_ds)
+        # Compute overall dopant-only MSE for checkpointing
+        dopant_mse = np.mean((y_true[:, dopant_indices] - y_pred[:, dopant_indices]) ** 2)
+
+        # Compute individual element MAE for visibility/logging
+        elem_maes = {
+            cv_data['names'][idx]: np.mean(np.abs(y_true[:, idx] - y_pred[:, idx]))
+            for idx in dopant_indices
+        }
+        elem_str = ' | '.join([f"{k}: {v:.4f}" for k, v in elem_maes.items()])
+
         scheduler.step(val_loss)
         log(logger=logger, msg=f"[F{fold}] Epoch {epoch:02d}/{epochs} [{time.time()-t0:.1f}s] | "
-                               f"Train {tr_loss:.4f} | Val {val_loss:.4f} | Conc MSE {val_sup:.4f} | R2 {r2:.4f}")
+                               f"Train {tr_loss:.4f} | Val {val_loss:.4f} | Dopant MSE: {dopant_mse:.6f} | MAE -> {elem_str}")
 
-        if r2 > best_r2:
-            best_r2, best_epoch = r2, epoch
+        if val_loss < best_val:
+            best_val = val_loss
+            best_epoch = epoch
             torch.save({
                 'epoch': epoch, 
                 'model_state_dict': raw_model.state_dict(), 
                 'scaler_state_dict': spec_scaler.state_dict(),
                 'val_loss': val_loss,
-                'val_r2': best_r2
             }, save_path)
 
-        if early_stopper(r2=r2):
+        if early_stopper(score=val_loss):
             log(logger=logger, msg=f"[F{fold}] early stop at epoch {epoch}")
             break
 
@@ -1192,13 +1046,12 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
     with torch.no_grad():
         for batch in val_loader:
             spectra = batch['spectrum'].to(device_obj, non_blocking=True) / scale_gpu
-            # spectra = batch['spectrum'].to(device_obj, non_blocking=True)
             preds.append(raw_model(spectra)['concentrations'].float().cpu().numpy())
     pred = np.concatenate(preds, axis=0)
 
     del model, raw_model, optimizer, amp_scaler, train_loader, val_loader
     gc.collect(); torch.cuda.empty_cache()
-    return dict(fold=fold, val_idx=val_idx, pred=pred, best_epoch=best_epoch, best_r2=best_r2)
+    return dict(fold=fold, val_idx=val_idx, best_val=best_val, pred=pred, best_epoch=best_epoch)
  
 def train_kfold_physics_vae(
     h5_path, master_table_path, log_path=None, save_path=None,
@@ -1224,7 +1077,7 @@ def train_kfold_physics_vae(
     # Save test set indices so they can be re-loaded for final lockbox evaluation
     test_idx_path = save_path.with_name(f"{save_path.stem}_test_idx.npy")
     np.save(test_idx_path, test_idx)
-    log(logger=logger, msg='This is the r2es base')
+    log(logger=logger, msg='This is the r2es restart')
     log(logger=logger, msg=f"Saved test holdout indices ({len(test_idx)} samples) → {test_idx_path.name}")
 
     # Slice sample-level entries for Cross-Validation data
@@ -1268,8 +1121,8 @@ def train_kfold_physics_vae(
             element_weights, epochs, batch_size, lr, weight_decay, lr_patience, stop_patience, use_compile=use_compile
         )
         np.savez(save_path.with_name(f"{save_path.stem}_oof_fold{k}.npz"), val_idx=res['val_idx'], pred=res['pred'])
-        log(logger=logger, msg=f"[F{k}] done: best epoch {res['best_epoch']}, R2 {res['best_r2']:.4f}")
-        results.append((k, res['best_epoch'], res['best_r2']))
+        log(logger=logger, msg=f"[F{k}] done: best epoch {res['best_epoch']}, R2 {res['best_val']:.4f}")
+        results.append((k, res['best_epoch'], res['best_val']))
 
     # Assemble full Out-Of-Fold (OOF) predictions across all CV samples
     oof_preds = np.zeros_like(cv_data['X'].cpu().numpy() if hasattr(cv_data['X'], 'cpu') else cv_data['X'])
@@ -1284,6 +1137,16 @@ def train_kfold_physics_vae(
             evaluated_mask[val_idx_k] = True
 
     if np.any(evaluated_mask):
+        # Compute Pooled Out-of-Fold R2 over active dopoants
+        evaluate_pooled_oof_metrics(
+            true_conc=cv_data['X'][evaluated_mask].cpu().numpy() if hasattr(cv_data['X'], 'cpu') else cv_data['X'][evaluated_mask],
+            pred_conc=oof_preds[evaluated_mask],
+            names=cv_data['names'],
+            host_elements=HOST_ELEMENTS,
+            logger=logger
+        )
+
+    if np.any(evaluated_mask):
         log(logger=logger, msg="=== Out-Of-Fold (OOF) Group Diagnostic ===")
         worst_groups(
             true=cv_data['X'][evaluated_mask],
@@ -1295,7 +1158,7 @@ def train_kfold_physics_vae(
             logger=logger
         )
 
-    return results
+    return results, split_path
 
 def worst_groups(true, pred, gid, names, dopants=('Ce', 'Gd', 'Sm', 'U'), top=3, logger=None):
     true_np = true.cpu().numpy() if hasattr(true, 'cpu') else np.asarray(true)
@@ -1380,19 +1243,20 @@ if __name__ == "__main__":
     # --------------------------------------------------
     # region Train Model
     # --------------------------------------------------
-    results = train_kfold_physics_vae(
+    results, split_path = train_kfold_physics_vae(
         h5_path=h5_file,
         master_table_path=master_table_path,
-        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/005_r2es_log.txt',
+        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/005_r2es_restart_log.txt',
         save_path=model_save_path,
         num_folds=k,
-        folds=None,              # [0] smoke test first, then None for all five
+        folds=None,              # [0] smoke test first, then None for rest
+        epochs=2,
         device='cuda',
         lr_patience=4,
         stop_patience=20,
         use_compile=False
     )
-    print("Training Results (fold, best_epoch, best_r2):")
+    print("Training Results (fold, best_epoch, best_val):")
     print(results)              # (fold, best_epoch, best_val_loss)
     # endregion
 
@@ -1404,6 +1268,7 @@ if __name__ == "__main__":
         h5_path=h5_file,
         master_table_path=master_table_path,
         model_prefix=model_prefix,
+        split_path=split_path,
         model_cls=PhysicsInformedVAE,
         scaler_cls=SpectralScaler,
         dataset_cls=LIBSSpectraDataset,
@@ -1412,7 +1277,7 @@ if __name__ == "__main__":
         batch_size=BATCH_SIZE,
         output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots/kfold/r2es",
         device="cuda",
-        model_tag=f'base_{timestamp}',
+        model_tag=f'restart_{timestamp}',
         max_wt_percent=12.0
     )
     # endregion

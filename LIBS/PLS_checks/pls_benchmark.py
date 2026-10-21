@@ -49,8 +49,8 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 def load_crossval_data(h5_path: str, spike_thresh: float = THRESH) -> dict:
     """Loads dataset and filters corrupted saturation shots (matching P3VAE)."""
     with h5py.File(h5_path, 'r') as hf:
-        y = hf['y'][:]           # Spectral intensities [N, Wavelengths]    # type: ignore
-        X = hf['X'][:]           # Target concentrations [N, Elements]    # type: ignore
+        y = hf['y'][:].astype(np.float32)           # Spectral intensities [N, Wavelengths]    # type: ignore
+        X = hf['X'][:].astype(np.float32)           # Target concentrations [N, Elements]    # type: ignore
         is_synth = hf['is_synthetic'][:]    # type: ignore
         is_lockbox = hf['is_lockbox'][:].astype(bool)    # type: ignore
         group_id = hf['group_id'][:]    # type: ignore
@@ -231,7 +231,7 @@ def main():
     t0_start = time.perf_counter()
 
     # Set worker pool size from SLURM task allocation
-    N_JOBS = 8
+    N_JOBS = 2
 
     # 1. Load Data
     data = load_crossval_data(H5_FILE)

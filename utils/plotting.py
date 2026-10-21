@@ -96,16 +96,17 @@ def evaluate_and_plot_kfold(
     h5_path: str | Path,
     master_table_path: str | Path,
     model_prefix: str | Path,
+    split_path: str | Path,
     model_cls: Any,
     scaler_cls: Any,
     dataset_cls: Any,
     load_data_fn: Any,
     num_folds: int = 5,
     batch_size: int = 128,
-    output_dir: str | Path = "plots",
+    output_dir: str | Path = "plots/oof",
     log_path: str | Path | None = None,
     device: str = "cuda",
-    model_tag: str = "20261015_133024",
+    model_tag: str = "oof_eval",
     max_wt_percent: float = 12.0,
 ):
     output_dir = Path(output_dir)
@@ -116,37 +117,42 @@ def evaluate_and_plot_kfold(
     logger = get_worker_logger(Path(log_path).stem)
 
     device_obj = torch.device(device if torch.cuda.is_available() else "cpu")
-    log(logger=logger, msg=f"Running K-Fold Ensemble Evaluation on: {device_obj}")
+    log(logger=logger, msg=f"Running Out-Of-Fold (OOF) Validation Evaluation on: {device_obj}")
 
+    # 1. Load Data & Fold Splits
     data = load_data_fn(str(h5_path))
-    test_idx_path = Path(f"{model_prefix}_test_idx.npy")
-    if not test_idx_path.exists():
-        raise FileNotFoundError(f"Could not locate test holdout indices file at: {test_idx_path}")
-
-    test_idx = np.load(test_idx_path)
-    log(logger=logger, msg=f"Loaded lockbox test set: {len(test_idx)} samples")
+    splits = np.load(split_path)
+    cv_idx = splits["cv_idx"]
+    cv_fold_id = splits["cv_fold_id"]
 
     wl_grid = torch.from_numpy(data["wavelengths"]).to(device_obj)
     target_names = [n.decode("utf-8") if isinstance(n, bytes) else str(n) for n in data["names"]]
 
     input_dim = data["y"].shape[-1]
     n_elements = data["X"].shape[-1]
-    N_test = len(test_idx)
+    N_cv = len(cv_idx)
 
-    avg_pred_conc = np.zeros((N_test, n_elements), dtype=np.float32)
-    avg_recon_spec = np.zeros((N_test, input_dim), dtype=np.float32)
-    avg_phys_spec = np.zeros((N_test, input_dim), dtype=np.float32)
-    avg_res_spec = np.zeros((N_test, input_dim), dtype=np.float32)
+    # Allocators for Out-Of-Fold predictions across all CV samples
+    oof_pred_conc = np.zeros((N_cv, n_elements), dtype=np.float32)
+    oof_recon_spec = np.zeros((N_cv, input_dim), dtype=np.float32)
+    oof_phys_spec = np.zeros((N_cv, input_dim), dtype=np.float32)
+    oof_res_spec = np.zeros((N_cv, input_dim), dtype=np.float32)
 
-    loaded_folds = 0
+    evaluated_mask = np.zeros(N_cv, dtype=bool)
 
+    # 2. Predict on each fold's designated validation set
     for k in range(num_folds):
         ckpt_path = Path(f"{model_prefix}_fold{k}.pt")
         if not ckpt_path.exists():
             log(logger=logger, msg=f"⚠️ Warning: Checkpoint for fold {k} not found ({ckpt_path.name}). Skipping fold.")
             continue
 
-        log(logger=logger, msg=f"Running inference for Fold {k} model...")
+        # Get relative validation indices within the cv_idx pool
+        val_mask_k = (cv_fold_id == k)
+        val_sub_idx = np.where(val_mask_k)[0]
+        val_global_idx = cv_idx[val_sub_idx]
+
+        log(logger=logger, msg=f"Running Fold {k} validation inference ({len(val_global_idx)} samples)...")
         checkpoint = torch.load(ckpt_path, map_location=device_obj)
 
         model = model_cls(
@@ -167,18 +173,19 @@ def evaluate_and_plot_kfold(
         scaler = scaler_cls()
         scaler.load_state_dict(checkpoint["scaler_state_dict"])
 
-        test_spectra_scaled = scaler.transform(data["y"][test_idx])
-        test_ds = dataset_cls(
-            test_spectra_scaled, 
-            data["X"][test_idx], 
-            data["is_synth"][test_idx], 
-            np.arange(len(test_idx))
+        # Transform validation spectra for Fold k using Fold k's fitted scaler
+        val_spectra_scaled = scaler.transform(data["y"][val_global_idx])
+        val_ds = dataset_cls(
+            val_spectra_scaled, 
+            data["X"][val_global_idx], 
+            data["is_synth"][val_global_idx], 
+            np.arange(len(val_global_idx))
         )
-        test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False)
+        val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False)
 
         fold_c, fold_r, fold_p, fold_res = [], [], [], []
         with torch.no_grad():
-            for batch in test_loader:
+            for batch in val_loader:
                 spectra = batch["spectrum"].to(device_obj)
                 out = model(spectra)
                 
@@ -187,32 +194,29 @@ def evaluate_and_plot_kfold(
                 fold_p.append(scaler.inverse_transform(out["ideal_physics_spectrum"].cpu().numpy()))
                 fold_res.append(scaler.inverse_transform(out["matrix_residual"].cpu().numpy()))
 
-        avg_pred_conc += np.concatenate(fold_c, axis=0)
-        avg_recon_spec += np.concatenate(fold_r, axis=0)
-        avg_phys_spec += np.concatenate(fold_p, axis=0)
-        avg_res_spec += np.concatenate(fold_res, axis=0)
-        loaded_folds += 1
+        # Assign predictions to OOF arrays at the specific validation indices
+        oof_pred_conc[val_sub_idx] = np.concatenate(fold_c, axis=0)
+        oof_recon_spec[val_sub_idx] = np.concatenate(fold_r, axis=0)
+        oof_phys_spec[val_sub_idx] = np.concatenate(fold_p, axis=0)
+        oof_res_spec[val_sub_idx] = np.concatenate(fold_res, axis=0)
+        evaluated_mask[val_sub_idx] = True
 
-        del model, checkpoint, fold_c, fold_r, fold_p, fold_res, test_spectra_scaled, test_loader
+        del model, checkpoint, fold_c, fold_r, fold_p, fold_res, val_spectra_scaled, val_loader
         gc.collect()
         if device_obj.type == 'cuda':
             torch.cuda.empty_cache()
 
-    if loaded_folds == 0:
-        raise RuntimeError("No valid model checkpoints were found for evaluation!")
+    if not np.any(evaluated_mask):
+        raise RuntimeError("No valid model checkpoints were evaluated!")
 
-    avg_pred_conc /= loaded_folds
-    avg_recon_spec /= loaded_folds
-    avg_phys_spec /= loaded_folds
-    avg_res_spec /= loaded_folds
+    # 3. Unscale Concentrations (Convert 0.0 - 1.0 back to physical wt%)
+    true_conc_wt = np.asarray(data["X"][cv_idx][evaluated_mask]) * max_wt_percent
+    pred_conc_wt = oof_pred_conc[evaluated_mask] * max_wt_percent
 
-    true_conc_wt = np.asarray(data["X"][test_idx]) * max_wt_percent
-    pred_conc_wt = avg_pred_conc * max_wt_percent
-
-    true_spectra = np.asarray(data["y"][test_idx])
+    true_spectra = np.asarray(data["y"][cv_idx][evaluated_mask])
     wl = data["wavelengths"]
 
-    log(logger=logger, msg=f"Successfully ensembled predictions across {loaded_folds} fold models.")
+    log(logger=logger, msg=f"Successfully generated OOF predictions for {np.sum(evaluated_mask)} CV samples.")
 
     # =========================================================================
     # PLOT 1: Concentration Parity Grid (Pred vs True wt%)
@@ -241,7 +245,7 @@ def evaluate_and_plot_kfold(
         max_v = max(np.max(y_true), np.max(y_pred))
         min_v = min(np.min(y_true), np.min(y_pred))
         ax.plot([min_v, max_v], [min_v, max_v], "k--", alpha=0.7, lw=1)
-        ax.set_title(f"{name}\n$R^2$: {r2:.3f} | RMSE: {rmse:.3f} wt% | MAE: {mae:.3f} wt%", fontsize=9, fontweight="bold")
+        ax.set_title(f"{name}\nPooled OOF $R^2$: {r2:.3f} | RMSE: {rmse:.3f} wt% | MAE: {mae:.3f} wt%", fontsize=9, fontweight="bold")
         ax.set_xlabel("True wt%", fontsize=8)
         ax.set_ylabel("Pred wt%", fontsize=8)
         ax.grid(True, linestyle=":", alpha=0.6)
@@ -250,10 +254,10 @@ def evaluate_and_plot_kfold(
         fig.delaxes(axes_flat[idx_plot])
 
     plt.tight_layout()
-    parity_path = output_dir / f"{model_tag}_kfold_concentration_parity_grid.png"
+    parity_path = output_dir / f"{model_tag}_oof_concentration_parity_grid.png"
     plt.savefig(parity_path, dpi=300)
     plt.close()
-    log(logger=logger, msg=f"Saved Concentration Parity Plot to: {parity_path}")
+    log(logger=logger, msg=f"Saved OOF Concentration Parity Plot to: {parity_path}")
 
     # =========================================================================
     # PLOT 2: Spectral Reconstruction & Physics Breakdown Overlay
@@ -262,14 +266,14 @@ def evaluate_and_plot_kfold(
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
 
     ax1.plot(wl, true_spectra[sample_idx], label="Measured Spectrum", color="black", alpha=0.7, lw=1)
-    ax1.plot(wl, avg_recon_spec[sample_idx], label="Ensemble Model Reconstruction", color="crimson", alpha=0.8, lw=1)
+    ax1.plot(wl, oof_recon_spec[sample_idx], label="OOF Model Reconstruction", color="crimson", alpha=0.8, lw=1)
     ax1.set_ylabel("Intensity (a.u.)", fontsize=10)
-    ax1.set_title(f"Lockbox Test Sample #{sample_idx} - Full Spectrum Reconstruction", fontsize=12, fontweight="bold")
+    ax1.set_title(f"OOF Validation Sample #{sample_idx} - Spectral Reconstruction", fontsize=12, fontweight="bold")
     ax1.legend(loc="upper right")
     ax1.grid(True, alpha=0.3)
 
-    ax2.plot(wl, avg_phys_spec[sample_idx], label="Ensemble Physics Component (NIST Lines)", color="forestgreen", lw=1)
-    ax2.plot(wl, avg_res_spec[sample_idx], label="Ensemble Matrix Residual Component", color="orange", lw=1)
+    ax2.plot(wl, oof_phys_spec[sample_idx], label="OOF Physics Component (NIST Lines)", color="forestgreen", lw=1)
+    ax2.plot(wl, oof_res_spec[sample_idx], label="OOF Matrix Residual Component", color="orange", lw=1)
     ax2.set_xlabel("Wavelength (nm)", fontsize=10)
     ax2.set_ylabel("Intensity (a.u.)", fontsize=10)
     ax2.set_title("P3VAE Decoded Physics vs. Residual Breakdown", fontsize=11)
@@ -277,21 +281,25 @@ def evaluate_and_plot_kfold(
     ax2.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    spec_path = output_dir / f"{model_tag}_kfold_sample_{sample_idx}_spectral_breakdown.png"
+    spec_path = output_dir / f"{model_tag}_oof_sample_{sample_idx}_spectral_breakdown.png"
     plt.savefig(spec_path, dpi=300)
     plt.close()
-    log(logger=logger, msg=f"Saved Spectral Breakdown Plot to: {spec_path}")
+    log(logger=logger, msg=f"Saved OOF Spectral Breakdown Plot to: {spec_path}")
 
     # =========================================================================
     # STRATIFIED DIAGNOSTICS: Non-Zero vs. Zero Background Performance
     # =========================================================================
     print("\n====================================================================================================")
-    print(f" Ensemble Test Set Performance Across {loaded_folds} Folds ({len(test_idx)} Shots)")
+    print(f" Pooled Out-Of-Fold (OOF) Performance Across {num_folds} Folds ({np.sum(evaluated_mask)} Shots)")
     print("====================================================================================================")
     eps = 0.001
+    HOST_ELEMENTS = {'Li', 'K', 'Cl'}
 
     for j in active_elem_idx:
         name = target_names[j]
+        if name in HOST_ELEMENTS:
+            continue
+
         y_true = true_conc_wt[:, j]
         y_pred = pred_conc_wt[:, j]
 
@@ -320,7 +328,7 @@ def evaluate_and_plot_kfold(
             tnr, fpr = 1.0, 0.0
 
         print(
-            f"Element {name:<5} | Overall R^2: {r2_all:7.3f} | "
+            f"Element {name:<5} | Pooled R^2: {r2_all:7.3f} | "
             f"Non-Zero R^2: {r2_nz:7.3f} (RMSE: {rmse_nz:.4f}, n={n_nz}) | "
             f"Zero Specificity (TNR): {tnr * 100:5.1f}% | FPR: {fpr * 100:4.1f}%"
         )
