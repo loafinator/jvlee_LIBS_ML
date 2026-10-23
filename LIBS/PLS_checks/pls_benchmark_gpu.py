@@ -279,6 +279,42 @@ def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="GPU PLS Benc
     plt.close()
 
 
+def print_benchmark_table(y_true, y_pred_model, y_train_mean, title_tag, elem_names):
+    """
+    Prints element-wise metrics comparing PLS against Dummy Baselines:
+    - Predict Zero (y_pred = 0)
+    - Predict Mean (y_pred = train_mean)
+    - Active Model (y_pred = y_pred_model)
+    """
+    active_idx = [j for j in range(y_true.shape[1]) if y_true[:, j].max() > 1e-5]
+    
+    print("\n" + "=" * 95)
+    print(f" {title_tag}")
+    print("=" * 95)
+    print(f"{'Element':<8} | {'Strategy':<18} | {'R^2':<8} | {'MAE (wt%)':<10} | {'RMSE (wt%)':<10} | {'Max True':<10}")
+    print("-" * 95)
+    
+    for j in active_idx:
+        name = elem_names[j]
+        yt = y_true[:, j]
+        yp = y_pred_model[:, j]
+        
+        # Baselines
+        pred_zero = np.zeros_like(yt)
+        pred_mean = np.full_like(yt, y_train_mean[j])
+        
+        strategies = [
+            ("Predict Zero", pred_zero),
+            ("Predict Mean", pred_mean),
+            ("PLS Model", yp)
+        ]
+        
+        for strat_name, y_hat in strategies:
+            r2 = r2_score(yt, y_hat)
+            mae = mean_absolute_error(yt, y_hat)
+            rmse = np.sqrt(mean_squared_error(yt, y_hat))
+            print(f"{name:<8} | {strat_name:<18} | {r2:8.3f} | {mae:10.4f} | {rmse:10.4f} | {yt.max():10.3f}")
+        print("-" * 95)
 # =============================================================================
 # Main Execution Pipeline
 # =============================================================================
@@ -331,7 +367,8 @@ def main():
         oof_preds_np = torch.clamp(oof_preds_gpu, min=0.0).cpu().numpy()
         oof_by_ncomp[n_comp] = oof_preds_np
 
-        mean_r2 = r2_calcs(Y_cv_cpu.numpy() * MAX_WT_PERCENT, oof_preds_np * MAX_WT_PERCENT)
+        exp_mask = cv_fold_id >= 0
+        mean_r2 = r2_calcs(Y_cv_cpu.numpy()[exp_mask] * MAX_WT_PERCENT, oof_preds_np[exp_mask] * MAX_WT_PERCENT)
         dt = time.perf_counter() - t_grid_start
         print(f"n_components = {n_comp:2d} | OOF Mean R^2: {mean_r2:7.4f} | Elapsed: {dt:.2f}s")
 
@@ -362,11 +399,32 @@ def main():
     lockbox_pred_avg = torch.clamp(lockbox_preds_gpu.mean(dim=0), min=0.0).cpu().numpy()
 
     # 4. Scale back to physical wt% and report metrics
-    true_cv_wt = Y_cv_cpu.numpy() * MAX_WT_PERCENT
-    pred_cv_wt = oof_by_ncomp[best_n_comp] * MAX_WT_PERCENT
+    exp_mask = cv_fold_id >= 0
+    true_cv_wt = Y_cv_cpu[exp_mask].numpy() * MAX_WT_PERCENT
+    pred_cv_wt = oof_by_ncomp[best_n_comp][exp_mask] * MAX_WT_PERCENT
+    train_mean_cv = true_cv_wt.mean(axis=0)
 
     true_test_wt = Y_test_cpu.numpy() * MAX_WT_PERCENT
     pred_test_wt = lockbox_pred_avg * MAX_WT_PERCENT
+    train_mean_full = (Y_cv_cpu[exp_mask].numpy() * MAX_WT_PERCENT).mean(axis=0)
+
+    # Report OOF with Baselines
+    print_benchmark_table(
+        y_true=true_cv_wt,
+        y_pred_model=pred_cv_wt,
+        y_train_mean=train_mean_cv,
+        title_tag=f"GPU PLS OOF Benchmarks (n_components={best_n_comp}) [Exp Only]",
+        elem_names=target_names
+    )
+
+    # Report Lockbox with Baselines
+    print_benchmark_table(
+        y_true=true_test_wt,
+        y_pred_model=pred_test_wt,
+        y_train_mean=train_mean_full,
+        title_tag=f"GPU PLS Lockbox Benchmarks (Ensemble of {NUM_FOLDS} Folds)",
+        elem_names=target_names
+    )
 
     active_elem_idx = [j for j in range(true_test_wt.shape[1]) if true_test_wt[:, j].max() > 1e-5]
 
