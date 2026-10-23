@@ -1,0 +1,550 @@
+from __future__ import annotations
+
+import sys
+import time
+import h5py
+import torch
+import torch.nn as nn
+from torch.utils.data import TensorDataset, DataLoader
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from pathlib import Path
+from datetime import datetime
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+from typing import Any, Dict
+
+# Add project root setup matching your directory layout
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from setup import add_project_root_to_path
+add_project_root_to_path(parent_generation=1)
+from utils import get_h5_ds
+
+
+# =============================================================================
+# Global Configuration & File Paths
+# =============================================================================
+H5_FILE = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5"
+SPLIT_DIR = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits_NoExtraDopants')
+OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/spec_to_conc/CNN_1D/h5_plots")
+
+NUM_FOLDS = 7
+THRESH = 2.8
+MAX_WT_PERCENT = 12.0
+SEED = 42
+HOST_ELEMENTS = {'Li', 'K', 'Cl'}
+EXP_DOPANTS = {'Ce', 'Gd', 'Sm', 'U'}
+
+# 1D CNN Hyperparameters
+EPOCHS = 80
+BATCH_SIZE = 256
+LEARNING_RATE = 1e-3
+WEIGHT_DECAY = 1e-4
+BASE_FILTERS = 32
+DROPOUT = 0.2
+
+TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+# =============================================================================
+# PyTorch 1D CNN Architecture
+# =============================================================================
+class PyTorch1DCNN(nn.Module):
+    """Deep 1D Convolutional Neural Network for LIBS spectral regression."""
+    def __init__(
+        self, 
+        in_channels: int = 1, 
+        out_features: int = 4, 
+        base_filters: int = 32, 
+        dropout: float = 0.2
+    ):
+        super().__init__()
+        
+        # 1D Convolutional Feature Extractor
+        self.features = nn.Sequential(
+            # Block 1: Broad receptive field for spectral peak smoothing
+            nn.Conv1d(in_channels, base_filters, kernel_size=11, stride=2, padding=5),
+            nn.BatchNorm1d(base_filters),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2),  # 10,000 -> 5,000 -> 2,500
+            
+            # Block 2: Intermediate line-group feature extraction
+            nn.Conv1d(base_filters, base_filters * 2, kernel_size=5, stride=2, padding=2),
+            nn.BatchNorm1d(base_filters * 2),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2),  # 2,500 -> 1,250 -> 625
+            
+            # Block 3: Fine atomic emission feature mapping
+            nn.Conv1d(base_filters * 2, base_filters * 4, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm1d(base_filters * 4),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2),  # 625 -> 312 -> 156
+            
+            # Block 4: Deep feature aggregation
+            nn.Conv1d(base_filters * 4, base_filters * 8, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm1d(base_filters * 8),
+            nn.ReLU(),
+            nn.AdaptiveAvgPool1d(1)  # -> [Batch, base_filters * 8, 1]
+        )
+        
+        # Regressor FC Head
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(base_filters * 8, 128),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(128, out_features)
+        )
+        
+        self._init_weights()
+
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, (nn.Conv1d, nn.Linear)):
+                nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # Automatically reshape 2D input [Batch, Wavelengths] to 3D [Batch, Channels, Wavelengths]
+        if x.dim() == 2:
+            x = x.unsqueeze(1)
+        feat = self.features(x)
+        return self.fc(feat)
+
+
+# =============================================================================
+# Helper & Data Functions
+# =============================================================================
+def load_crossval_data(
+    h5_path: str, 
+    spike_thresh: float = THRESH,
+    exp_dopants: set = EXP_DOPANTS,
+    host_elements: set = HOST_ELEMENTS
+) -> Dict[str, Any]:
+    """Loads dataset into CPU RAM, cleans saturation spikes, filters unmodeled 
+    synthetic dopants, and slices target columns to active elements."""
+    
+    keep_elements = host_elements.union(exp_dopants)
+
+    with h5py.File(h5_path, 'r') as hf:
+        y = get_h5_ds(hf, 'y')[:].astype(np.float32)
+        X = get_h5_ds(hf, 'X')[:].astype(np.float32)
+        is_synth = get_h5_ds(hf, 'is_synthetic')[:]
+        is_lockbox = get_h5_ds(hf, 'is_lockbox')[:].astype(bool) if 'is_lockbox' in hf else None
+        group_id = get_h5_ds(hf, 'group_id')[:]
+        wavelengths = get_h5_ds(hf, 'wavelengths')[:]
+        names = [
+            n.decode('utf-8') if isinstance(n, bytes) else str(n) 
+            for n in get_h5_ds(hf, 'feature_cols')[:]
+        ]
+
+    # 1. Identify active columns to keep vs. extra synthetic dopants to drop
+    keep_idx = [i for i, name in enumerate(names) if name in keep_elements]
+    extra_dopant_idx = [i for i, name in enumerate(names) if name not in keep_elements]
+
+    # 2. Row Filter A: Drop corrupted saturation shots
+    row_maxes = y.max(axis=1)
+    clean_spike_mask = row_maxes <= spike_thresh
+
+    # 3. Row Filter B: Drop synthetic samples containing non-experimental dopants
+    has_extra_dopants = (X[:, extra_dopant_idx] > 0).any(axis=1)
+    valid_synth_mask = (is_synth == 0) | (~has_extra_dopants)
+
+    # Combine row filters
+    final_row_mask = clean_spike_mask & valid_synth_mask
+
+    # 4. Slice targets X (columns) and filter samples (rows) simultaneously
+    X_clean = X[final_row_mask][:, keep_idx]
+    y_clean = y[final_row_mask]
+    is_synth_clean = is_synth[final_row_mask]
+    group_id_clean = group_id[final_row_mask]
+    names_clean = [names[i] for i in keep_idx]
+
+    # 5. L2 Normalization on cleaned spectra
+    y_tensor = torch.from_numpy(y_clean)
+    l2_norms = torch.norm(y_tensor, p=2, dim=1, keepdim=True).clamp(min=1e-08)
+    y_tensor = y_tensor / l2_norms
+
+    # Reporting
+    n_dropped_spikes = len(y) - np.sum(clean_spike_mask)
+    n_dropped_synth = np.sum(clean_spike_mask & ~valid_synth_mask)
+    if n_dropped_spikes > 0 or n_dropped_synth > 0:
+        print(f"Data loading summary:")
+        print(f"  - Dropped {n_dropped_spikes} corrupted saturation shots (max > {spike_thresh}).")
+        print(f"  - Filtered {n_dropped_synth} synthetic shots containing non-experimental dopants.")
+        print(f"  - Retained {len(y_tensor)} total shots across {len(names_clean)} features: {names_clean}")
+
+    out_dict = dict(
+        X=torch.from_numpy(X_clean),
+        y=y_tensor,
+        is_synth=torch.from_numpy(is_synth_clean).long(),
+        group_id=group_id_clean,
+        wavelengths=wavelengths,
+        names=names_clean,
+    )
+
+    if is_lockbox is not None:
+        out_dict['is_lockbox'] = is_lockbox[final_row_mask]
+
+    return out_dict
+
+
+def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
+                       n_splits=5, n_trials=2000, min_groups_per_dopant=1, seed=42):
+    """Stratified group fold assignment matching original P3VAE script."""
+    exp = np.where(is_synthetic == 0)[0]
+    groups, inv = np.unique(group_id[exp], return_inverse=True)
+    inv = inv.ravel()
+    n_groups = len(groups)
+    shots = np.bincount(inv, minlength=n_groups)
+
+    first = np.zeros(n_groups, dtype=int)
+    first[inv[::-1]] = np.arange(len(inv))[::-1]
+    present = X[exp[first]][:, dopant_idx] > 0
+    total_g_per_dopant = present.sum(axis=0)
+    active_dopant_mask = total_g_per_dopant > 0
+    present = present[:, active_dopant_mask]
+    active_dopant_idx = [d for i, d in enumerate(dopant_idx) if active_dopant_mask[i]]
+    sig = (present.astype(int) * (1 << np.arange(len(active_dopant_idx)))).sum(axis=1)
+    classes = np.unique(sig)
+
+    best_fog: np.ndarray | None = None
+    best_score = None
+    for t in range(n_trials):
+        rng = np.random.default_rng(seed + t)
+        fog = np.empty(n_groups, dtype=int)
+        offset = int(rng.integers(n_splits))
+        for s in rng.permutation(classes):
+            members = rng.permutation(np.where(sig == s)[0])
+            fog[members] = (offset + np.arange(len(members))) % n_splits
+            offset += len(members)
+        fold_shots = np.bincount(fog, weights=shots, minlength=n_splits)
+        imbalance = np.abs(fold_shots / shots.sum() - 1.0 / n_splits).max()
+        cov = np.array([present[fog == k].sum(axis=0) for k in range(n_splits)])
+        score = (-min(int(cov.min()), min_groups_per_dopant), imbalance)
+        if best_score is None or score < best_score:
+            best_fog, best_score = fog, score
+
+    if best_fog is None:
+        raise ValueError("Failed to assign fold groups: n_trials must be > 0.")
+
+    fold_id = np.full(len(X), -1, dtype=np.int32)
+    fold_id[exp] = best_fog[inv]
+    return fold_id
+
+
+def build_splits_once(data, split_path, num_folds, seed=42):
+    """Loads existing pre-computed CV splits or creates them if absent."""
+    split_path = Path(split_path).with_suffix('.npz')
+    if split_path.exists():
+        print(f"Loading cached splits from: {split_path}")
+        d = np.load(split_path)
+        return d['test_idx'], d['cv_idx'], d['cv_fold_id']
+
+    split_path.parent.mkdir(parents=True, exist_ok=True)
+    test_idx = np.where(data['is_lockbox'])[0] if 'is_lockbox' in data else np.array([], dtype=int)
+    cv_idx = np.where(~data['is_lockbox'])[0] if 'is_lockbox' in data else np.arange(len(data['X']), dtype=int)
+
+    X_cv = data['X'][cv_idx].numpy()
+    is_synth_cv = data['is_synth'][cv_idx]
+
+    host_elements = HOST_ELEMENTS
+    dopant_idx = [
+        i for i, name in enumerate(data['names']) 
+        if name not in host_elements and (X_cv[:, i] > 0).any()
+    ]
+
+    cv_fold_id = assign_group_folds(
+        X=X_cv, group_id=data['group_id'][cv_idx], is_synthetic=is_synth_cv,
+        dopant_idx=dopant_idx, elem_names=data['names'], n_splits=num_folds, seed=seed
+    )
+
+    np.savez(split_path, test_idx=test_idx, cv_idx=cv_idx, cv_fold_id=cv_fold_id,
+             num_folds=num_folds, seed=seed)
+    return test_idx, cv_idx, cv_fold_id
+
+
+def r2_calcs(y_true, y_pred):
+    """Calculates mean R^2 score across active target elements."""
+    active_cols = y_true.max(axis=0) > 1e-5
+    if not np.any(active_cols):
+        return 0.0
+    r2_scores = []
+    for col in np.where(active_cols)[0]:
+        r2 = r2_score(y_true[:, col], y_pred[:, col])
+        r2_scores.append(r2)
+    return float(np.mean(r2_scores))
+
+
+def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="1D CNN Benchmark", save_path=None):
+    """Generates an NxM parity grid plot matching P3VAE visualization."""
+    active_elem_idx = [j for j in range(y_true_wt.shape[1]) if y_true_wt[:, j].max() > 1e-5]
+    n_active = len(active_elem_idx)
+    cols = 4
+    rows = int(np.ceil(n_active / cols)) if n_active > 0 else 1
+
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 3.8, rows * 3.4))
+    axes_flat = np.atleast_1d(axes).flatten()
+
+    for idx_plot, j in enumerate(active_elem_idx):
+        ax = axes_flat[idx_plot]
+        name = target_names[j]
+        yt = y_true_wt[:, j]
+        yp = y_pred_wt[:, j]
+
+        r2 = r2_score(yt, yp)
+        mae = mean_absolute_error(yt, yp)
+        rmse = np.sqrt(mean_squared_error(yt, yp))
+
+        ax.scatter(yt, yp, alpha=0.35, s=10, color="#d62728", edgecolors="none")
+        max_v = max(np.max(yt), np.max(yp), 1e-3)
+        min_v = min(np.min(yt), np.min(yp))
+        ax.plot([min_v, max_v], [min_v, max_v], "k--", alpha=0.7, lw=1)
+        ax.set_title(f"{name}\n$R^2$: {r2:.3f} | RMSE: {rmse:.3f} wt%\nMAE: {mae:.3f} wt%", fontsize=9, fontweight="bold")
+        ax.set_xlabel("True wt%", fontsize=8)
+        ax.set_ylabel("Pred wt%", fontsize=8)
+        ax.grid(True, linestyle=":", alpha=0.6)
+
+    for idx_plot in range(n_active, len(axes_flat)):
+        fig.delaxes(axes_flat[idx_plot])
+
+    plt.suptitle(f"{title_tag} - Concentration Parity Grid", fontsize=12, fontweight="bold", y=1.02)
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
+        print(f"Saved Parity Plot to: {save_path}")
+    plt.close()
+
+
+def print_benchmark_table(y_true, y_pred_model, y_train_mean, title_tag, elem_names):
+    """Prints element-wise metrics comparing 1D CNN against Dummy Baselines."""
+    active_idx = [j for j in range(y_true.shape[1]) if y_true[:, j].max() > 1e-5]
+    
+    print("\n" + "=" * 95)
+    print(f" {title_tag}")
+    print("=" * 95)
+    print(f"{'Element':<8} | {'Strategy':<18} | {'R^2':<8} | {'MAE (wt%)':<10} | {'RMSE (wt%)':<10} | {'Max True':<10}")
+    print("-" * 95)
+    
+    for j in active_idx:
+        name = elem_names[j]
+        yt = y_true[:, j]
+        yp = y_pred_model[:, j]
+        
+        pred_zero = np.zeros_like(yt)
+        pred_mean = np.full_like(yt, y_train_mean[j])
+        
+        strategies = [
+            ("Predict Zero", pred_zero),
+            ("Predict Mean", pred_mean),
+            ("1D CNN Model", yp)
+        ]
+        
+        for strat_name, y_hat in strategies:
+            r2 = r2_score(yt, y_hat)
+            mae = mean_absolute_error(yt, y_hat)
+            rmse = np.sqrt(mean_squared_error(yt, y_hat))
+            print(f"{name:<8} | {strat_name:<18} | {r2:8.3f} | {mae:10.4f} | {rmse:10.4f} | {yt.max():10.3f}")
+        print("-" * 95)
+
+
+# =============================================================================
+# Main Execution Pipeline
+# =============================================================================
+def main():
+    print(f"=== Starting GPU-Accelerated 1D CNN Benchmark Pipeline [{DEVICE}] ===")
+    t0_start = time.perf_counter()
+
+    # 1. Load Data into CPU RAM
+    data = load_crossval_data(H5_FILE)
+    split_path = SPLIT_DIR / f'max12_{NUM_FOLDS}_folds_seed{SEED}.npz'
+    test_idx, cv_idx, cv_fold_id = build_splits_once(data, split_path, NUM_FOLDS, seed=SEED)
+
+    # Inputs (Normalized Spectra y) and Targets (Dopant Concentrations X)
+    X_cv_cpu = data['y'][cv_idx]
+    Y_cv_cpu = data['X'][cv_idx]
+    X_test_cpu = data['y'][test_idx]
+    Y_test_cpu = data['X'][test_idx]
+
+    # Target isolation (Experimental Dopants Only: Ce, Gd, Sm, U)
+    dopant_indices = [i for i, name in enumerate(data['names']) if name not in HOST_ELEMENTS]
+    Y_cv_cpu = Y_cv_cpu[:, dopant_indices]
+    Y_test_cpu = Y_test_cpu[:, dopant_indices]
+    target_names = [data['names'][i] for i in dopant_indices]
+
+    input_channels = 1
+    output_dim = Y_cv_cpu.shape[1]   # 4 dopant target features
+
+    print(f"Dataset Loaded | CV Pool: {len(cv_idx)} samples | Lockbox Test Set: {len(test_idx)} samples")
+    print(f"Target Elements: {target_names}")
+
+    # Containers for Out-Of-Fold and Lockbox Ensemble predictions
+    oof_preds_np = np.zeros((len(cv_idx), output_dim), dtype=np.float32)
+    lockbox_preds_gpu = torch.zeros((NUM_FOLDS, len(test_idx), output_dim), device=DEVICE)
+
+    # 2. K-Fold Cross-Validation Training Loop
+    print("\n--- Training Deep 1D CNN across K Folds ---")
+    
+    for k in range(NUM_FOLDS):
+        t_fold_start = time.perf_counter()
+        train_mask = cv_fold_id != k
+        val_mask = cv_fold_id == k
+
+        # DataLoader Setup
+        train_ds = TensorDataset(X_cv_cpu[train_mask], Y_cv_cpu[train_mask])
+        val_ds = TensorDataset(X_cv_cpu[val_mask], Y_cv_cpu[val_mask])
+
+        train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True)
+        val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True)
+
+        # Fresh 1D CNN Instance
+        model = PyTorch1DCNN(
+            in_channels=input_channels, 
+            out_features=output_dim, 
+            base_filters=BASE_FILTERS, 
+            dropout=DROPOUT
+        ).to(DEVICE)
+
+        optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
+        criterion = nn.MSELoss()
+
+        best_val_loss = float('inf')
+        best_model_weights = None
+
+        for epoch in range(1, EPOCHS + 1):
+            model.train()
+            train_loss = 0.0
+
+            for bx, by in train_loader:
+                bx, by = bx.to(DEVICE, non_blocking=True), by.to(DEVICE, non_blocking=True)
+                optimizer.zero_grad()
+                pred = model(bx)
+                loss = criterion(pred, by)
+                loss.backward()
+                optimizer.step()
+                train_loss += loss.item() * bx.size(0)
+
+            train_loss /= len(train_ds)
+
+            # Validation
+            model.eval()
+            val_loss = 0.0
+            with torch.no_grad():
+                for bx, by in val_loader:
+                    bx, by = bx.to(DEVICE, non_blocking=True), by.to(DEVICE, non_blocking=True)
+                    pred = model(bx)
+                    val_loss += criterion(pred, by).item() * bx.size(0)
+
+            val_loss /= len(val_ds)
+            scheduler.step(val_loss)
+
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                best_model_weights = {k_w: v_w.cpu().clone() for k_w, v_w in model.state_dict().items()}
+
+        # Load best fold weights safely
+        if best_model_weights is not None:
+            model.load_state_dict(best_model_weights)
+        else:
+            print("Warning: best_model_weights was never updated during training.")
+        model.eval()
+
+        # OOF Predictions
+        fold_oof_preds = []
+        with torch.no_grad():
+            for bx, _ in val_loader:
+                bx = bx.to(DEVICE, non_blocking=True)
+                fold_oof_preds.append(torch.clamp(model(bx), min=0.0).cpu())
+        oof_preds_np[val_mask] = torch.cat(fold_oof_preds, dim=0).numpy()
+
+        # Lockbox Test Predictions for this fold
+        X_test_gpu = X_test_cpu.to(DEVICE)
+        with torch.no_grad():
+            lockbox_preds_gpu[k] = torch.clamp(model(X_test_gpu), min=0.0)
+
+        dt = time.perf_counter() - t_fold_start
+        print(f"Fold {k + 1}/{NUM_FOLDS} Complete | Best Val MSE: {best_val_loss:.6f} | Time: {dt:.2f}s")
+
+        del model, optimizer, scheduler, X_test_gpu
+        torch.cuda.empty_cache()
+
+    # 3. Final Lockbox Prediction Ensembling
+    lockbox_pred_avg = torch.clamp(lockbox_preds_gpu.mean(dim=0), min=0.0).cpu().numpy()
+
+    # 4. Scale back to physical wt% and report metrics
+    exp_mask = cv_fold_id >= 0
+    true_cv_wt = Y_cv_cpu[exp_mask].numpy() * MAX_WT_PERCENT
+    pred_cv_wt = oof_preds_np[exp_mask] * MAX_WT_PERCENT
+    train_mean_cv = true_cv_wt.mean(axis=0)
+
+    true_test_wt = Y_test_cpu.numpy() * MAX_WT_PERCENT
+    pred_test_wt = lockbox_pred_avg * MAX_WT_PERCENT
+    train_mean_full = (Y_cv_cpu[exp_mask].numpy() * MAX_WT_PERCENT).mean(axis=0)
+
+    # Report OOF with Baselines
+    print_benchmark_table(
+        y_true=true_cv_wt,
+        y_pred_model=pred_cv_wt,
+        y_train_mean=train_mean_cv,
+        title_tag=f"1D CNN OOF Benchmarks (BASE_FILTERS={BASE_FILTERS})",
+        elem_names=target_names
+    )
+
+    # Report Lockbox with Baselines
+    print_benchmark_table(
+        y_true=true_test_wt,
+        y_pred_model=pred_test_wt,
+        y_train_mean=train_mean_full,
+        title_tag=f"1D CNN Lockbox Benchmarks (Ensemble of {NUM_FOLDS} Folds)",
+        elem_names=target_names
+    )
+
+    active_elem_idx = [j for j in range(true_test_wt.shape[1]) if true_test_wt[:, j].max() > 1e-5]
+
+    print("\n" + "=" * 80)
+    print(f" GPU 1D CNN Benchmark - Out-Of-Fold (OOF) Performance")
+    print("=" * 80)
+    for j in active_elem_idx:
+        name = target_names[j]
+        yt = true_cv_wt[:, j]
+        yp = pred_cv_wt[:, j]
+        r2 = r2_score(yt, yp)
+        mae = mean_absolute_error(yt, yp)
+        rmse = np.sqrt(mean_squared_error(yt, yp))
+        print(f"Element {name:<5} | R^2: {r2:7.3f} | MAE: {mae:.4f} wt% | RMSE: {rmse:.4f} wt% | Max True: {yt.max():.3f} wt%")
+
+    print("\n" + "=" * 80)
+    print(f" GPU 1D CNN Benchmark - Lockbox Test Set Performance (Ensemble of {NUM_FOLDS} Folds)")
+    print("=" * 80)
+    for j in active_elem_idx:
+        name = target_names[j]
+        yt = true_test_wt[:, j]
+        yp = pred_test_wt[:, j]
+        r2 = r2_score(yt, yp)
+        mae = mean_absolute_error(yt, yp)
+        rmse = np.sqrt(mean_squared_error(yt, yp))
+        print(f"Element {name:<5} | R^2: {r2:7.3f} | MAE: {mae:.4f} wt% | RMSE: {rmse:.4f} wt% | Max True: {yt.max():.3f} wt%")
+    print("=" * 80 + "\n")
+
+    # 5. Parity Plots
+    oof_parity_path = OUTPUT_DIR / f"gpu_cnn_1d_L2_synth_oof_parity_{TIMESTAMP}.png"
+    lockbox_parity_path = OUTPUT_DIR / f"gpu_cnn_1d_L2_synth_lockbox_parity_{TIMESTAMP}.png"
+
+    plot_parity_grid(true_cv_wt, pred_cv_wt, target_names, 
+                     title_tag="1D CNN L2 SYNTHETIC DATA INCLUDED OOF", save_path=oof_parity_path)
+    plot_parity_grid(true_test_wt, pred_test_wt, target_names, 
+                     title_tag="1D CNN L2 SYNTHETIC DATA INCLUDED LOCKBOX ENSEMBLE", save_path=lockbox_parity_path)
+
+    print(f"GPU Pipeline completed in {(time.perf_counter() - t0_start):.2f} seconds.")
+
+
+if __name__ == "__main__":
+    main()
