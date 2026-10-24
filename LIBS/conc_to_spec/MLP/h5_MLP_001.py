@@ -1,19 +1,18 @@
 from __future__ import annotations
 
 import sys
+import json
 import time
+import gc
 import h5py
 import torch
 import torch.nn as nn
-from torch.utils.data import TensorDataset, DataLoader
-
+import torch.nn.functional as F
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
 from pathlib import Path
 from datetime import datetime
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from typing import Any, Dict
 
 # Add project root setup matching directory layout
@@ -29,7 +28,7 @@ from utils import get_h5_ds
 # =============================================================================
 H5_FILE = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5"
 SPLIT_DIR = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits_NoExtraDopants')
-OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/cts_plots")
+OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/h5_plots")
 
 NUM_FOLDS = 7
 THRESH = 2.8
@@ -39,138 +38,117 @@ EXP_DOPANTS = {'Ce', 'Gd', 'Sm', 'U'}
 
 # CTS MLP Hyperparameters
 EPOCHS = 80
-BATCH_SIZE = 256
-LEARNING_RATE = 1e-3
+EARLY_STOP_PATIENCE = 15
+BATCH_SIZE = 1024          # was 256; bigger batches keep the GPU busy
+LEARNING_RATE = 2e-3       # scaled up a bit for the larger batch
 WEIGHT_DECAY = 1e-4
-HIDDEN_DIMS = (512, 2048, 5120)  # Expanding architecture for 10k output reconstruction
+HIDDEN_DIMS = (512, 2048, 5120)
 DROPOUT = 0.1
+MAKE_PLOT = True
+
+# Rows are L2-normalised, so mean(y^2) = 1/C. Multiplying targets by sqrt(C)
+# gives unit mean-square targets (a predict-zero model then has loss == 1.0).
+# All reported metrics are converted back to the original L2-normalised units.
+SCALE = 100.0
 
 TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+USE_AMP = DEVICE.type == "cuda"
+if USE_AMP:
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+    torch.set_float32_matmul_precision("high")
 
 
 # =============================================================================
-# Concentration-to-Spectra (CTS) PyTorch MLP Architecture
+# Model
 # =============================================================================
 class PyTorchCTSMLP(nn.Module):
-    """Deep MLP for mapping elemental concentrations (7 features) to LIBS spectra (10,000 bins)."""
-    def __init__(
-        self, 
-        in_features: int = 7, 
-        out_wavelengths: int = 10000, 
-        hidden_dims: tuple[int, ...] = (512, 2048, 5120), 
-        dropout: float = 0.1
-    ):
+    """Deep MLP mapping elemental concentrations to LIBS spectra.
+
+    NOTE: no ReLU on the output layer. The original final ReLU let the whole
+    output die (all-zero predictions, zero gradient). Predictions are clamped
+    at >= 0 at evaluation time instead.
+    """
+    def __init__(self, in_features=7, out_wavelengths=10000,
+                 hidden_dims=(512, 2048, 5120), dropout=0.1):
         super().__init__()
         layers = []
         in_dim = in_features
-
-        # Expanding hidden layers
         for h_dim in hidden_dims:
-            layers.extend([
-                nn.Linear(in_dim, h_dim),
-                nn.BatchNorm1d(h_dim),
-                nn.ReLU(),
-                nn.Dropout(dropout)
-            ])
+            layers.extend([nn.Linear(in_dim, h_dim), nn.BatchNorm1d(h_dim),
+                           nn.ReLU(), nn.Dropout(dropout)])
             in_dim = h_dim
-
-        # Final projection to 10,000 spectral wavelength channels
-        layers.append(nn.Linear(in_dim, out_wavelengths))
-        # Non-negative output activation (LIBS intensities >= 0)
-        layers.append(nn.ReLU())
-        
+        self.out = nn.Linear(in_dim, out_wavelengths)
+        layers.append(self.out)
         self.net = nn.Sequential(*layers)
         self._init_weights()
 
     def _init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Linear):
-                nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
-                if m.bias is not None:
-                    nn.init.zeros_(m.bias)
+                if m is self.out:
+                    nn.init.xavier_uniform_(m.weight)
+                else:
+                    nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
+                nn.init.zeros_(m.bias)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x):
         return self.net(x)
 
 
 # =============================================================================
-# Helper & Data Functions
+# Data
 # =============================================================================
-def load_crossval_data(
-    h5_path: str, 
-    spike_thresh: float = THRESH,
-    exp_dopants: set = EXP_DOPANTS,
-    host_elements: set = HOST_ELEMENTS
-) -> Dict[str, Any]:
-    """Loads dataset into CPU RAM, cleans saturation spikes, filters unmodeled 
-    synthetic dopants, and slices target columns to active elements."""
-    
+def load_crossval_data(h5_path, spike_thresh=THRESH, exp_dopants=EXP_DOPANTS,
+                       host_elements=HOST_ELEMENTS) -> Dict[str, Any]:
+    """Same filtering as before, but with far fewer full-size copies of y."""
     keep_elements = host_elements.union(exp_dopants)
 
     with h5py.File(h5_path, 'r') as hf:
-        y = get_h5_ds(hf, 'y')[:].astype(np.float32)
-        X = get_h5_ds(hf, 'X')[:].astype(np.float32)
+        y = np.asarray(get_h5_ds(hf, 'y')[:], dtype=np.float32)   # no copy if already f32
+        X = np.asarray(get_h5_ds(hf, 'X')[:], dtype=np.float32)
         is_synth = get_h5_ds(hf, 'is_synthetic')[:]
         is_lockbox = get_h5_ds(hf, 'is_lockbox')[:].astype(bool) if 'is_lockbox' in hf else None
         group_id = get_h5_ds(hf, 'group_id')[:]
         wavelengths = get_h5_ds(hf, 'wavelengths')[:]
-        names = [
-            n.decode('utf-8') if isinstance(n, bytes) else str(n) 
-            for n in get_h5_ds(hf, 'feature_cols')[:]
-        ]
+        names = [n.decode('utf-8') if isinstance(n, bytes) else str(n)
+                 for n in get_h5_ds(hf, 'feature_cols')[:]]
 
-    # 1. Identify active columns to keep vs. extra synthetic dopants to drop
-    keep_idx = [i for i, name in enumerate(names) if name in keep_elements]
-    extra_dopant_idx = [i for i, name in enumerate(names) if name not in keep_elements]
+    keep_idx = [i for i, n in enumerate(names) if n in keep_elements]
+    extra_dopant_idx = [i for i, n in enumerate(names) if n not in keep_elements]
 
-    # 2. Row Filter A: Drop corrupted saturation shots
-    row_maxes = y.max(axis=1)
-    clean_spike_mask = row_maxes <= spike_thresh
-
-    # 3. Row Filter B: Drop synthetic samples containing non-experimental dopants
-    has_extra_dopants = (X[:, extra_dopant_idx] > 0).any(axis=1)
-    valid_synth_mask = (is_synth == 0) | (~has_extra_dopants)
-
-    # Combine row filters
+    clean_spike_mask = y.max(axis=1) <= spike_thresh
+    has_extra = (X[:, extra_dopant_idx] > 0).any(axis=1)
+    valid_synth_mask = (is_synth == 0) | (~has_extra)
     final_row_mask = clean_spike_mask & valid_synth_mask
 
-    # 4. Slice concentrations X (columns) and filter samples (rows)
+    n_total = len(y)
     X_clean = X[final_row_mask][:, keep_idx]
     y_clean = y[final_row_mask]
-    is_synth_clean = is_synth[final_row_mask]
-    group_id_clean = group_id[final_row_mask]
+    del y
+    gc.collect()
+
+    # L2 normalisation, in place (no extra 8 GB temporaries)
+    y_t = torch.from_numpy(y_clean)
+    y_t.div_(y_t.norm(p=2, dim=1, keepdim=True).clamp_(min=1e-8))
+
     names_clean = [names[i] for i in keep_idx]
+    n_dropped_spikes = n_total - int(clean_spike_mask.sum())
+    n_dropped_synth = int((clean_spike_mask & ~valid_synth_mask).sum())
+    print("Data loading summary:")
+    print(f"  - Dropped {n_dropped_spikes} corrupted saturation shots (max > {spike_thresh}).")
+    print(f"  - Filtered {n_dropped_synth} synthetic shots containing non-experimental dopants.")
+    print(f"  - Retained {len(y_t)} total shots across {len(names_clean)} features: {names_clean}")
 
-    # 5. L2 Normalization on cleaned spectra
-    y_tensor = torch.from_numpy(y_clean)
-    l2_norms = torch.norm(y_tensor, p=2, dim=1, keepdim=True).clamp(min=1e-08)
-    y_tensor = y_tensor / l2_norms
-
-    # Reporting
-    n_dropped_spikes = len(y) - np.sum(clean_spike_mask)
-    n_dropped_synth = np.sum(clean_spike_mask & ~valid_synth_mask)
-    if n_dropped_spikes > 0 or n_dropped_synth > 0:
-        print(f"Data loading summary:")
-        print(f"  - Dropped {n_dropped_spikes} corrupted saturation shots (max > {spike_thresh}).")
-        print(f"  - Filtered {n_dropped_synth} synthetic shots containing non-experimental dopants.")
-        print(f"  - Retained {len(y_tensor)} total shots across {len(names_clean)} features: {names_clean}")
-
-    out_dict = dict(
-        X=torch.from_numpy(X_clean),
-        y=y_tensor,
-        is_synth=torch.from_numpy(is_synth_clean).long(),
-        group_id=group_id_clean,
-        wavelengths=wavelengths,
-        names=names_clean,
-    )
-
+    out = dict(X=torch.from_numpy(X_clean), y=y_t,
+               is_synth=torch.from_numpy(is_synth[final_row_mask]).long(),
+               group_id=group_id[final_row_mask], wavelengths=wavelengths, names=names_clean)
     if is_lockbox is not None:
-        out_dict['is_lockbox'] = is_lockbox[final_row_mask]
-
-    return out_dict
+        out['is_lockbox'] = is_lockbox[final_row_mask]
+    return out
 
 
 def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
@@ -192,7 +170,7 @@ def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
     sig = (present.astype(int) * (1 << np.arange(len(active_dopant_idx)))).sum(axis=1)
     classes = np.unique(sig)
 
-    best_fog: np.ndarray | None = None
+    best_fog = None
     best_score = None
     for t in range(n_trials):
         rng = np.random.default_rng(seed + t)
@@ -218,7 +196,6 @@ def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
 
 
 def build_splits_once(data, split_path, num_folds, seed=42):
-    """Loads existing pre-computed CV splits or creates them if absent."""
     split_path = Path(split_path).with_suffix('.npz')
     if split_path.exists():
         print(f"Loading cached splits from: {split_path}")
@@ -231,50 +208,121 @@ def build_splits_once(data, split_path, num_folds, seed=42):
 
     X_cv = data['X'][cv_idx].numpy()
     is_synth_cv = data['is_synth'][cv_idx]
-
-    host_elements = HOST_ELEMENTS
-    dopant_idx = [
-        i for i, name in enumerate(data['names']) 
-        if name not in host_elements and (X_cv[:, i] > 0).any()
-    ]
-
+    dopant_idx = [i for i, n in enumerate(data['names'])
+                  if n not in HOST_ELEMENTS and (X_cv[:, i] > 0).any()]
     cv_fold_id = assign_group_folds(
         X=X_cv, group_id=data['group_id'][cv_idx], is_synthetic=is_synth_cv,
-        dopant_idx=dopant_idx, elem_names=data['names'], n_splits=num_folds, seed=seed
-    )
-
+        dopant_idx=dopant_idx, elem_names=data['names'], n_splits=num_folds, seed=seed)
     np.savez(split_path, test_idx=test_idx, cv_idx=cv_idx, cv_fold_id=cv_fold_id,
              num_folds=num_folds, seed=seed)
     return test_idx, cv_idx, cv_fold_id
 
 
-def plot_spectral_overlay_sample(
-    wavelengths: np.ndarray, 
-    y_true: np.ndarray, 
-    y_pred: np.ndarray, 
-    sample_idx: int = 0, 
-    save_path: Path | None = None
-):
-    """Plots true vs predicted spectrum overlay and residual reconstruction curve."""
+def to_gpu_fp16_scaled(Y_cpu: torch.Tensor, idx: np.ndarray, chunk: int = 16384) -> torch.Tensor:
+    """Copy selected rows to the GPU as scaled fp16 in chunks (no big CPU copies)."""
+    idx_t = torch.from_numpy(np.asarray(idx)).long()
+    out = torch.empty((len(idx_t), Y_cpu.shape[1]), dtype=torch.float16, device=DEVICE)
+    for s in range(0, len(idx_t), chunk):
+        sel = idx_t[s:s + chunk]
+        out[s:s + chunk] = (Y_cpu[sel] * SCALE).to(DEVICE).half()
+    return out
+
+
+# =============================================================================
+# Streaming metrics (R2 / MAE / RMSE) -- accumulated on GPU, nothing big in RAM
+# =============================================================================
+class MetricAcc:
+    def __init__(self, C: int):
+        self.n = 0
+        self.sy = torch.zeros(C, dtype=torch.float64, device=DEVICE)
+        self.syy = torch.zeros(C, dtype=torch.float64, device=DEVICE)
+        self.see = torch.zeros(C, dtype=torch.float64, device=DEVICE)
+        self.sae = torch.zeros((), dtype=torch.float64, device=DEVICE)
+
+    def update(self, y: torch.Tensor, p: torch.Tensor):
+        """y, p in ORIGINAL (L2-normalised) units, float32, shape (n, C)."""
+        d = (p - y).double()
+        yd = y.double()
+        self.n += y.shape[0]
+        self.sy += yd.sum(0)
+        self.syy += (yd * yd).sum(0)
+        self.see += (d * d).sum(0)
+        self.sae += d.abs().sum()
+
+    def merge(self, other: "MetricAcc"):
+        self.n += other.n
+        self.sy += other.sy; self.syy += other.syy
+        self.see += other.see; self.sae += other.sae
+
+    def result(self) -> Dict[str, float]:
+        C = self.sy.numel()
+        total = self.n * C
+        sst_c = self.syy - self.sy ** 2 / self.n
+        valid = sst_c > 1e-6 * sst_c.mean()
+        r2_c = 1.0 - self.see / sst_c.clamp(min=1e-30)
+        mse = (self.see.sum() / total).item()
+        return dict(
+            n_spectra=int(self.n),
+            mse=mse,
+            rmse=mse ** 0.5,
+            mae=(self.sae / total).item(),
+            # 1 - total SSE / total per-channel variance (sklearn 'variance_weighted')
+            r2_variance_weighted=(1.0 - self.see.sum() / sst_c.sum()).item(),
+            # plain average of per-channel R2 (sklearn 'uniform_average'), low-variance channels excluded
+            r2_uniform_channels=r2_c[valid].mean().item(),
+            # R2 against a single global mean (peaks dominate -> optimistic)
+            r2_global=(1.0 - self.see.sum() / (self.syy.sum() - self.sy.sum() ** 2 / total)).item(),
+            baseline_mse_predict_zero=(self.syy.sum() / total).item(),
+            baseline_mse_predict_channel_mean=(sst_c.sum() / total).item(),
+        )
+
+
+def print_metrics(title: str, m: Dict[str, float]):
+    print(f" {title:<18}| R2(var-wtd): {m['r2_variance_weighted']:.4f} | R2(chan-avg): {m['r2_uniform_channels']:.4f} "
+          f"| R2(global): {m['r2_global']:.4f} | MAE: {m['mae']:.6e} | RMSE: {m['rmse']:.6e} | MSE: {m['mse']:.6e}")
+
+
+# =============================================================================
+# GPU-resident helpers
+# =============================================================================
+def forward_eval(model, bx):
+    with torch.autocast(device_type=DEVICE.type, dtype=torch.bfloat16, enabled=USE_AMP):
+        p = model(bx)
+    return p.float().clamp_min_(0.0)        # intensities are non-negative
+
+
+@torch.no_grad()
+def val_loss_scaled(model, X, Y, idx, bs=4096) -> float:
+    sse = torch.zeros((), dtype=torch.float64, device=DEVICE)
+    for s in range(0, len(idx), bs):
+        b = idx[s:s + bs]
+        p = forward_eval(model, X[b])
+        sse += ((p - Y[b].float()) ** 2).sum().double()
+    return (sse / (len(idx) * Y.shape[1])).item()   # 1.0 == predict-zero
+
+
+@torch.no_grad()
+def eval_into(model, X, Y, idx, acc: MetricAcc, lock_sum=None, bs=2048):
+    """Update `acc` with predictions for rows `idx`; optionally add preds to lock_sum."""
+    for s in range(0, len(idx), bs):
+        b = idx[s:s + bs]
+        p = forward_eval(model, X[b])
+        if lock_sum is not None:
+            lock_sum[s:s + len(b)] += p
+        acc.update(Y[b].float() / SCALE, p / SCALE)
+
+
+def plot_spectral_overlay_sample(wavelengths, y_true, y_pred, sample_idx=0, save_path=None):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 6), sharex=True)
-
-    # Upper panel: Spectrum overlay
-    ax1.plot(wavelengths, y_true[sample_idx], label="Measured / Target Spectrum", color="black", alpha=0.8, lw=1)
-    ax1.plot(wavelengths, y_pred[sample_idx], label="MLP Predicted Spectrum", color="crimson", alpha=0.8, lw=1)
-    ax1.set_ylabel("Normalized Intensity (a.u.)", fontsize=10)
-    ax1.set_title(f"Concentration-to-Spectra MLP Forward Prediction — Sample #{sample_idx}", fontsize=11, fontweight="bold")
-    ax1.legend(loc="upper right")
-    ax1.grid(True, linestyle=":", alpha=0.5)
-
-    # Lower panel: Residual difference
-    residual = y_true[sample_idx] - y_pred[sample_idx]
-    ax2.plot(wavelengths, residual, label="Residual Error (True - Pred)", color="darkblue", lw=0.8)
+    ax1.plot(wavelengths, y_true, label="Measured / Target", color="black", alpha=0.8, lw=1)
+    ax1.plot(wavelengths, y_pred, label="MLP Predicted", color="crimson", alpha=0.8, lw=1)
+    ax1.set_ylabel("Normalized Intensity (a.u.)")
+    ax1.set_title(f"CTS MLP Forward Prediction - Sample #{sample_idx}", fontweight="bold")
+    ax1.legend(loc="upper right"); ax1.grid(True, linestyle=":", alpha=0.5)
+    ax2.plot(wavelengths, y_true - y_pred, label="Residual (True - Pred)", color="darkblue", lw=0.8)
     ax2.axhline(0, color="gray", linestyle="--", lw=1)
-    ax2.set_xlabel("Wavelength (nm)", fontsize=10)
-    ax2.set_ylabel("Error (a.u.)", fontsize=10)
-    ax2.legend(loc="upper right")
-    ax2.grid(True, linestyle=":", alpha=0.5)
-
+    ax2.set_xlabel("Wavelength (nm)"); ax2.set_ylabel("Error (a.u.)")
+    ax2.legend(loc="upper right"); ax2.grid(True, linestyle=":", alpha=0.5)
     plt.tight_layout()
     if save_path:
         plt.savefig(save_path, dpi=300)
@@ -283,158 +331,141 @@ def plot_spectral_overlay_sample(
 
 
 # =============================================================================
-# Main Execution Pipeline
+# Main
 # =============================================================================
 def main():
-    print(f"=== Starting GPU-Accelerated CTS MLP Forward Pipeline [{DEVICE}] ===")
+    global SCALE
+    print(f"=== Starting GPU-Accelerated CTS MLP Forward Pipeline [{DEVICE}] (bf16 autocast: {USE_AMP}) ===")
     t0_start = time.perf_counter()
 
-    # 1. Load Data into CPU RAM
     data = load_crossval_data(H5_FILE)
     split_path = SPLIT_DIR / f'max12_{NUM_FOLDS}_folds_seed{SEED}.npz'
     test_idx, cv_idx, cv_fold_id = build_splits_once(data, split_path, NUM_FOLDS, seed=SEED)
 
-    # INPUTS = Concentrations X (All 7 elements: Li, K, Cl + Ce, Gd, Sm, U)
-    # OUTPUTS = Spectra y (10,000 channels)
-    X_cv_cpu = data['X'][cv_idx]
-    Y_cv_cpu = data['y'][cv_idx]
-    X_test_cpu = data['X'][test_idx]
-    Y_test_cpu = data['y'][test_idx]
+    C = data['y'].shape[1]
+    SCALE = float(C) ** 0.5
+    input_dim = data['X'].shape[1]
+    wavelengths_grid = data['wavelengths']
 
-    input_dim = X_cv_cpu.shape[1]        # 7 elemental concentration features
-    output_channels = Y_cv_cpu.shape[1]  # 10,000 spectral wavelength bins
+    # Everything lives on the GPU from here on (fp16 targets: ~4 GB for the CV pool)
+    X_cv = data['X'][torch.from_numpy(cv_idx).long()].to(DEVICE)
+    X_test = data['X'][torch.from_numpy(test_idx).long()].to(DEVICE)
+    Y_cv = to_gpu_fp16_scaled(data['y'], cv_idx)
+    Y_test = to_gpu_fp16_scaled(data['y'], test_idx)
+    del data
+    gc.collect()
 
+    fold_t = torch.from_numpy(cv_fold_id).to(DEVICE)
     print(f"Dataset Loaded | CV Pool: {len(cv_idx)} samples | Lockbox Test Set: {len(test_idx)} samples")
-    print(f"Inputs (Concentrations): {data['names']} | Target Output: {output_channels} Spectral Channels")
+    print(f"Inputs: {input_dim} concentration features | Target Output: {C} spectral channels")
+    print(f"(Validation uses experimental shots only: fold_id >= 0; synthetic shots are train-only)")
 
-    # Containers for Out-Of-Fold and Lockbox predictions
-    oof_preds_np = np.zeros((len(cv_idx), output_channels), dtype=np.float32)
-    lockbox_preds_gpu = torch.zeros((NUM_FOLDS, len(test_idx), output_channels), device=DEVICE)
+    oof_acc = MetricAcc(C)
+    lock_sum = torch.zeros((len(test_idx), C), device=DEVICE)
+    test_idx_gpu = torch.arange(len(test_idx), device=DEVICE)
+    fold_results = []
 
-    # 2. K-Fold Cross-Validation Training Loop
     print("\n--- Training Deep CTS MLP across K Folds ---")
-    
     for k in range(NUM_FOLDS):
-        t_fold_start = time.perf_counter()
-        train_mask = cv_fold_id != k
-        val_mask = cv_fold_id == k
+        t_fold = time.perf_counter()
+        torch.manual_seed(SEED + k)
+        train_idx = (fold_t != k).nonzero().squeeze(1)
+        val_idx = (fold_t == k).nonzero().squeeze(1)
 
-        # DataLoader Setup (X = Concentrations, Y = Spectra)
-        train_ds = TensorDataset(X_cv_cpu[train_mask], Y_cv_cpu[train_mask])
-        val_ds = TensorDataset(X_cv_cpu[val_mask], Y_cv_cpu[val_mask])
-
-        train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True)
-        val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True)
-
-        # Fresh CTS MLP Instance
-        model = PyTorchCTSMLP(
-            in_features=input_dim, 
-            out_wavelengths=output_channels, 
-            hidden_dims=HIDDEN_DIMS, 
-            dropout=DROPOUT
-        ).to(DEVICE)
-
-        optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
+        model = PyTorchCTSMLP(input_dim, C, HIDDEN_DIMS, DROPOUT).to(DEVICE)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE,
+                                      weight_decay=WEIGHT_DECAY, fused=USE_AMP)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
-        criterion = nn.MSELoss()
 
-        best_val_loss = float('inf')
-        best_model_weights: dict[str, Any] | None = None
+        best_val, best_state, bad_epochs = float('inf'), None, 0
+        n_tr = len(train_idx)
 
         for epoch in range(1, EPOCHS + 1):
             model.train()
-            train_loss = 0.0
-
-            for bx, by in train_loader:
-                bx, by = bx.to(DEVICE, non_blocking=True), by.to(DEVICE, non_blocking=True)
-                optimizer.zero_grad()
-                pred_spectra = model(bx)
-                loss = criterion(pred_spectra, by)
+            perm = train_idx[torch.randperm(n_tr, device=DEVICE)]
+            tr_loss = torch.zeros((), device=DEVICE)
+            for s in range(0, n_tr, BATCH_SIZE):
+                b = perm[s:s + BATCH_SIZE]
+                if len(b) < 2:          # BatchNorm needs >1 sample
+                    continue
+                optimizer.zero_grad(set_to_none=True)
+                with torch.autocast(device_type=DEVICE.type, dtype=torch.bfloat16, enabled=USE_AMP):
+                    pred = model(X_cv[b])
+                loss = F.mse_loss(pred.float(), Y_cv[b].float())
                 loss.backward()
                 optimizer.step()
-                train_loss += loss.item() * bx.size(0)
+                tr_loss += loss.detach() * len(b)      # no per-step .item() sync
 
-            train_loss /= len(train_ds)
-
-            # Validation phase
             model.eval()
-            val_loss = 0.0
-            with torch.no_grad():
-                for bx, by in val_loader:
-                    bx, by = bx.to(DEVICE, non_blocking=True), by.to(DEVICE, non_blocking=True)
-                    pred_spectra = model(bx)
-                    val_loss += criterion(pred_spectra, by).item() * bx.size(0)
+            v = val_loss_scaled(model, X_cv, Y_cv, val_idx)
+            scheduler.step(v)
 
-            val_loss /= len(val_ds)
-            scheduler.step(val_loss)
+            if v < best_val:
+                best_val, bad_epochs = v, 0
+                best_state = {n: t.detach().clone() for n, t in model.state_dict().items()}  # stays on GPU
+            else:
+                bad_epochs += 1
 
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                best_model_weights = {k_w: v_w.cpu().clone() for k_w, v_w in model.state_dict().items()}
+            if epoch <= 3 or epoch % 5 == 0:
+                print(f"  fold {k+1} ep {epoch:02d} | train {tr_loss.item()/n_tr:.4f} | "
+                      f"val {v:.4f} (1.0 = predict-zero) | best {best_val:.4f}")
+            if bad_epochs >= EARLY_STOP_PATIENCE:
+                print(f"  fold {k+1}: early stop at epoch {epoch}")
+                break
 
-        # Restore best model parameters
-        if best_model_weights is not None:
-            model.load_state_dict(best_model_weights)
+        if best_state is not None:
+            model.load_state_dict(best_state)
         else:
-            print("Warning: best_model_weights was never updated during training.")
+            raise ValueError("Best_state freaking sharted itself, try again boyo!")
         model.eval()
 
-        # Generate Out-Of-Fold Spectral Predictions
-        fold_oof_preds = []
-        with torch.no_grad():
-            for bx, _ in val_loader:
-                bx = bx.to(DEVICE, non_blocking=True)
-                fold_oof_preds.append(model(bx).cpu())
-        oof_preds_np[val_mask] = torch.cat(fold_oof_preds, dim=0).numpy()
+        fold_acc = MetricAcc(C)
+        eval_into(model, X_cv, Y_cv, val_idx, fold_acc)
+        eval_into(model, X_test, Y_test, test_idx_gpu, MetricAcc(C), lock_sum=lock_sum)  # accumulates ensemble
+        fm = fold_acc.result()
+        oof_acc.merge(fold_acc)
+        fold_results.append(fm)
 
-        # Generate Lockbox Test Predictions for this fold model
-        X_test_gpu = X_test_cpu.to(DEVICE)
-        with torch.no_grad():
-            lockbox_preds_gpu[k] = model(X_test_gpu)
+        dt = time.perf_counter() - t_fold
+        print(f"Fold {k+1}/{NUM_FOLDS} Complete | Best Val Spectral MSE: {fm['mse']:.6e} | Time: {dt:.1f}s")
+        print_metrics(f"Fold {k+1} (val)", fm)
 
-        dt = time.perf_counter() - t_fold_start
-        print(f"Fold {k + 1}/{NUM_FOLDS} Complete | Best Val Spectral MSE: {best_val_loss:.6e} | Time: {dt:.2f}s")
+        # Save progress after every fold so a kill can't wipe everything out
+        with open(OUTPUT_DIR / f"cts_mlp_fold_metrics_{TIMESTAMP}.json", "w") as f:
+            json.dump(fold_results, f, indent=2)
 
-        del model, optimizer, scheduler, X_test_gpu
+        del model, optimizer, scheduler, best_state
         torch.cuda.empty_cache()
 
-    # 3. Final Lockbox Prediction Ensembling
-    lockbox_pred_avg = lockbox_preds_gpu.mean(dim=0).cpu().numpy()
+    # Lockbox: average the 7 fold models' predictions
+    lock_pred = lock_sum / NUM_FOLDS
+    lock_acc = MetricAcc(C)
+    for s in range(0, len(test_idx), 2048):
+        sl = slice(s, s + 2048)
+        lock_acc.update(Y_test[sl].float() / SCALE, lock_pred[sl] / SCALE)
 
-    # 4. Compute Spectral Metrics (Experimental Only)
-    exp_mask = cv_fold_id >= 0
-    true_cv_spectra = Y_cv_cpu[exp_mask].numpy()
-    pred_cv_spectra = oof_preds_np[exp_mask]
+    oof_m, lock_m = oof_acc.result(), lock_acc.result()
 
-    true_test_spectra = Y_test_cpu.numpy()
-    pred_test_spectra = lockbox_pred_avg
+    print("\n" + "=" * 100)
+    print(" Concentration-to-Spectra (CTS) MLP Performance Summary (original L2-normalised units)")
+    print("=" * 100)
+    print_metrics("OOF (CV)", oof_m)
+    print_metrics("Lockbox (ens.)", lock_m)
+    print(f" OOF baselines      | MSE predict-zero: {oof_m['baseline_mse_predict_zero']:.6e} "
+          f"| MSE predict-channel-mean: {oof_m['baseline_mse_predict_channel_mean']:.6e}")
+    print("=" * 100)
 
-    # Spectral Reconstruction Performance
-    oof_mse = mean_squared_error(true_cv_spectra, pred_cv_spectra)
-    oof_mae = mean_absolute_error(true_cv_spectra, pred_cv_spectra)
-    
-    test_mse = mean_squared_error(true_test_spectra, pred_test_spectra)
-    test_mae = mean_absolute_error(true_test_spectra, pred_test_spectra)
+    with open(OUTPUT_DIR / f"cts_mlp_metrics_{TIMESTAMP}.json", "w") as f:
+        json.dump(dict(oof=oof_m, lockbox=lock_m, folds=fold_results), f, indent=2)
 
-    print("\n" + "=" * 80)
-    print(" Concentration-to-Spectra (CTS) MLP Performance Summary")
-    print("=" * 80)
-    print(f" Out-Of-Fold (OOF)  | Spectral MSE: {oof_mse:.6e} | Spectral MAE: {oof_mae:.6f} a.u.")
-    print(f" Lockbox Test Set   | Spectral MSE: {test_mse:.6e} | Spectral MAE: {test_mae:.6f} a.u.")
-    print("=" * 80 + "\n")
+    if MAKE_PLOT:
+        i = int(np.random.randint(0, len(test_idx)))
+        plot_spectral_overlay_sample(
+            wavelengths_grid, (Y_test[i].float() / SCALE).cpu().numpy(),
+            (lock_pred[i] / SCALE).cpu().numpy(), i,
+            OUTPUT_DIR / f"cts_mlp_sample_{i}_reconstruction_{TIMESTAMP}.png")
 
-    # 5. Plot Sample Reconstruction Overlays
-    sample_idx = np.random.randint(0, len(true_test_spectra))
-    overlay_path = OUTPUT_DIR / f"cts_mlp_sample_{sample_idx}_reconstruction_{TIMESTAMP}.png"
-    plot_spectral_overlay_sample(
-        wavelengths=data['wavelengths'], 
-        y_true=true_test_spectra, 
-        y_pred=pred_test_spectra, 
-        sample_idx=sample_idx, 
-        save_path=overlay_path
-    )
-
-    print(f"CTS Pipeline completed in {(time.perf_counter() - t0_start):.2f} seconds.")
+    print(f"CTS Pipeline completed in {time.perf_counter() - t0_start:.1f} seconds.")
 
 
 if __name__ == "__main__":
