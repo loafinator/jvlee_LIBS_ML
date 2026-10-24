@@ -1,5 +1,7 @@
 __pycache__/
 .venv/
+.vscode/
+*.pyc
 LIBS/trn_val_split_LIBS.h5
 
 # Log Files
@@ -15,3 +17,4 @@ LIBS/trn_val_split_LIBS.h5
 *.zip
 *.bin
 *.npz
+cache/
