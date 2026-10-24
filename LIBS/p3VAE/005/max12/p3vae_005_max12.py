@@ -299,7 +299,7 @@ class PhysicsInformedVAE(nn.Module):
         )
 
         # Initialize residual scale smaller (0.1) so physics decoder handles primary line fitting
-        # self.residual_scale = nn.Parameter(torch.tensor([0.5]))
+        self.residual_scale = nn.Parameter(torch.tensor([0.05]))
 
         nn.init.constant_(self.fc_logvar_phys.weight, 0.0)
         nn.init.constant_(self.fc_logvar_phys.bias, 0.0)
