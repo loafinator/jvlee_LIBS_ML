@@ -5,6 +5,9 @@ import time
 import h5py
 import torch
 import copy
+import gc
+import hashlib
+
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -731,15 +734,279 @@ def print_learning_verdict(y_true, y_pred, tag):
     print(f"  Global Spectrum R^2 = {global_r2:7.3f}  -> {status}")
 
 
+# =============================================================================
+# Memory-lean evaluation of saved checkpoints
+#
+# Peak RAM is a few hundred MB to ~1 GB regardless of dataset size. Nothing of shape
+# [N_rows, n_wavelengths] is ever held in memory:
+#   * spectra are filtered / L2-normalised / scaled by sqrt(n_wl) while STREAMING out of the h5 file
+#     into a float32 disk cache, which is then read back through np.memmap in small chunks;
+#   * predictions are made chunk-by-chunk (each CV row is predicted by the model of its own fold,
+#     the lockbox by the mean of all fold models) and reduced to per-wavelength sufficient statistics;
+#   * the tables, verdicts and plots are produced from those statistics.
+# =============================================================================
+CACHE_DIR = OUTPUT_DIR.parent / "cache"     # ~ (n_clean_rows * n_wavelengths * 4) bytes, built once
+STREAM_CHUNK = 1024                          # rows per chunk (~80 MB per float64 temporary at 10k wavelengths)
+N_PARITY_PEAKS = 12                          # must match the 12 channels plot_parity_grid draws
+
+
+def _cache_tag(h5_path, spike_thresh, exp_dopants, host_elements) -> str:
+    st = Path(h5_path).stat()
+    key = (f"{Path(h5_path).resolve()}|{st.st_size}|{int(st.st_mtime)}|{spike_thresh}|"
+           f"{sorted(exp_dopants)}|{sorted(host_elements)}")
+    return f"{Path(h5_path).stem}_{hashlib.md5(key.encode()).hexdigest()[:10]}"
+
+
+def load_clean_spectra_lean(
+    h5_path: str,
+    cache_dir: Path = CACHE_DIR,
+    spike_thresh: float = THRESH,
+    exp_dopants: set = EXP_DOPANTS,
+    host_elements: set = HOST_ELEMENTS,
+    chunk: int = 4096,
+):
+    """Drop-in for `load_crossval_data(...)` + `* sqrt(n_wavelengths)` that never loads the spectra.
+
+    Applies exactly the same row filters, L2 normalisation and RMS-1 scaling, but streams the h5 'y'
+    dataset in row chunks into a float32 file (built once, then reused). Returns
+    (data, Y): `data` has the same keys as load_crossval_data minus 'y'; `Y` is a read-only
+    np.memmap of shape [n_clean_rows, n_wavelengths] already in RMS-1 units."""
+    cache_dir = Path(cache_dir)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    tag = _cache_tag(h5_path, spike_thresh, exp_dopants, host_elements)
+    bin_path = cache_dir / f"{tag}_spectra_f32.bin"
+    meta_path = cache_dir / f"{tag}_meta.npz"
+    keep_elements = host_elements.union(exp_dopants)
+
+    with h5py.File(h5_path, 'r') as hf:
+        X = get_h5_ds(hf, 'X')[:].astype(np.float32)
+        is_synth = get_h5_ds(hf, 'is_synthetic')[:]
+        is_lockbox = get_h5_ds(hf, 'is_lockbox')[:].astype(bool) if 'is_lockbox' in hf else None
+        group_id = get_h5_ds(hf, 'group_id')[:]
+        wavelengths = get_h5_ds(hf, 'wavelengths')[:]
+        names = [
+            n.decode('utf-8') if isinstance(n, bytes) else str(n)
+            for n in get_h5_ds(hf, 'feature_cols')[:]
+        ]
+        ds_y = get_h5_ds(hf, 'y')
+        n_total, n_wl = ds_y.shape
+
+        keep_idx = [i for i, name in enumerate(names) if name in keep_elements]
+        extra_dopant_idx = [i for i, name in enumerate(names) if name not in keep_elements]
+        has_extra_dopants = (X[:, extra_dopant_idx] > 0).any(axis=1)
+        valid_synth_mask = (is_synth == 0) | (~has_extra_dopants)
+
+        if bin_path.exists() and meta_path.exists():
+            meta = np.load(meta_path)
+            final_row_mask = meta['final_row_mask']
+            n_dropped_spikes = int(meta['n_dropped_spikes'])
+            n_dropped_synth = int(meta['n_dropped_synth'])
+            print(f"Using cached clean spectra: {bin_path}")
+        else:
+            print("Building clean-spectra cache (one-time streaming pass over the h5 file)...")
+            scale = n_wl ** 0.5
+            clean_spike_mask = np.zeros(n_total, dtype=bool)
+            final_row_mask = np.zeros(n_total, dtype=bool)
+            tmp_path = bin_path.with_suffix('.tmp')
+            with open(tmp_path, 'wb') as f:
+                for a in range(0, n_total, chunk):
+                    b = min(a + chunk, n_total)
+                    yc = ds_y[a:b].astype(np.float32)
+                    clean = yc.max(axis=1) <= spike_thresh
+                    sel = clean & valid_synth_mask[a:b]
+                    clean_spike_mask[a:b] = clean
+                    final_row_mask[a:b] = sel
+                    if sel.any():
+                        ys = yc[sel]
+                        norms = np.maximum(np.linalg.norm(ys, axis=1, keepdims=True), 1e-8)
+                        ((ys / norms) * scale).astype(np.float32).tofile(f)
+            n_dropped_spikes = n_total - int(clean_spike_mask.sum())
+            n_dropped_synth = int((clean_spike_mask & ~valid_synth_mask).sum())
+            tmp_path.replace(bin_path)
+            np.savez(meta_path, final_row_mask=final_row_mask,
+                     n_dropped_spikes=n_dropped_spikes, n_dropped_synth=n_dropped_synth)
+
+    n_rows = int(final_row_mask.sum())
+    expected = n_rows * n_wl * 4
+    if bin_path.stat().st_size != expected:
+        raise ValueError(f"Cache {bin_path} has {bin_path.stat().st_size} bytes, expected {expected}. "
+                         f"Delete it (and its _meta.npz) so it is rebuilt.")
+
+    names_clean = [names[i] for i in keep_idx]
+    if n_dropped_spikes > 0 or n_dropped_synth > 0:
+        print(f"Data loading summary:")
+        print(f"  - Dropped {n_dropped_spikes} corrupted saturation shots (max > {spike_thresh}).")
+        print(f"  - Filtered {n_dropped_synth} synthetic shots containing non-experimental dopants.")
+        print(f"  - Retained {n_rows} total shots across {len(names_clean)} features: {names_clean}")
+
+    data = dict(
+        X=torch.from_numpy(X[final_row_mask][:, keep_idx]),
+        is_synth=torch.from_numpy(is_synth[final_row_mask]).long(),
+        group_id=group_id[final_row_mask],
+        wavelengths=wavelengths,
+        names=names_clean,
+    )
+    if is_lockbox is not None:
+        data['is_lockbox'] = is_lockbox[final_row_mask]
+
+    Y = np.memmap(bin_path, dtype=np.float32, mode='r', shape=(n_rows, n_wl))
+    return data, Y
+
+
+def stream_spectral_stats(Y, rows, predict_fn, conc, folds=None, train_mean=None,
+                          n_peaks: int = N_PARITY_PEAKS, chunk: int = STREAM_CHUNK):
+    """Two chunked passes over Y[rows]; returns per-wavelength sufficient statistics.
+
+    rows       : indices into Y (the rows being evaluated)
+    predict_fn : (conc_chunk, folds_chunk_or_None) -> predicted spectra, numpy [chunk, n_wl]
+    conc       : model inputs aligned with `rows`
+    folds      : per-row fold id (each row is predicted by its own fold's model) or None (ensemble)
+    train_mean : spectrum used by the 'Predict Mean' strategy (default: the mean of these rows)
+    """
+    rows = np.asarray(rows)
+    n, n_wl = len(rows), Y.shape[1]
+
+    # Pass 1: truth only (mean spectrum -> region masks, Predict-Zero and Predict-Mean baselines)
+    s1, s2, sabs = np.zeros(n_wl), np.zeros(n_wl), np.zeros(n_wl)
+    for a in range(0, n, chunk):
+        t = np.asarray(Y[rows[a:a + chunk]], dtype=np.float64)
+        s1 += t.sum(0)
+        s2 += np.einsum('ij,ij->j', t, t)
+        sabs += np.abs(t).sum(0)
+    mean_spec = s1 / n
+    mu = mean_spec if train_mean is None else np.asarray(train_mean, dtype=np.float64)
+    top_cols = np.argsort(mean_spec)[-n_peaks:][::-1]
+
+    # Pass 2: truth + predictions
+    sse_m, sae_m = np.zeros(n_wl), np.zeros(n_wl)
+    sse_mu, sae_mu = np.zeros(n_wl), np.zeros(n_wl)
+    row_r2 = np.empty(n)
+    yt_top = np.empty((n, len(top_cols)), dtype=np.float32)
+    yp_top = np.empty((n, len(top_cols)), dtype=np.float32)
+    for a in range(0, n, chunk):
+        b = min(a + chunk, n)
+        t = np.asarray(Y[rows[a:b]], dtype=np.float64)
+        p = np.asarray(predict_fn(conc[a:b], None if folds is None else folds[a:b]), dtype=np.float64)
+        d = t - p
+        sse_m += np.einsum('ij,ij->j', d, d)
+        sae_m += np.abs(d).sum(0)
+        dm = t - mu
+        sse_mu += np.einsum('ij,ij->j', dm, dm)
+        sae_mu += np.abs(dm).sum(0)
+        ss_res = np.einsum('ij,ij->i', d, d)
+        tc = t - t.mean(1, keepdims=True)
+        ss_tot = np.einsum('ij,ij->i', tc, tc) + 1e-08
+        row_r2[a:b] = 1.0 - ss_res / ss_tot
+        yt_top[a:b] = t[:, top_cols]
+        yp_top[a:b] = p[:, top_cols]
+
+    return dict(n=n, s1=s1, s2=s2, sabs=sabs, mean_spec=mean_spec, mu=mu, top_cols=top_cols,
+                sse_m=sse_m, sae_m=sae_m, sse_mu=sse_mu, sae_mu=sae_mu,
+                row_r2=row_r2, yt_top=yt_top, yp_top=yp_top)
+
+
+def print_table_from_stats(st, title_tag):
+    """Same table as print_benchmark_table, computed from stream_spectral_stats() output."""
+    mean_spec = st['mean_spec']
+    top = mean_spec >= np.percentile(mean_spec, 90)
+    regions = [("Full Spectrum", np.arange(len(mean_spec))),
+               ("Peak Channels (Top 10%)", np.where(top)[0]),
+               ("Continuum / Background", np.where(~top)[0])]
+    sst_w = st['s2'] - st['s1'] ** 2 / st['n']
+    strategies = [("Predict Zero", st['s2'], st['sabs']),
+                  ("Predict Mean", st['sse_mu'], st['sae_mu']),
+                  ("MLP Model", st['sse_m'], st['sae_m'])]
+
+    print("\n" + "=" * 95); print(f" {title_tag}"); print("=" * 95)
+    print(f"{'Spectral Region':<25} | {'Strategy':<18} | {'Global R^2':<10} | {'MAE':<10} | {'RMSE':<10}")
+    print("-" * 95)
+    for reg_name, cols in regions:
+        sst = float(sst_w[cols].sum())
+        cnt = st['n'] * len(cols)
+        for strat_name, sse_w, sae_w in strategies:
+            sse, sae = float(sse_w[cols].sum()), float(sae_w[cols].sum())
+            r2 = 1.0 - sse / sst if sst > 1e-8 else 0.0
+            print(f"{reg_name:<25} | {strat_name:<18} | {r2:10.4f} | {sae / cnt:10.4f} | {np.sqrt(sse / cnt):10.4f}")
+        print("-" * 95)
+
+
+def print_verdict_from_stats(st, tag):
+    """Same read-out as print_learning_verdict, from stats."""
+    sst = float((st['s2'] - st['s1'] ** 2 / st['n']).sum())
+    global_r2 = float(1.0 - st['sse_m'].sum() / sst) if sst > 1e-8 else 0.0
+    print(f"\n--- Learning verdict: {tag} ---")
+    if global_r2 <= 0.05:
+        status = "NOT LEARNING (no better than predicting the mean spectrum)"
+    elif global_r2 < 0.5:
+        status = "weak"
+    else:
+        status = "learning"
+    print(f"  Global Spectrum R^2 = {global_r2:7.3f}  -> {status}")
+
+
+def make_predict_fn(models, n_wl):
+    @torch.no_grad()
+    def fn(conc_np, folds_np):
+        x = torch.from_numpy(np.ascontiguousarray(conc_np, dtype=np.float32)).to(DEVICE)
+        if folds_np is None:                      # ensemble mean over all fold models
+            out = torch.zeros(len(x), n_wl, device=DEVICE)
+            for m in models:
+                out += m(x).float()
+            out /= len(models)
+        else:                                     # each row -> the model of its own fold
+            out = torch.empty(len(x), n_wl, device=DEVICE)
+            for k in np.unique(folds_np):
+                sel = torch.from_numpy(folds_np == k).to(DEVICE)
+                out[sel] = models[int(k)](x[sel]).float()
+        return out.cpu().numpy()
+    return fn
+
+
+@torch.no_grad()
+def per_model_preds(models, conc_row):
+    """[K, n_wl] predictions of every fold model for one sample (for the +-1 sigma band)."""
+    x = torch.from_numpy(np.ascontiguousarray(conc_row[None], dtype=np.float32)).to(DEVICE)
+    return np.stack([m(x).float().cpu().numpy()[0] for m in models])
+
+
+class _Rows:
+    """Duck-typed stand-in for a big [N, n_wl] array when plot_sample_spectra only touches a few rows."""
+    def __init__(self, d, ndim=2):
+        self.d, self.ndim = d, ndim
+
+    def __getitem__(self, key):
+        if isinstance(key, tuple):      # fold_preds[:, idx, :] on the 3-D [K, N, n_wl] layout
+            key = key[1]
+        return self.d[int(key)]
+
+
+class _Cols:
+    """Duck-typed stand-in for a big [N, n_wl] array when plot_parity_grid only touches 12 columns."""
+    def __init__(self, mean_spec, cols):
+        self.mean_spec, self.cols = mean_spec, cols
+
+    def mean(self, axis=0):
+        return self.mean_spec
+
+    def __getitem__(self, key):
+        return self.cols[int(key[1])]
+
+
+def _parity_views(st):
+    names = [int(c) for c in st['top_cols']]
+    yt = _Cols(st['mean_spec'], {c: st['yt_top'][:, j] for j, c in enumerate(names)})
+    yp = _Cols(st['mean_spec'], {c: st['yp_top'][:, j] for j, c in enumerate(names)})
+    return yt, yp
+
+
 def evaluate_saved_models(
         model_prefix: str | Path
 ):
     print(f"=== Running Standalone Evaluation from Saved Checkpoints [{DEVICE}] ===")
-
     prefix_str = str(model_prefix)
-    
-    # 1. Reload original data and split indices
-    data = load_crossval_data(H5_FILE)
+
+    # 1. Metadata + memory-mapped spectra (the spectra are never loaded into RAM)
+    data, Y = load_clean_spectra_lean(H5_FILE)
     split_path = SPLIT_DIR / f'max12_{NUM_FOLDS}_folds_seed{SEED}.npz'
     test_idx, cv_idx, cv_fold_id = build_splits_once(data, split_path, NUM_FOLDS, seed=SEED)
     has_test = len(test_idx) > 0
@@ -747,26 +1014,16 @@ def evaluate_saved_models(
     dopant_indices = [i for i, name in enumerate(data['names']) if name not in HOST_ELEMENTS]
     feature_names = [data['names'][i] for i in dopant_indices]
     input_dim = len(dopant_indices)
-    output_dim = data['y'].shape[1]
+    output_dim = Y.shape[1]
     wavelengths = data['wavelengths']
 
-    # Slice input concentrations & scale target spectra exactly as in training
-    X_cv = data['X'][cv_idx][:, dopant_indices].to(DEVICE)
-    fold_t = torch.from_numpy(cv_fold_id.astype(np.int64)).to(DEVICE)
-    
-    scale = output_dim ** 0.5
-    true_cv_spec = (data['y'][cv_idx] * scale).numpy()
-    
-    if has_test:
-        X_test = data['X'][test_idx][:, dopant_indices].to(DEVICE)
-        te_idx = torch.arange(len(test_idx), device=DEVICE)
-        true_test_spec = (data['y'][test_idx] * scale).numpy()
+    X_cv_np = data['X'][cv_idx][:, dopant_indices].numpy().astype(np.float32)       # tiny (N x n_dopants)  # type: ignore
+    X_test_np = data['X'][test_idx][:, dopant_indices].numpy().astype(np.float32) if has_test else None  # type: ignore
+    del data
+    gc.collect()
 
-    # Pre-allocate prediction containers
-    oof_preds_np = np.zeros((len(cv_idx), output_dim), dtype=np.float32)
-    lockbox_preds = torch.zeros((NUM_FOLDS, len(test_idx), output_dim), device=DEVICE) if has_test else None
-
-    # 2. Load model weights and run fast evaluation forward-passes
+    # 2. Load all fold models (~50 MB each)
+    models = []
     for k in range(NUM_FOLDS):
         ckpt_path = Path(f"{prefix_str}_fold{k + 1}.pt")
         if not ckpt_path.exists():
@@ -774,111 +1031,71 @@ def evaluate_saved_models(
 
         print(f"Loading checkpoint: {ckpt_path.name}")
         checkpoint = torch.load(ckpt_path, map_location=DEVICE)
-
-        # Re-instantiate architecture and load trained weights
         model = PyTorchMLP(in_features=input_dim, out_features=output_dim).to(DEVICE)
         model.load_state_dict(checkpoint['model_state_dict'])
         model.eval()
+        models.append(model)
+    predict_fn = make_predict_fn(models, output_dim)
 
-        va_idx = torch.nonzero(fold_t == k).squeeze(1)
+    # 3. Streamed evaluation: OOF (experimental CV rows, each predicted by its own fold's model)
+    exp_pos = np.where(cv_fold_id >= 0)[0]
+    cv_rows = cv_idx[exp_pos]
+    print("Streaming OOF evaluation (constant memory)...")
+    st_cv = stream_spectral_stats(Y, cv_rows, predict_fn, X_cv_np[exp_pos], folds=cv_fold_id[exp_pos])
+    print_table_from_stats(st_cv, "MLP OOF Benchmarks (Loaded Checkpoints)")
+    print_verdict_from_stats(st_cv, "OOF")
 
-        # Generate predictions
-        oof = predict(model, X_cv, va_idx).cpu().numpy()
-        oof_preds_np[va_idx.cpu().numpy()] = oof
-
-        if has_test:
-            lockbox_preds[k] = predict(model, X_test, te_idx)   # type: ignore
-
-        del model
-        if DEVICE.type == "cuda":
-            torch.cuda.empty_cache()
-
-    # 3. Compute benchmark tables with chunked memory safety
-    exp_mask = cv_fold_id >= 0
-    true_cv_eval = true_cv_spec[exp_mask]
-    pred_cv_eval = oof_preds_np[exp_mask]
-    train_mean_cv = true_cv_eval.mean(axis=0)
-
-    print_benchmark_table(
-        y_true=true_cv_eval, y_pred_model=pred_cv_eval, y_train_mean=train_mean_cv,
-        title_tag="MLP OOF Benchmarks (Loaded Checkpoints)",
-        wavelengths=wavelengths,
-    )
-    print_learning_verdict(true_cv_eval, pred_cv_eval, "OOF")
-
+    st_te = None
     if has_test:
-        lockbox_pred_avg = lockbox_preds.mean(dim=0).cpu().numpy()   # type: ignore
-        print_benchmark_table(
-            y_true=true_test_spec, y_pred_model=lockbox_pred_avg, y_train_mean=train_mean_cv,   # type: ignore
-            title_tag=f"MLP Lockbox Benchmarks (Ensemble of {NUM_FOLDS} Checkpoints)",
-            wavelengths=wavelengths,
-        )
-        print_learning_verdict(true_test_spec, lockbox_pred_avg, "Lockbox")   # type: ignore
+        print("Streaming lockbox evaluation (constant memory)...")
+        st_te = stream_spectral_stats(Y, test_idx, predict_fn, X_test_np, folds=None,
+                                      train_mean=st_cv['mean_spec'])
+        print_table_from_stats(st_te, f"MLP Lockbox Benchmarks (Ensemble of {NUM_FOLDS} Checkpoints)")
+        print_verdict_from_stats(st_te, "Lockbox")
 
-    # 4. Generate figures
-    X_cv_cpu = data['X'][cv_idx][:, dopant_indices]
-    X_test_cpu = data['X'][test_idx][:, dopant_indices] if has_test else None
-
-    sample_r2s = []
-    for idx in range(len(true_cv_eval)):
-        yt = true_cv_eval[idx]
-        yp = pred_cv_eval[idx]
-        ss_res = np.sum((yt - yp) ** 2)
-        ss_tot = np.sum((yt - np.mean(yt)) ** 2) + 1e-08
-        sample_r2s.append(1.0 - (ss_res/ss_tot))
-
-    sample_r2s = np.array(sample_r2s)
-    best_idx = int(np.argmax(sample_r2s))
-    worst_idx = int(np.argmin(sample_r2s))
-
+    # 4. Figures
+    yt_par, yp_par = _parity_views(st_cv)
     plot_parity_grid(
-        true_cv_eval, 
-        pred_cv_eval, 
+        yt_par, yp_par,
         wavelengths=wavelengths,
         title_tag="MLP CONCENTRATION TO SPECTRA OOF",
         save_path=OUTPUT_DIR / "eval_oof_parity.png"
     )
+    picks = [int(np.argmax(st_cv['row_r2'])), int(np.argmin(st_cv['row_r2']))]
     plot_sample_spectra(
-        y_true=true_cv_eval, 
-        fold_preds=pred_cv_eval, 
+        y_true=_Rows({p: np.asarray(Y[cv_rows[p]]) for p in picks}),
+        fold_preds=_Rows({p: predict_fn(X_cv_np[exp_pos[p]][None], cv_fold_id[exp_pos[p]][None])[0]
+                          for p in picks}),
         wavelengths=wavelengths,
-        sample_indices=[best_idx, worst_idx],
-        X=X_cv_cpu,
+        sample_indices=picks,
+        X=_Rows({p: X_cv_np[exp_pos[p]] for p in picks}),
         feature_names=feature_names,
         title_tag="MLP OOF",
         save_path=OUTPUT_DIR / f"eval_oof_samples_{TIMESTAMP}.png"
     )
 
-    if has_test:
-        lockbox_pred_avg = lockbox_preds.mean(dim=0).cpu().numpy()  # type: ignore
-        
-        # Calculate Lockbox sample-wise R^2
-        test_r2s = np.array([
-            1.0 - (np.sum((true_test_spec[i] - lockbox_pred_avg[i]) ** 2) /   # type: ignore
-                (np.sum((true_test_spec[i] - np.mean(true_test_spec[i])) ** 2) + 1e-8))  # type: ignore
-            for i in range(len(true_test_spec))  # type: ignore
-        ])
-        test_best_idx = int(np.argmax(test_r2s))
-        test_worst_idx = int(np.argmin(test_r2s))
-
+    if has_test and st_te is not None:
+        yt_par, yp_par = _parity_views(st_te)
         plot_parity_grid(
-            true_test_spec, lockbox_pred_avg, wavelengths=wavelengths,  # type: ignore
+            yt_par, yp_par, wavelengths=wavelengths,
             title_tag="MLP LOCKBOX ENSEMBLE",
             save_path=OUTPUT_DIR / "eval_lockbox_parity.png"
         )
+        picks = [int(np.argmax(st_te['row_r2'])), int(np.argmin(st_te['row_r2']))]
         plot_sample_spectra(
-            y_true=true_test_spec,  # type: ignore
-            fold_preds=lockbox_preds.cpu().numpy(),  # type: ignore
+            y_true=_Rows({p: np.asarray(Y[test_idx[p]]) for p in picks}),
+            fold_preds=_Rows({p: per_model_preds(models, X_test_np[p]) for p in picks}, ndim=3),  # type: ignore
             wavelengths=wavelengths,
-            sample_indices=[test_best_idx, test_worst_idx],  # Pass best/worst lockbox indices
-            X=X_test_cpu,
+            sample_indices=picks,
+            X=_Rows({p: X_test_np[p] for p in picks}),  # type: ignore
             feature_names=feature_names,
-            title_tag="MLP Lockbox Ensemble Best vs. Worst",
+            title_tag="MLP Lockbox Ensemble",
             save_path=OUTPUT_DIR / f"eval_lockbox_samples_{TIMESTAMP}.png"
         )
 
     print("Evaluation complete! All figures and benchmark metrics generated safely.")
-# =============================================================================
+
+#=============================================================================
 # Main Execution Pipeline
 # =============================================================================
 def main():
