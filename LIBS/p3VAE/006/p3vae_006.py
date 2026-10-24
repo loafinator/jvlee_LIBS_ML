@@ -29,7 +29,7 @@ from torch.utils.data import DataLoader, Dataset, get_worker_info
 from torch.utils.checkpoint import checkpoint
 from tqdm import tqdm
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from setup import add_project_root_to_path
 add_project_root_to_path(parent_generation=1)
 
@@ -250,33 +250,33 @@ class PhysicsInformedVAE(nn.Module):
         self.matrix_latent_dim = matrix_latent_dim
 
         # Smoother feature extraction funnel: 10,000 -> 4096 -> 1024 -> 256 -> 128
-        # self.encoder = nn.Sequential(
-        #     nn.Linear(input_dim, 4096),
-        #     nn.LayerNorm(4096),
-        #     nn.ReLU(),
-        #     nn.Dropout(p=0.15),
-
-        #     nn.Linear(4096, 1024),
-        #     nn.LayerNorm(1024),
-        #     nn.ReLU(),
-        #     nn.Dropout(p=0.15),
-
-        #     nn.Linear(1024, 256),
-        #     nn.LayerNorm(256),
-        #     nn.ReLU(),
-        #     nn.Dropout(p=0.15),
-
-        #     nn.Linear(256, 128),
-        #     nn.LayerNorm(128),
-        #     nn.ReLU(),
-        #     nn.Dropout(p=0.15)
-        # )
         self.encoder = nn.Sequential(
-            nn.Linear(input_dim, 256),
+            nn.Linear(input_dim, 4096),
+            nn.LayerNorm(4096),
             nn.ReLU(),
+            nn.Dropout(p=0.15),
+
+            nn.Linear(4096, 1024),
+            nn.LayerNorm(1024),
+            nn.ReLU(),
+            nn.Dropout(p=0.15),
+
+            nn.Linear(1024, 256),
+            nn.LayerNorm(256),
+            nn.ReLU(),
+            nn.Dropout(p=0.15),
+
             nn.Linear(256, 128),
-            nn.ReLU()
+            nn.LayerNorm(128),
+            nn.ReLU(),
+            nn.Dropout(p=0.15)
         )
+        # self.encoder = nn.Sequential(
+        #     nn.Linear(input_dim, 256),
+        #     nn.ReLU(),
+        #     nn.Linear(256, 128),
+        #     nn.ReLU()
+        # )
 
         phys_dim = self.n_elements + self.n_broadening
         self.fc_mean_phys = nn.Linear(128, phys_dim)
@@ -299,7 +299,7 @@ class PhysicsInformedVAE(nn.Module):
         )
 
         # Initialize residual scale smaller (0.1) so physics decoder handles primary line fitting
-        # self.residual_scale = nn.Parameter(torch.tensor([0.5]))
+        self.residual_scale = nn.Parameter(torch.tensor([0.05]))
 
         nn.init.constant_(self.fc_logvar_phys.weight, 0.0)
         nn.init.constant_(self.fc_logvar_phys.bias, 0.0)
@@ -342,8 +342,8 @@ class PhysicsInformedVAE(nn.Module):
         z_matrix = self.reparameterize(mu_m, logvar_m)
 
         ideal_physics_spectrum = self.physics_decoder(concentrations, broadening, chunk_size=CHUNK_SIZE)
-        # matrix_residual = self.matrix_decoder(z_matrix) * self.residual_scale
-        matrix_residual = self.matrix_decoder(z_matrix)
+        matrix_residual = self.matrix_decoder(z_matrix) * self.residual_scale
+        # matrix_residual = self.matrix_decoder(z_matrix)
         
         reconstructed_spectrum = ideal_physics_spectrum + matrix_residual
 
@@ -403,7 +403,7 @@ class PhysicsVAELoss(nn.Module):
         true_conc = batch["targets"]
 
         # 1. Spectral Reconstruction Loss
-        recon_loss = F.mse_loss(x_recon, x_target, reduction="mean")
+        recon_loss = F.mse_loss(x_recon, x_target, reduction="none").sum(dim=-1).mean()
 
         # 2. Dopant-Focused Concentration Loss
         if self.use_log_conc:
@@ -1102,8 +1102,13 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
     else:
         model = raw_model
 
-    criterion = PhysicsVAELoss(element_weights=element_weights, alpha_recon=1.0, beta_sup=10.0,
-                               gamma_kl=1e-4, use_log_conc=True).to(device_obj)
+    criterion = PhysicsVAELoss(
+        element_weights=element_weights, 
+        alpha_recon=1.0, 
+        beta_sup=20.0,
+        gamma_kl=1e-4, 
+        use_log_conc=False
+    ).to(device_obj)
     optimizer = torch.optim.AdamW(raw_model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=lr_patience, min_lr=MIN_LR)
     use_amp = device_obj.type == 'cuda'
@@ -1378,37 +1383,37 @@ if __name__ == "__main__":
     # --------------------------------------------------
     # region Train Model
     # --------------------------------------------------
-    # results = train_kfold_physics_vae(
-    #     h5_path=h5_file,
-    #     master_table_path=master_table_path,
-    #     log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/005_max12_log.txt',
-    #     save_path=model_save_path,
-    #     num_folds=k,
-    #     folds=None,              # [0] smoke test first, then None for all five
-    #     device='cuda',
-    #     lr_patience=4,
-    #     stop_patience=20,
-    #     use_compile=False
-    # )
-    # print("Training Results (fold, best_epoch, best_val_loss):")
-    # print(results)              # (fold, best_epoch, best_val_loss)
+    results = train_kfold_physics_vae(
+        h5_path=h5_file,
+        master_table_path=master_table_path,
+        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/006__log.txt',
+        save_path=model_save_path,
+        num_folds=k,
+        folds=None,              # [0] smoke test first, then None for all five
+        device='cuda',
+        lr_patience=4,
+        stop_patience=20,
+        use_compile=False
+    )
+    print("Training Results (fold, best_epoch, best_val_loss):")
+    print(results)              # (fold, best_epoch, best_val_loss)
     # endregion
 
     # --------------------------------------------------
     # region Evaluate Model
     # --------------------------------------------------
     # model_prefix = str(model_save_path.with_suffix(""))  # Strips .pt extension to match saved files
-    model_prefix = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261015_133024"
-    evaluate_and_plot_kfold(
-        h5_path=h5_file,
-        master_table_path=master_table_path,
-        model_prefix=model_prefix,
-        num_folds=k,
-        output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots",
-        device="cuda",
-        model_tag='20261015_133024',
-        max_wt_percent=12.0
-    )
+    # model_prefix = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_20261015_133024"
+    # evaluate_and_plot_kfold(
+    #     h5_path=h5_file,
+    #     master_table_path=master_table_path,
+    #     model_prefix=model_prefix,
+    #     num_folds=k,
+    #     output_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots/006",
+    #     device="cuda",
+    #     model_tag='20261015_133024',
+    #     max_wt_percent=12.0
+    # )
     # endregion
 
     loop_time_end = time.perf_counter()

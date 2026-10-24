@@ -4,6 +4,7 @@ import sys
 import time
 import h5py
 import torch
+import copy
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -41,12 +42,17 @@ HOST_ELEMENTS = {'Li', 'K', 'Cl'}
 EXP_DOPANTS = {'Ce', 'Gd', 'Sm', 'U'}
 
 # MLP Hyperparameters (Concentration -> Spectrum)
-EPOCHS = 80
+EPOCHS = 150
 BATCH_SIZE = 256
 LEARNING_RATE = 1e-3          # peak LR of the one-cycle schedule
 WEIGHT_DECAY = 1e-4
 HIDDEN_DIMS = [256, 512, 1024, 1024]
 DROPOUT = 0.2
+
+# Early stopping config
+PATIENCE = 15
+MIN_DELTA = 1e-06
+LOG_EVERY = 1
 
 # Speed options
 USE_AMP = True                # bf16 autocast on Ampere+, fp16 + GradScaler on older GPUs
@@ -56,7 +62,7 @@ GPU_DATA_BUDGET_FRAC = 0.6    # keep dataset on-GPU if it fits
 # Diagnostics
 RUN_SANITY_CHECKS = True      # data stats + overfit-a-tiny-subset test
 RUN_SHUFFLE_CONTROL = True    # train on shuffled targets; held-out R^2 must collapse to ~0
-LOG_EVERY = 5                 # epochs between held-out loss evaluations
+# LOG_EVERY = 5                 # epochs between held-out loss evaluations
 
 TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -518,7 +524,7 @@ def predict(model: nn.Module, Xs: torch.Tensor, idx: torch.Tensor, bs: int = 102
 
 
 def fit(model, Xs, Y_fit, Y_eval, tr_idx, va_idx, epochs, seed, verbose=True):
-    """Fixed-length training with a one-cycle LR schedule."""
+    """Training loop with validation checking and early stopping with weight restoration."""
     n = tr_idx.numel()
     steps = n // BATCH_SIZE
     if steps == 0:
@@ -527,11 +533,17 @@ def fit(model, Xs, Y_fit, Y_eval, tr_idx, va_idx, epochs, seed, verbose=True):
     g = torch.Generator(device=tr_idx.device)
     g.manual_seed(seed)
     opt = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
-    sched = torch.optim.lr_scheduler.OneCycleLR(
-        opt, max_lr=LEARNING_RATE, total_steps=epochs * steps, pct_start=0.1
+    sched = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        opt, mode='min', factor=0.5, patience=5
     )
     amp_dtype, scaler = amp_setup()
-    hist = dict(epoch=[], train=[], val=[])
+    hist = dict(epoch=[], train=[], val=[], stopped_epoch=epochs)
+    
+    # Early Stopping state tracking
+    best_val_loss = float("inf")
+    best_model_weights = None
+    patience_counter = 0
+    
     t0 = time.perf_counter()
 
     for ep in range(1, epochs + 1):
@@ -555,23 +567,50 @@ def fit(model, Xs, Y_fit, Y_eval, tr_idx, va_idx, epochs, seed, verbose=True):
             else:
                 loss.backward()
                 opt.step()
-            sched.step()
+            # sched.step()
             running += loss.detach()
 
+        # Evaluate Validation Metrics
         if ep == 1 or ep % LOG_EVERY == 0 or ep == epochs:
             tr_loss = (running / steps).item()
             va_pred = predict(model, Xs, va_idx)
             va_loss = F.mse_loss(va_pred, Y_eval[va_idx.to(Y_eval.device)]).item()
-            hist["epoch"].append(ep); hist["train"].append(tr_loss); hist["val"].append(va_loss)
+
+            sched.step(va_loss)
+            
+            hist["epoch"].append(ep)
+            hist["train"].append(tr_loss)
+            hist["val"].append(va_loss)
+
             if verbose:
                 print(f"    ep {ep:3d}/{epochs} | train MSE {tr_loss:.6f} (dropout on) | "
                       f"held-out MSE {va_loss:.6f} | lr {sched.get_last_lr()[0]:.2e}")
+
+            # Early Stopping Evaluation
+            if va_loss < (best_val_loss - MIN_DELTA):
+                best_val_loss = va_loss
+                best_model_weights = copy.deepcopy(model.state_dict())
+                patience_counter = 0
+            else:
+                patience_counter += 1
+
+            if patience_counter >= PATIENCE:
+                if verbose:
+                    print(f"    --> Early stopping triggered at epoch {ep}. Best Val MSE: {best_val_loss:.6f}")
+                hist["stopped_epoch"] = ep  # type: ignore
+                break
+
+    # Restore best validation checkpoint weights
+    if best_model_weights is not None:
+        model.load_state_dict(best_model_weights)
+        if verbose:
+            print(f"    --> Restored best model weights from epoch {hist['epoch'][hist['val'].index(best_val_loss)]}")
 
     if DEVICE.type == "cuda":
         torch.cuda.synchronize()
     dt = time.perf_counter() - t0
     hist["seconds"] = dt  # type: ignore
-    hist["samples_per_sec"] = epochs * steps * BATCH_SIZE / dt
+    hist["samples_per_sec"] = len(hist["epoch"]) * steps * BATCH_SIZE / dt
     return hist
 
 
@@ -910,11 +949,14 @@ def main():
         print(f"Fold {k + 1}/{NUM_FOLDS} | train rows {tr_idx.numel()} | held-out rows {va_idx.numel()} | "
               f"predict-mean held-out MSE {base_mse:.6f}")
 
+        # Inside main() K-fold loop:
         torch.manual_seed(SEED + k)
         model = new_model(input_dim, output_dim, Y_cv[tr_idx.to(DEVICE)].mean(0))
         hist = fit(model, Xs_cv, Y_cv, Y_cv, tr_idx, va_idx, EPOCHS, seed=SEED + k)
-        histories.append(hist); baselines.append(base_mse)
+        histories.append(hist)
+        baselines.append(base_mse)
 
+        # OOF and Lockbox predictions use the best restored weights
         oof = predict(model, Xs_cv, va_idx).cpu().numpy()
         oof_preds_np[va_idx.cpu().numpy()] = oof
         if has_test:
@@ -922,15 +964,19 @@ def main():
 
         torch.save({
             'fold': k,
-            'model_state_dict': model.state_dict(),
+            'model_state_dict': model.state_dict(),  # Saves best validation weights
             'input_dim': input_dim,
             'output_dim': output_dim,
+            'stopped_epoch': hist["stopped_epoch"],
+            'best_val_mse': min(hist["val"]),
         }, ckpt_dir / f"mlp_{TIMESTAMP}_fold{k + 1}.pt")
 
-        ratio = hist["val"][-1] / base_mse
-        print(f"Fold {k + 1}/{NUM_FOLDS} Complete | held-out MSE {hist['val'][-1]:.6f} "
-              f"({100 * ratio:.1f}% of predict-mean baseline) | {hist['seconds']:.1f}s "
-              f"({hist['samples_per_sec']:,.0f} samples/s)")
+        best_mse = min(hist["val"])
+        ratio = best_mse / base_mse
+        print(f"Fold {k + 1}/{NUM_FOLDS} Complete | Best held-out MSE {best_mse:.6f} "
+              f"({100 * ratio:.1f}% of baseline) stopped at epoch {hist['stopped_epoch']} | "
+              f"{hist['seconds']:.1f}s ({hist['samples_per_sec']:,.0f} samples/s)")
+
         del model
         if DEVICE.type == "cuda":
             torch.cuda.empty_cache()
@@ -1013,4 +1059,4 @@ def main():
 
 if __name__ == "__main__":
     # main()
-    evaluate_saved_models(model_prefix='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/trained_models/mlp_20261024_080258')
+    evaluate_saved_models(model_prefix='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/trained_models/mlp_20261024_135220')
