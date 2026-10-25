@@ -44,7 +44,7 @@ OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/poster_plots
 # -----------------------------------------------------------------------------
 # TOGGLE FLAGS FOR TROUBLESHOOTING
 # -----------------------------------------------------------------------------
-ENABLE_P3VAE = False   # Set to True when P3VAE training finishes; False for troubleshooting PLS & CNN
+ENABLE_P3VAE = True   # Set to True when P3VAE training finishes; False for troubleshooting PLS & CNN
 
 NUM_FOLDS = 7
 THRESH = 2.8

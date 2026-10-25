@@ -382,7 +382,7 @@ def plot_sample_spectra(
         ss_tot = np.sum((y_true[idx] - np.mean(y_true[idx])) ** 2) + 1e-8
         r2 = 1.0 - (ss_res / ss_tot)
 
-        tag_label = "Best Fit" if i == 0 else ("Worst Fit" if i == n_samples - 1 else f"Sample #{idx}")
+        tag_label = f"Sample #{idx}"
         ax_main.set_title(f"{tag_label} (Sample #{idx}) — $R^2$: {r2:.4f}", fontsize=11, fontweight="bold")
         ax_main.set_ylabel("Intensity", fontsize=10)
         ax_main.tick_params(axis="both", labelsize=10)  # Increased tick label size
