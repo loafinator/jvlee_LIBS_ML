@@ -54,11 +54,11 @@ HOST_ELEMENTS = {'Li', 'K', 'Cl'}
 TARGET_DOPANTS = ['Ce', 'Gd', 'Sm', 'U']  # The 4 rows in our 4x3 poster grid
 
 # Model Checkpoint Prefixes
-P3VAE_MODEL_PREFIX = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae6_model_20261024_162246"
-CNN_MODEL_PREFIX = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/spec_to_conc/CNN_1D/trained_models/cnn1d_20261024_180000"
+P3VAE_MODEL_PREFIX = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae6_model_20261024_211302"
+CNN_MODEL_PREFIX = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/spec_to_conc/CNN_1D/trained_models/cnn1d_20261025_003016"
 
 PLS_COMPONENTS = 15
-EVAL_MODE = "lockbox"  # Options: 'lockbox' (Ensemble Test Set) or 'oof' (Out-Of-Fold Validation)
+EVAL_MODE = "oof"  # Options: 'lockbox' (Ensemble Test Set) or 'oof' (Out-Of-Fold Validation)
 
 TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

@@ -382,8 +382,9 @@ def plot_sample_spectra(
         ss_tot = np.sum((y_true[idx] - np.mean(y_true[idx])) ** 2) + 1e-8
         r2 = 1.0 - (ss_res / ss_tot)
 
-        tag_label = f"Sample #{idx}"
-        ax_main.set_title(f"{tag_label} (Sample #{idx}) — $R^2$: {r2:.4f}", fontsize=11, fontweight="bold")
+        # tag_label = f"Sample #{idx}"
+        # ax_main.set_title(f"{tag_label} (Sample #{idx}) — $R^2$: {r2:.4f}", fontsize=11, fontweight="bold")
+        ax_main.set_title(f"Sample #{idx} — $R^2$: {r2:.4f}", fontsize=11, fontweight="bold")
         ax_main.set_ylabel("Intensity", fontsize=10)
         ax_main.tick_params(axis="both", labelsize=10)  # Increased tick label size
 
@@ -433,7 +434,7 @@ def plot_sample_spectra(
         if max_abs > 0:
             ax_res.set_ylim(-max_abs, max_abs)
 
-    plt.suptitle(f"{title_tag} — Best vs. Worst Performance", fontsize=12, fontweight="bold", y=0.98)
+    plt.suptitle(f"{title_tag} — Measured vs. Reconstructed Spectra", fontsize=12, fontweight="bold", y=0.98)
     plt.tight_layout()
 
     if save_path:
@@ -487,7 +488,7 @@ def just_plotting(sample_indices: list[int] | None = None):
         sample_indices=sample_indices,
         X=X_cv_exp,
         feature_names=feature_names,
-        title_tag="MLP OOF",
+        title_tag="MLP OOF (Complex vs. Trace)",
         save_path=OUTPUT_SAVE_PATH
     )    
 def _chunk_stats(y_true, y_pred, cols, chunk=2048):
