@@ -319,5 +319,5 @@ def evaluate_p3vae_encoder(model_prefix: str | Path):
 
 if __name__ == "__main__":
     # Pass your trained model prefix here (without the _foldK.pt suffix)
-    MODEL_PREFIX = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae6_model_20261024_162246"
+    MODEL_PREFIX = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae6_model_20261024_211302"
     evaluate_p3vae_encoder(MODEL_PREFIX)

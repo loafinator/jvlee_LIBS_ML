@@ -36,6 +36,8 @@ H5_FILE = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_nolea
 SPLIT_DIR = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits_NoExtraDopants')
 OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/h5_plots")
 TRAINED_MODEL_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/trained_models")
+NPZ_PATH = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/h5_plots/mlp_spectral_predictions_20261024_135220.npz")
+OUTPUT_SAVE_PATH = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/h5_plots/updated_sample_plot.png")
 
 NUM_FOLDS = 7
 THRESH = 2.8
@@ -134,15 +136,15 @@ def load_crossval_data(
     h5_path: str, 
     spike_thresh: float = THRESH,
     exp_dopants: set = EXP_DOPANTS,
-    host_elements: set = HOST_ELEMENTS
+    host_elements: set = HOST_ELEMENTS,
+    load_y: bool = True
 ) -> Dict[str, Any]:
-    """Loads dataset into CPU RAM, cleans saturation spikes, filters unmodeled 
-    synthetic dopants, and slices concentration target columns."""
-    
+    """Loads dataset features into RAM. Stream-checks saturation spikes so 
+    the full multi-gigabyte spectra matrix is never loaded unless load_y=True.
+    """
     keep_elements = host_elements.union(exp_dopants)
 
     with h5py.File(h5_path, 'r') as hf:
-        y = get_h5_ds(hf, 'y')[:].astype(np.float32)
         X = get_h5_ds(hf, 'X')[:].astype(np.float32)
         is_synth = get_h5_ds(hf, 'is_synthetic')[:]
         is_lockbox = get_h5_ds(hf, 'is_lockbox')[:].astype(bool) if 'is_lockbox' in hf else None
@@ -153,56 +155,47 @@ def load_crossval_data(
             for n in get_h5_ds(hf, 'feature_cols')[:]
         ]
 
-    # 1. Identify active columns to keep vs. extra synthetic dopants to drop
+        # Stream row max calculations in chunks to save RAM
+        y_ds = get_h5_ds(hf, 'y')
+        n_rows = y_ds.shape[0]
+        row_maxes = np.empty(n_rows, dtype=np.float32)
+        for i in range(0, n_rows, 4096):
+            row_maxes[i:i + 4096] = y_ds[i:i + 4096].max(axis=1)
+
+        y_raw = y_ds[:].astype(np.float32) if load_y else None
+
     keep_idx = [i for i, name in enumerate(names) if name in keep_elements]
     extra_dopant_idx = [i for i, name in enumerate(names) if name not in keep_elements]
 
-    # 2. Row Filter A: Drop corrupted saturation shots
-    row_maxes = y.max(axis=1)
     clean_spike_mask = row_maxes <= spike_thresh
-
-    # 3. Row Filter B: Drop synthetic samples containing non-experimental dopants
     has_extra_dopants = (X[:, extra_dopant_idx] > 0).any(axis=1)
     valid_synth_mask = (is_synth == 0) | (~has_extra_dopants)
 
-    # Combine row filters
     final_row_mask = clean_spike_mask & valid_synth_mask
 
-    # 4. Slice targets X (columns) and filter samples (rows) simultaneously
     X_clean = X[final_row_mask][:, keep_idx]
-    y_clean = y[final_row_mask]
     is_synth_clean = is_synth[final_row_mask]
     group_id_clean = group_id[final_row_mask]
     names_clean = [names[i] for i in keep_idx]
 
-    # 5. L2 Normalization on spectra
-    y_tensor = torch.from_numpy(y_clean)
-    l2_norms = torch.norm(y_tensor, p=2, dim=1, keepdim=True).clamp(min=1e-08)
-    y_tensor = y_tensor / l2_norms
-
-    # Reporting
-    n_dropped_spikes = len(y) - np.sum(clean_spike_mask)
-    n_dropped_synth = np.sum(clean_spike_mask & ~valid_synth_mask)
-    if n_dropped_spikes > 0 or n_dropped_synth > 0:
-        print(f"Data loading summary:")
-        print(f"  - Dropped {n_dropped_spikes} corrupted saturation shots (max > {spike_thresh}).")
-        print(f"  - Filtered {n_dropped_synth} synthetic shots containing non-experimental dopants.")
-        print(f"  - Retained {len(y_tensor)} total shots across {len(names_clean)} features: {names_clean}")
-
     out_dict = dict(
         X=torch.from_numpy(X_clean),
-        y=y_tensor,
         is_synth=torch.from_numpy(is_synth_clean).long(),
         group_id=group_id_clean,
         wavelengths=wavelengths,
         names=names_clean,
     )
 
+    if load_y and y_raw is not None:
+        y_clean = y_raw[final_row_mask]
+        y_tensor = torch.from_numpy(y_clean)
+        l2_norms = torch.norm(y_tensor, p=2, dim=1, keepdim=True).clamp(min=1e-08)
+        out_dict['y'] = y_tensor / l2_norms
+
     if is_lockbox is not None:
         out_dict['is_lockbox'] = is_lockbox[final_row_mask]
 
     return out_dict
-
 
 def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
                        n_splits=5, n_trials=2000, min_groups_per_dopant=1, seed=42):
@@ -353,17 +346,16 @@ def plot_sample_spectra(
     n_samples = len(sample_indices)
     has_folds = (fold_preds.ndim == 3)
 
-    # 2 rows (Top: Main Spectrum, Bottom: Residuals), n_samples columns (Best vs. Worst)
     fig, axes = plt.subplots(
         2, n_samples, 
-        figsize=(6.5 * n_samples, 5.5), 
+        figsize=(6.5 * n_samples, 3.5), 
         sharex='col', 
-        gridspec_kw={'height_ratios': [3.5, 1]}
+        gridspec_kw={'height_ratios': [2.5, 1]}
     )
 
     for i, idx in enumerate(sample_indices):
-        ax_main = axes[0, i]
-        ax_res = axes[1, i]
+        ax_main = axes[0, i] if n_samples > 1 else axes[0]
+        ax_res = axes[1, i] if n_samples > 1 else axes[1]
 
         if has_folds:
             sample_folds = fold_preds[:, idx, :]
@@ -392,7 +384,9 @@ def plot_sample_spectra(
 
         tag_label = "Best Fit" if i == 0 else ("Worst Fit" if i == n_samples - 1 else f"Sample #{idx}")
         ax_main.set_title(f"{tag_label} (Sample #{idx}) — $R^2$: {r2:.4f}", fontsize=11, fontweight="bold")
-        ax_main.set_ylabel("Intensity", fontsize=9)
+        ax_main.set_ylabel("Intensity", fontsize=10)
+        ax_main.tick_params(axis="both", labelsize=10)  # Increased tick label size
+
         ax_main.grid(True, linestyle=":", alpha=0.4)
 
         # Composition Inset
@@ -427,9 +421,11 @@ def plot_sample_spectra(
         ax_res.axhline(0, color="black", linestyle="--", linewidth=0.8, alpha=0.7)
         ax_res.fill_between(wavelengths, 0, residual, color="#b25395", alpha=0.25)
 
-        ax_res.set_xlabel("Wavelength (nm)", fontsize=9)
-        ax_res.set_ylabel("Residual", fontsize=9, color="#b25395")
-        ax_res.tick_params(axis="y", labelcolor="#b25395", labelsize=8)
+        ax_res.set_xlabel("Wavelength (nm)", fontsize=10)
+        ax_res.set_ylabel("Residual", fontsize=10, color="black")
+        
+        # Increased size to 10 and changed labelcolor from "#b25395" to "black"
+        ax_res.tick_params(axis="both", labelcolor="black", labelsize=10)
         ax_res.grid(True, linestyle=":", alpha=0.4)
 
         # Symmetrical Y-limits centered on zero
@@ -443,9 +439,57 @@ def plot_sample_spectra(
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"Saved Sample Spectra Plot to: {save_path}")
-    plt.close() 
+    plt.close()
 
+def just_plotting(sample_indices: list[int] | None = None):
+    if not NPZ_PATH.exists():
+        raise FileNotFoundError(f"Could not find saved predictions file at: {NPZ_PATH}")
 
+    print(f"Loading pre-computed predictions from: {NPZ_PATH.name}...")
+    saved_data = np.load(NPZ_PATH)
+
+    wavelengths = saved_data["wavelengths"]
+    true_spectra = saved_data["true_cv_spectra"]
+    pred_spectra = saved_data["pred_cv_spectra"]
+
+    # Pass load_y=False so RAM usage stays under ~20 MB
+    print("Loading composition features and fold splits...")
+    data = load_crossval_data(H5_FILE, load_y=False)
+    split_path = SPLIT_DIR / f'max12_{NUM_FOLDS}_folds_seed{SEED}.npz'
+    _, cv_idx, cv_fold_id = build_splits_once(data, split_path, NUM_FOLDS, seed=SEED)
+
+    dopant_indices = [i for i, name in enumerate(data['names']) if name not in HOST_ELEMENTS]
+    feature_names = [data['names'][i] for i in dopant_indices]
+
+    # Align concentration rows with true_cv_spectra (filtered by exp_mask)
+    exp_mask = cv_fold_id >= 0
+    X_cv_exp = data['X'][cv_idx][exp_mask][:, dopant_indices]
+
+    n_samples_avail = len(true_spectra)
+
+    if sample_indices is None:
+        sample_r2s = [
+            1.0 - (np.sum((true_spectra[i] - pred_spectra[i]) ** 2) / 
+                  (np.sum((true_spectra[i] - np.mean(true_spectra[i])) ** 2) + 1e-8))
+            for i in range(n_samples_avail)
+        ]
+        sample_indices = [int(np.argmax(sample_r2s)), int(np.argmin(sample_r2s))]
+    else:
+        # Clamp or wrap indices to ensure they fall within valid array bounds
+        sample_indices = [idx % n_samples_avail for idx in sample_indices]
+
+    print(f"Plotting sample indices: {sample_indices} (out of {n_samples_avail} available CV samples)")
+
+    plot_sample_spectra(
+        y_true=true_spectra,
+        fold_preds=pred_spectra,
+        wavelengths=wavelengths,
+        sample_indices=sample_indices,
+        X=X_cv_exp,
+        feature_names=feature_names,
+        title_tag="MLP OOF",
+        save_path=OUTPUT_SAVE_PATH
+    )    
 def _chunk_stats(y_true, y_pred, cols, chunk=2048):
     """SSE, SAE, SST(about per-wavelength mean) and element count over the columns `cols` (index array).
     y_pred may be [N, n_wl] or a single [n_wl] vector broadcast over rows. Never copies the full array."""
@@ -999,13 +1043,11 @@ def _parity_views(st):
     return yt, yp
 
 
-def evaluate_saved_models(
-        model_prefix: str | Path
-):
+def evaluate_saved_models(model_prefix: str | Path):
     print(f"=== Running Standalone Evaluation from Saved Checkpoints [{DEVICE}] ===")
     prefix_str = str(model_prefix)
 
-    # 1. Metadata + memory-mapped spectra (the spectra are never loaded into RAM)
+    # 1. Metadata + memory-mapped spectra
     data, Y = load_clean_spectra_lean(H5_FILE)
     split_path = SPLIT_DIR / f'max12_{NUM_FOLDS}_folds_seed{SEED}.npz'
     test_idx, cv_idx, cv_fold_id = build_splits_once(data, split_path, NUM_FOLDS, seed=SEED)
@@ -1017,8 +1059,8 @@ def evaluate_saved_models(
     output_dim = Y.shape[1]
     wavelengths = data['wavelengths']
 
-    X_cv_np = data['X'][cv_idx][:, dopant_indices].numpy().astype(np.float32)       # tiny (N x n_dopants)  # type: ignore
-    X_test_np = data['X'][test_idx][:, dopant_indices].numpy().astype(np.float32) if has_test else None  # type: ignore
+    X_cv_np = data['X'][cv_idx][:, dopant_indices].numpy().astype(np.float32)   # type: ignore
+    X_test_np = data['X'][test_idx][:, dopant_indices].numpy().astype(np.float32) if has_test else None   # type: ignore
     del data
     gc.collect()
 
@@ -1037,7 +1079,7 @@ def evaluate_saved_models(
         models.append(model)
     predict_fn = make_predict_fn(models, output_dim)
 
-    # 3. Streamed evaluation: OOF (experimental CV rows, each predicted by its own fold's model)
+    # 3. Streamed evaluation: OOF
     exp_pos = np.where(cv_fold_id >= 0)[0]
     cv_rows = cv_idx[exp_pos]
     print("Streaming OOF evaluation (constant memory)...")
@@ -1048,12 +1090,33 @@ def evaluate_saved_models(
     st_te = None
     if has_test:
         print("Streaming lockbox evaluation (constant memory)...")
-        st_te = stream_spectral_stats(Y, test_idx, predict_fn, X_test_np, folds=None,
-                                      train_mean=st_cv['mean_spec'])
+        st_te = stream_spectral_stats(Y, test_idx, predict_fn, X_test_np, folds=None, train_mean=st_cv['mean_spec'])
         print_table_from_stats(st_te, f"MLP Lockbox Benchmarks (Ensemble of {NUM_FOLDS} Checkpoints)")
         print_verdict_from_stats(st_te, "Lockbox")
 
-    # 4. Figures
+    # 4. Extract arrays and export .npz file
+    true_cv_spec = np.asarray(Y[cv_rows])
+    pred_cv_spec = predict_fn(X_cv_np[exp_pos], cv_fold_id[exp_pos])
+    
+    true_test_spec = np.asarray(Y[test_idx]) if has_test else None
+    pred_test_spec = predict_fn(X_test_np, None) if has_test else None
+
+    # Derive timestamp tag from prefix or current time
+    prefix_path = Path(prefix_str)
+    tag = prefix_path.name.replace("mlp_", "")
+    save_npz_path = OUTPUT_DIR / f"mlp_spectral_predictions_{tag}.npz"
+
+    np.savez(
+        save_npz_path,
+        wavelengths=wavelengths,
+        true_cv_spectra=true_cv_spec,
+        pred_cv_spectra=pred_cv_spec,
+        true_lockbox_spectra=true_test_spec,   # type: ignore
+        pred_lockbox_spectra=pred_test_spec,   # type: ignore
+    )
+    print(f"✅ Exported predictions array to: {save_npz_path}")
+
+    # 5. Figures
     yt_par, yp_par = _parity_views(st_cv)
     plot_parity_grid(
         yt_par, yp_par,
@@ -1063,9 +1126,8 @@ def evaluate_saved_models(
     )
     picks = [int(np.argmax(st_cv['row_r2'])), int(np.argmin(st_cv['row_r2']))]
     plot_sample_spectra(
-        y_true=_Rows({p: np.asarray(Y[cv_rows[p]]) for p in picks}),
-        fold_preds=_Rows({p: predict_fn(X_cv_np[exp_pos[p]][None], cv_fold_id[exp_pos[p]][None])[0]
-                          for p in picks}),
+        y_true=_Rows({p: true_cv_spec[p] for p in picks}),
+        fold_preds=_Rows({p: pred_cv_spec[p] for p in picks}),
         wavelengths=wavelengths,
         sample_indices=picks,
         X=_Rows({p: X_cv_np[exp_pos[p]] for p in picks}),
@@ -1074,27 +1136,7 @@ def evaluate_saved_models(
         save_path=OUTPUT_DIR / f"eval_oof_samples_{TIMESTAMP}.png"
     )
 
-    if has_test and st_te is not None:
-        yt_par, yp_par = _parity_views(st_te)
-        plot_parity_grid(
-            yt_par, yp_par, wavelengths=wavelengths,
-            title_tag="MLP LOCKBOX ENSEMBLE",
-            save_path=OUTPUT_DIR / "eval_lockbox_parity.png"
-        )
-        picks = [int(np.argmax(st_te['row_r2'])), int(np.argmin(st_te['row_r2']))]
-        plot_sample_spectra(
-            y_true=_Rows({p: np.asarray(Y[test_idx[p]]) for p in picks}),
-            fold_preds=_Rows({p: per_model_preds(models, X_test_np[p]) for p in picks}, ndim=3),  # type: ignore
-            wavelengths=wavelengths,
-            sample_indices=picks,
-            X=_Rows({p: X_test_np[p] for p in picks}),  # type: ignore
-            feature_names=feature_names,
-            title_tag="MLP Lockbox Ensemble",
-            save_path=OUTPUT_DIR / f"eval_lockbox_samples_{TIMESTAMP}.png"
-        )
-
-    print("Evaluation complete! All figures and benchmark metrics generated safely.")
-
+    print("Evaluation complete! Prediction array and figures generated safely.")
 #=============================================================================
 # Main Execution Pipeline
 # =============================================================================
@@ -1276,4 +1318,5 @@ def main():
 
 if __name__ == "__main__":
     # main()
-    evaluate_saved_models(model_prefix='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/trained_models/mlp_20261024_135220')
+    # evaluate_saved_models(model_prefix='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/trained_models/mlp_20261024_135220')
+    just_plotting(sample_indices=[70568, 18937])

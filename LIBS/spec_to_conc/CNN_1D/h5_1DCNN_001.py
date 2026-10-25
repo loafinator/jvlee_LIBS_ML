@@ -422,7 +422,7 @@ def gather_x(Xs: torch.Tensor, idx: torch.Tensor) -> torch.Tensor:
 def amp_setup():
     if not (USE_AMP and DEVICE.type == "cuda"):
         return None, None
-    if torch.cuda.is_bf16_supported():
+    if torch.cuda.get_device_capability()[0] >= 8:      # Ampere+ has native bf16
         return torch.bfloat16, None
     return torch.float16, torch.amp.GradScaler("cuda")  # type: ignore
 
@@ -478,6 +478,7 @@ def fit(
     t0 = time.perf_counter()
 
     for ep in range(1, epochs + 1):
+        t_ep = time.perf_counter()
         model.train()
         perm = tr_idx[torch.randperm(n, device=tr_idx.device, generator=g)]
         running = torch.zeros((), device=DEVICE)
@@ -499,6 +500,8 @@ def fit(
                 loss.backward()
                 opt.step()
             running += loss.detach()
+        if DEVICE.type == "cuda": torch.cuda.synchronize()
+        t_train = time.perf_counter() - t_ep
 
         # Evaluate Validation Metrics
         if ep == 1 or ep % log_every == 0 or ep == epochs:
@@ -514,6 +517,9 @@ def fit(
             hist["val"].append(va_loss)
 
             if verbose:
+                if DEVICE.type == "cuda": torch.cuda.synchronize()
+                t_tot = time.perf_counter() - t_ep
+                print(f"---- train {t_train:.1f}s | val {t_tot - t_train}s | {steps*BATCH_SIZE/t_train:,.0f} samples/s (train)----")
                 print(f"    ep {ep:3d}/{epochs} | train MSE {tr_loss:.6f} (dropout on) | "
                       f"held-out MSE {va_loss:.6f} | lr {opt.param_groups[0]['lr']:.2e}")
 
@@ -712,6 +718,8 @@ def print_learning_verdict(y_true_wt, y_pred_wt, target_names, tag):
 # =============================================================================
 def main():
     amp_dtype, _ = amp_setup()
+    if DEVICE.type == "cuda":
+        print(f"GPU: {torch.cuda.get_device_name()} | capability {torch.cuda.get_device_capability()} | amp={amp_dtype}")
     print(f"=== Fast 1D CNN Benchmark [{DEVICE}] | amp={amp_dtype} | pool_bins={POOL_BINS} | "
           f"compile={USE_COMPILE} ===")
     t0_start = time.perf_counter()

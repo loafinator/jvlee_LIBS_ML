@@ -66,6 +66,30 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # =============================================================================
+# Helper Utilities & Fold Checkpoint Offset Detection
+# =============================================================================
+def detect_fold_offset(prefix: str, num_folds: int = NUM_FOLDS) -> int:
+    """
+    Detects whether checkpoints follow 0-indexed (_fold0) or 1-indexed (_fold1) naming convention,
+    and asserts that all expected folds exist in a contiguous sequence.
+    """
+    p = Path(prefix)
+    matching_files = list(p.parent.glob(p.name + "_fold*.pt"))
+    if not matching_files:
+        raise FileNotFoundError(f"No checkpoint files matching '{p.name}_fold*.pt' in directory {p.parent}")
+    
+    found = sorted(int(f.stem.rsplit("fold", 1)[1]) for f in matching_files)
+    assert len(found) == num_folds, (
+        f"Expected {num_folds} fold checkpoints for '{p.name}', but found {len(found)}: {found}"
+    )
+    expected_sequence = list(range(found[0], found[0] + num_folds))
+    assert found == expected_sequence, (
+        f"Fold checkpoint numbering for '{p.name}' is non-contiguous. Found {found}, expected {expected_sequence}"
+    )
+    return found[0]
+
+
+# =============================================================================
 # 1D CNN Architecture (Matching 1DCNN_benchmark.py)
 # =============================================================================
 class PyTorch1DCNN(nn.Module):
@@ -104,19 +128,20 @@ class PyTorch1DCNN(nn.Module):
 
 
 # =============================================================================
-# PyTorch PLS Implementation (Matching pls_benchmark_2.py)
+# PyTorch PLS Implementation (In-Place Standardization Memory Fix)
 # =============================================================================
 class PyTorchPLS:
     def __init__(self, n_components: int = 15):
         self.n_components = n_components
         self.mean_X, self.std_X, self.mean_Y, self.B = None, None, None, None
 
-    def fit(self, X: torch.Tensor, Y: torch.Tensor):
+    def fit(self, X: torch.Tensor, Y: torch.Tensor, inplace: bool = False):
         self.mean_X = X.mean(dim=0, keepdim=True)
         self.std_X = X.std(dim=0, keepdim=True).clamp(min=1e-6)
         self.mean_Y = Y.mean(dim=0, keepdim=True)
 
-        X_std = (X - self.mean_X) / self.std_X
+        X_std = X if inplace else X.clone()
+        X_std.sub_(self.mean_X).div_(self.std_X)
         Y0 = Y - self.mean_Y
 
         S = torch.matmul(X_std.T, Y0)
@@ -155,14 +180,15 @@ class PyTorchPLS:
 
 
 # =============================================================================
-# Data Slicing & Loading Utilities
+# Data Loading & Batched Inference Utilities
 # =============================================================================
 def load_crossval_data(h5_path: str, spike_thresh: float = THRESH) -> Dict[str, Any]:
     keep_elements = HOST_ELEMENTS.union(set(TARGET_DOPANTS))
 
     with h5py.File(h5_path, 'r') as hf:
-        y = get_h5_ds(hf, 'y')[:].astype(np.float32)
-        X = get_h5_ds(hf, 'X')[:].astype(np.float32)
+        y_ds = get_h5_ds(hf, 'y')
+        y_full = y_ds[:] if y_ds.dtype == np.float32 else y_ds[:].astype(np.float32)
+        X_full = get_h5_ds(hf, 'X')[:].astype(np.float32)
         is_synth = get_h5_ds(hf, 'is_synthetic')[:]
         is_lockbox = get_h5_ds(hf, 'is_lockbox')[:].astype(bool) if 'is_lockbox' in hf else None
         group_id = get_h5_ds(hf, 'group_id')[:]
@@ -172,14 +198,23 @@ def load_crossval_data(h5_path: str, spike_thresh: float = THRESH) -> Dict[str, 
     keep_idx = [i for i, name in enumerate(names) if name in keep_elements]
     extra_dopant_idx = [i for i, name in enumerate(names) if name not in keep_elements]
 
-    clean_spike_mask = y.max(axis=1) <= spike_thresh
-    has_extra_dopants = (X[:, extra_dopant_idx] > 0).any(axis=1)
+    clean_spike_mask = y_full.max(axis=1) <= spike_thresh
+    has_extra_dopants = (X_full[:, extra_dopant_idx] > 0).any(axis=1)
     valid_synth_mask = (is_synth == 0) | (~has_extra_dopants)
     final_row_mask = clean_spike_mask & valid_synth_mask
 
+    # Slicing creates masked copies; free unmasked raw arrays immediately
+    y = torch.from_numpy(y_full[final_row_mask])
+    del y_full
+
+    X = torch.from_numpy(X_full[final_row_mask][:, keep_idx])
+    del X_full
+
+    print(f"📊 Dataset Loaded | Masked y shape: {y.shape} | Base Memory: {y.element_size() * y.nelement() / 1e9:.2f} GB")
+
     return dict(
-        X=torch.from_numpy(X[final_row_mask][:, keep_idx]),
-        y=torch.from_numpy(y[final_row_mask]),
+        X=X,
+        y=y,
         is_synth=torch.from_numpy(is_synth[final_row_mask]).long(),
         group_id=group_id[final_row_mask],
         wavelengths=wavelengths,
@@ -187,6 +222,21 @@ def load_crossval_data(h5_path: str, spike_thresh: float = THRESH) -> Dict[str, 
         keep_idx=keep_idx,
         is_lockbox=is_lockbox[final_row_mask] if is_lockbox is not None else None
     )
+
+
+def predict_batched(model: nn.Module, X: torch.Tensor, norms: torch.Tensor, idx: np.ndarray | torch.Tensor, scale: float, bs: int = 256) -> np.ndarray:
+    """
+    Batched inference for 1D CNN with L2 normalization and sqrt(P) RMS scaling.
+    """
+    out = []
+    idx_t = torch.as_tensor(idx, dtype=torch.long)
+    with torch.no_grad():
+        for i in range(0, len(idx_t), bs):
+            batch_idx = idx_t[i:i + bs]
+            xb = (X[batch_idx] / norms[batch_idx]) * scale
+            xb = xb.to(DEVICE)
+            out.append(model(xb).clamp(min=0.0).cpu())
+    return torch.cat(out, dim=0).numpy()
 
 
 def get_model_predictions(data, cv_fold_id, test_idx, cv_idx):
@@ -202,51 +252,59 @@ def get_model_predictions(data, cv_fold_id, test_idx, cv_idx):
         'P3VAE': np.zeros((n_samples, len(dopant_indices)), dtype=np.float32)
     }
 
+    # Precalculate L2 norms for spectral normalization
+    norms = torch.norm(data['y'], p=2, dim=1, keepdim=True).clamp(min=1e-8)
+
     # -------------------------------------------------------------------------
-    # 1. GPU PLS Model Predictions
+    # 1. Memory-Efficient PyTorch PLS Predictions
     # -------------------------------------------------------------------------
     print("Generating GPU PLS predictions...")
-    y_tensor = data['y'] / torch.norm(data['y'], p=2, dim=1, keepdim=True).clamp(min=1e-8)
-    X_cv_gpu, Y_cv_gpu = y_tensor[cv_idx].to(DEVICE), data['X'][cv_idx][:, dopant_indices].to(DEVICE)
-    
+
+    def rows(idx):
+        idx_t = torch.as_tensor(idx, dtype=torch.long)
+        x = data['y'][idx_t]      # Fancy indexing already creates a copy!
+        x.div_(norms[idx_t])       # In-place L2 normalization
+        return x.to(DEVICE)
+
+    Y_all = data['X'][:, dopant_indices].to(DEVICE)
+    cv_idx_t = torch.as_tensor(cv_idx, dtype=torch.long)
+
     if EVAL_MODE == "lockbox":
-        X_te_gpu = y_tensor[test_idx].to(DEVICE)
+        X_te = rows(test_idx)
         pls_folds = torch.zeros((NUM_FOLDS, len(test_idx), len(dopant_indices)), device=DEVICE)
         for k in range(NUM_FOLDS):
-            tr_mask = cv_fold_id != k
-            pls = PyTorchPLS(n_components=PLS_COMPONENTS).fit(X_cv_gpu[tr_mask], Y_cv_gpu[tr_mask])
-            pls_folds[k] = pls.predict(X_te_gpu)
+            tr_idx = cv_idx_t[cv_fold_id != k]
+            pls = PyTorchPLS(n_components=PLS_COMPONENTS).fit(rows(tr_idx), Y_all[tr_idx], inplace=True)
+            pls_folds[k] = pls.predict(X_te)
         preds['PLS'] = torch.clamp(pls_folds.mean(dim=0), min=0.0).cpu().numpy() * MAX_WT_PERCENT
     else:
         pls_oof = torch.zeros((len(cv_idx), len(dopant_indices)), device=DEVICE)
         for k in range(NUM_FOLDS):
-            tr_mask, va_mask = cv_fold_id != k, cv_fold_id == k
-            pls = PyTorchPLS(n_components=PLS_COMPONENTS).fit(X_cv_gpu[tr_mask], Y_cv_gpu[tr_mask])
-            pls_oof[va_mask] = pls.predict(X_cv_gpu[va_mask])
+            tr_idx = cv_idx_t[cv_fold_id != k]
+            va_mask = cv_fold_id == k
+            va_idx = cv_idx_t[va_mask]
+            pls = PyTorchPLS(n_components=PLS_COMPONENTS).fit(rows(tr_idx), Y_all[tr_idx], inplace=True)
+            pls_oof[torch.from_numpy(va_mask)] = pls.predict(rows(va_idx))
         preds['PLS'] = torch.clamp(pls_oof, min=0.0).cpu().numpy() * MAX_WT_PERCENT
 
     # -------------------------------------------------------------------------
-    # 2. 1D CNN Model Predictions
+    # 2. Batched 1D CNN Model Predictions
     # -------------------------------------------------------------------------
     print("Generating 1D CNN predictions...")
     scale = data['y'].shape[1] ** 0.5
-    X_cnn_scaled = data['y'] * scale
+    cnn_offset = detect_fold_offset(CNN_MODEL_PREFIX)
     
     cnn_folds = []
     for k in range(NUM_FOLDS):
-        ckpt_path = Path(f"{CNN_MODEL_PREFIX}_fold{k+1}.pt")
-        if not ckpt_path.exists():
-            continue
+        ckpt_path = Path(f"{CNN_MODEL_PREFIX}_fold{k + cnn_offset}.pt")
         ckpt = torch.load(ckpt_path, map_location=DEVICE)
         cnn = PyTorch1DCNN(in_channels=1, out_features=len(dopant_indices)).to(DEVICE)
         cnn.load_state_dict(ckpt['model_state_dict'])
         cnn.eval()
 
         eval_idx = test_idx if EVAL_MODE == "lockbox" else cv_idx[cv_fold_id == k]
-        X_eval = X_cnn_scaled[eval_idx].to(DEVICE)
-        with torch.no_grad():
-            pred_k = cnn(X_eval).clamp(min=0.0).cpu().numpy()
-            
+        pred_k = predict_batched(cnn, data['y'], norms, eval_idx, scale)
+
         if EVAL_MODE == "lockbox":
             cnn_folds.append(pred_k)
         else:
@@ -260,12 +318,10 @@ def get_model_predictions(data, cv_fold_id, test_idx, cv_idx):
     # -------------------------------------------------------------------------
     if ENABLE_P3VAE:
         print("Generating P3VAE predictions...")
+        p3vae_offset = detect_fold_offset(P3VAE_MODEL_PREFIX)
         p3vae_folds = []
         for k in range(NUM_FOLDS):
-            ckpt_path = Path(f"{P3VAE_MODEL_PREFIX}_fold{k}.pt")
-            if not ckpt_path.exists():
-                print(f"⚠️ Warning: P3VAE Checkpoint missing: {ckpt_path.name}")
-                continue
+            ckpt_path = Path(f"{P3VAE_MODEL_PREFIX}_fold{k + p3vae_offset}.pt")
             ckpt = torch.load(ckpt_path, map_location=DEVICE)
             
             p3vae = PhysicsInformedVAE(
