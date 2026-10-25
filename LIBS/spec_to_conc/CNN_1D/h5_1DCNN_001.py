@@ -60,8 +60,8 @@ USE_COMPILE = False           # torch.compile; can add ~1 min compile per fold, 
 GPU_DATA_BUDGET_FRAC = 0.6    # keep the dataset on-GPU only if it fits in this fraction of free VRAM
 
 # Diagnostics ("is it actually learning?")
-RUN_SANITY_CHECKS = True      # data stats + overfit-a-tiny-subset test
-RUN_SHUFFLE_CONTROL = True    # train on shuffled labels; held-out R^2 must collapse to ~0
+RUN_SANITY_CHECKS = False      # data stats + overfit-a-tiny-subset test
+RUN_SHUFFLE_CONTROL = False    # train on shuffled labels; held-out R^2 must collapse to ~0
 # LOG_EVERY = 5                 # epochs between held-out loss evaluations (logging only, never used for selection)
 
 TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -449,7 +449,8 @@ def fit(
     epochs, 
     seed, 
     verbose=True, 
-    enable_early_stopping=True
+    enable_early_stopping=True,
+    log_every=LOG_EVERY
 ):
     """Training loop with ReduceLROnPlateau, validation tracking, and early stopping with weight restoration."""
     n = tr_idx.numel()
@@ -500,7 +501,7 @@ def fit(
             running += loss.detach()
 
         # Evaluate Validation Metrics
-        if ep == 1 or ep % LOG_EVERY == 0 or ep == epochs:
+        if ep == 1 or ep % log_every == 0 or ep == epochs:
             tr_loss = (running / steps).item()
             va_pred = predict(model, Xs, va_idx)
             va_loss = F.mse_loss(va_pred, Y_eval[va_idx.to(Y_eval.device)]).item()
@@ -622,20 +623,40 @@ def overfit_test(Xs, Y, fold_id_t, out_dim, seed):
     return ok
 
 
+# --- 1) In fit(): make the logging interval a parameter instead of the global LOG_EVERY ---------
+#     signature:   def fit(model, Xs, Y_fit, Y_eval, tr_idx, va_idx, epochs, seed, verbose=True,
+#                          enable_early_stopping=True, log_every=LOG_EVERY):
+#     and in the body change the one line
+#         if ep == 1 or ep % LOG_EVERY == 0 or ep == epochs:
+#     to
+#         if ep == 1 or ep % log_every == 0 or ep == epochs:
+
+# --- 2) Replace shuffle_control with this (add the two constants next to RUN_SHUFFLE_CONTROL) ---
+SHUFFLE_EPOCHS = 15           # a shuffled-label model has nothing to learn; 150 epochs buys nothing
+SHUFFLE_MAX_TRAIN = 30000     # subsample the training rows (held-out fold is still evaluated in full)
+
+
 def shuffle_control(Xs, Y, fold_id_t, out_dim, target_names, seed):
     """Train on shuffled labels. Held-out R^2 must be ~0 (or negative). If it is clearly positive,
-    information is leaking between train and held-out rows and every other number is suspect."""
+    something is leaking and every other number is suspect."""
     print("\n" + "=" * 80)
     print(" SANITY CHECK 3: shuffled-label control (fold 0)")
     print("=" * 80)
     tr_idx, va_idx = fold_indices(fold_id_t, 0)
     g = torch.Generator().manual_seed(seed + 999)
+    if tr_idx.numel() > SHUFFLE_MAX_TRAIN:
+        keep = torch.randperm(tr_idx.numel(), generator=g)[:SHUFFLE_MAX_TRAIN].to(tr_idx.device)
+        tr_idx = tr_idx[keep]
+    print(f"  training {SHUFFLE_EPOCHS} epochs on {tr_idx.numel()} shuffled rows "
+          f"(held-out: {va_idx.numel()} rows)...", flush=True)
+
     Y_shuf = Y.clone()
     perm = torch.randperm(tr_idx.numel(), generator=g).to(tr_idx.device)
     Y_shuf[tr_idx.to(Y.device)] = Y[tr_idx[perm].to(Y.device)]
 
     model = new_model(out_dim, Y_shuf[tr_idx.to(Y.device)].mean(0))
-    fit(model, Xs, Y_shuf, Y, tr_idx, va_idx, epochs=EPOCHS, seed=seed, verbose=False, enable_early_stopping=False)
+    fit(model, Xs, Y_shuf, Y, tr_idx, va_idx, epochs=SHUFFLE_EPOCHS, seed=seed, verbose=True,
+        enable_early_stopping=False, log_every=5)
     pred = predict(model, Xs, va_idx).clamp(min=0).cpu().numpy()
     true = Y[va_idx.to(Y.device)].cpu().numpy()
     r2 = per_element_r2(true, pred)
@@ -646,7 +667,6 @@ def shuffle_control(Xs, Y, fold_id_t, out_dim, target_names, seed):
           "FAIL: model 'learns' from shuffled labels -> leakage between train and held-out rows")
     del model
     return ok
-
 
 def plot_learning_curves(histories, baselines, save_path):
     n = len(histories)

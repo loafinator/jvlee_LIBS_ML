@@ -61,6 +61,10 @@ NUM_FOLDS = 5
 DROPOUT = 0.15
 THRESH = 2.8 # Any lower and it cuts out valid Sm data, don't go higher than 3.2 cuz then you won't get all the faulty peaks
 
+HOST_ELEMENTS = {'Li', 'K', 'Cl'}
+EXP_DOPANTS = {'Ce', 'Gd', 'Sm', 'U'}
+SPLIT_DIR = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits_NoExtraDopants')
+
 ELEMENT_WEIGHTS_REFERENCE = {
     b'Ba': 5.0, b'Ca': 5.0, b'Ce': 5.0, b'Cr': 5.0, b'Cs': 5.0,
     b'Fe': 5.0, b'Gd': 5.0, b'K':  0.2, b'La': 5.0, b'Li': 0.2,
@@ -79,26 +83,33 @@ ELEMENT_WEIGHTS = torch.tensor([
 h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5"
 master_table_path = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv').resolve()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae_model_{timestamp}.pt').resolve()
+model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae6_model_{timestamp}.pt').resolve()
 model_save_path.parent.mkdir(parents=True, exist_ok=True)
 # endregion
 
 class BankedPhysicsDecoder(nn.Module):
-    def __init__(self, wl_grid, master_table_path, n_elements,
+    def __init__(self, wl_grid, master_table_path, n_elements, 
+                 elem_names=None, keep_idx=None,
                  n_gamma=64, g_min=0.01, g_max=5.0):
         super().__init__()
         df = pd.read_csv(master_table_path)
         centers = torch.tensor(df['wavelength_nm'].values, dtype=torch.float32)
         amps = torch.tensor(df['base_intensity'].values, dtype=torch.float32)
         amps = amps / amps.max()
-        elem = torch.tensor(df['elem_idx'].values)
         wl = wl_grid.detach().cpu().float()
         gammas = torch.logspace(math.log10(g_min), math.log10(g_max), n_gamma)
 
         bank = torch.zeros(n_gamma, n_elements, wl.numel())
         for k, g in enumerate(gammas):
             for e in range(n_elements):
-                m = elem == e
+                # Map channel 'e' to line table entry via name or original feature index
+                if 'element' in df.columns and elem_names is not None:
+                    m = (df['element'].astype(str).values == elem_names[e])
+                elif keep_idx is not None:
+                    m = (df['elem_idx'].values == keep_idx[e])
+                else:
+                    m = (df['elem_idx'].values == e)
+
                 c, a = centers[m], amps[m]
                 for i in range(0, len(c), 256):
                     d = (wl[None, :] - c[i:i+256, None])**2 + g**2 + 1e-6
@@ -120,7 +131,7 @@ class BankedPhysicsDecoder(nn.Module):
 
 
 class EarlyStopping:
-    def __init__(self, patience: int = 8, min_delta: float = 1e-5):
+    def __init__(self, patience: int = 8, min_delta: float = 5e-6):
         self.patience = patience
         self.min_delta = min_delta
         self.counter = 0
@@ -241,6 +252,8 @@ class PhysicsInformedVAE(nn.Module):
         n_elements: int, 
         wl_grid: torch.Tensor, 
         master_table_path: str | Path,
+        elem_names: list[str] | None = None,
+        keep_idx: list[int] | None = None,
         n_broadening: int = 1,
         matrix_latent_dim: int = 8
     ):
@@ -286,8 +299,14 @@ class PhysicsInformedVAE(nn.Module):
         self.fc_logvar_matrix = nn.Linear(128, self.matrix_latent_dim)
 
         self.physics_decoder = BankedPhysicsDecoder(
-            wl_grid=wl_grid, master_table_path=master_table_path,
-            n_elements=n_elements, n_gamma=32, g_min=0.01, g_max=5.0,
+            wl_grid=wl_grid, 
+            master_table_path=master_table_path,
+            n_elements=n_elements, 
+            elem_names=elem_names,
+            keep_idx=keep_idx,
+            n_gamma=32, 
+            g_min=0.01, 
+            g_max=5.0,
         )
 
         # Keep matrix decoder small (128 hidden units) to limit unphysical cheating
@@ -753,11 +772,14 @@ def evaluate_and_plot_kfold(
         log(logger=logger, msg=f"Running inference for Fold {k} model...")
         checkpoint = torch.load(ckpt_path, map_location=device_obj)
 
+        # UPDATED:
         model = PhysicsInformedVAE(
             input_dim=input_dim,
             n_elements=n_elements,
             wl_grid=wl_grid,
             master_table_path=master_table_path,
+            elem_names=data["names"],
+            keep_idx=data.get("keep_idx"),
             n_broadening=1,
         ).to(device_obj)
 
@@ -956,13 +978,21 @@ def group_mean(arr, gid):
     cnt = np.bincount(inv)
     return np.stack([np.bincount(inv, weights=arr[:, j]) / cnt for j in range(arr.shape[1])], 1), ug
 
-def load_crossval_data(h5_path: str, spike_thresh: float = THRESH) -> Dict[str, Any]:
-    """Loads dataset once from HDF5 file and filters corrupted saturation rows."""
+def load_crossval_data(
+    h5_path: str, 
+    spike_thresh: float = THRESH,
+    exp_dopants: set = EXP_DOPANTS,
+    host_elements: set = HOST_ELEMENTS
+) -> Dict[str, Any]:
+    """Loads dataset into RAM, cleans saturation spikes, filters unmodeled 
+    synthetic dopants, and retains matching target features."""
+    keep_elements = host_elements.union(exp_dopants)
+
     with h5py.File(h5_path, 'r') as hf:
         y = torch.from_numpy(get_h5_ds(hf, 'y')[:]).float()
         X = torch.from_numpy(get_h5_ds(hf, 'X')[:]).float()
         is_synth = torch.from_numpy(get_h5_ds(hf, 'is_synthetic')[:]).long()
-        is_lockbox = get_h5_ds(hf, 'is_lockbox')[:].astype(bool)
+        is_lockbox = torch.from_numpy(get_h5_ds(hf, 'is_lockbox')[:]).bool() if 'is_lockbox' in hf else None
         group_id = get_h5_ds(hf, 'group_id')[:]
         wavelengths = get_h5_ds(hf, 'wavelengths')[:]
         names = [
@@ -970,23 +1000,32 @@ def load_crossval_data(h5_path: str, spike_thresh: float = THRESH) -> Dict[str, 
             for n in get_h5_ds(hf, 'feature_cols')[:]
         ]
 
-    # --- FILTER OUT DETECTOR SATURATION SPIKES (> 2.5 max intensity) ---
+    # Identify active columns vs. extra synthetic dopants
+    keep_idx = [i for i, name in enumerate(names) if name in keep_elements]
+    extra_dopant_idx = [i for i, name in enumerate(names) if name not in keep_elements]
+
+    # Row Filter A: Drop saturation spikes
     row_maxes = y.max(dim=1).values
-    clean_mask = (row_maxes <= spike_thresh).numpy()
-    
-    n_dropped = len(y) - np.sum(clean_mask)
-    if n_dropped > 0:
-        print(f"🧹 Data Prep: Dropped {n_dropped} corrupted saturation shots (max intensity > {spike_thresh}).")
+    clean_spike_mask = row_maxes <= spike_thresh
+
+    # Row Filter B: Drop synthetic samples containing non-experimental dopants
+    has_extra_dopants = (X[:, extra_dopant_idx] > 0).any(dim=1)
+    valid_synth_mask = (is_synth == 0) | (~has_extra_dopants)
+
+    final_row_mask = (clean_spike_mask & valid_synth_mask).numpy()
 
     data = dict(
-        X=X[clean_mask],
-        y=y[clean_mask],
-        is_synth=is_synth[clean_mask],
-        is_lockbox=is_lockbox[clean_mask],
-        group_id=group_id[clean_mask],
+        X=X[final_row_mask][:, keep_idx],
+        y=y[final_row_mask],
+        is_synth=is_synth[final_row_mask],
+        group_id=group_id[final_row_mask],
         wavelengths=wavelengths,
-        names=names,
+        names=[names[i] for i in keep_idx],
+        keep_idx=keep_idx,  # Retain original indices for physics table mapping
     )
+
+    if is_lockbox is not None:
+        data['is_lockbox'] = is_lockbox[final_row_mask]
 
     return data
 
@@ -1046,20 +1085,14 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
     
     # Fit scaler strictly on training fold
     train_y_slice = cv_data['y'][train_idx]
-    # spec_scaler = SpectralScaler(mode='global_max').fit(train_y_slice)
-    # spec_scaler = SpectralScaler(mode='none').fit(train_y_slice)
     spec_scaler = SpectralScaler(mode='robust_max', q=99.9)                             # gemini recommendation
     spec_scaler.fit(train_y_slice)                                                      # gemini recommendation
     scale_gpu = spec_scaler.scale_.to(device_obj)   # type: ignore                                    # gemini recommendation
     log(logger=logger, msg=f'[F{fold}] spec_scaler scale_ = {scale_gpu.item():.4f}')    # gemini recommendation
     sub = train_idx[::200]
     ys, sy = cv_data['y'][sub], cv_data['is_synth'][sub]
-    # log(logger=logger, msg=f"[F{fold}] scale_={spec_scaler.scale_.item():.4g} | "   # type: ignore
-    #     f"exp max/mean {ys[sy==0].max():.4g}/{ys[sy==0].mean():.4g} | "
-    #     f"syn max/mean {ys[sy==1].max():.4g}/{ys[sy==1].mean():.4g}")
     log(logger=logger, msg= f"exp max/mean {ys[sy==0].max():.4g}/{ys[sy==0].mean():.4g} | "
         f"syn max/mean {ys[sy==1].max():.4g}/{ys[sy==1].mean():.4g}")
-    # scale_gpu = spec_scaler.scale_.to(device_obj)   # type: ignore
 
     # Reclaim temporary slice memory before DataLoader initialization
     del train_y_slice
@@ -1092,9 +1125,15 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
                            f"({len(np.unique(cv_data['group_id'][val_idx]))} compositions) ===")
 
     wl_grid = torch.from_numpy(cv_data['wavelengths']).to(device_obj)
-    raw_model = PhysicsInformedVAE(input_dim=cv_data['y'].shape[1], n_elements=cv_data['X'].shape[1],
-                                   wl_grid=wl_grid, master_table_path=master_table_path,
-                                   n_broadening=1).to(device_obj)
+    raw_model = PhysicsInformedVAE(
+        input_dim=cv_data['y'].shape[1], 
+        n_elements=cv_data['X'].shape[1],
+        wl_grid=wl_grid, 
+        master_table_path=master_table_path,
+        elem_names=cv_data['names'],
+        keep_idx=cv_data.get('keep_idx'),
+        n_broadening=1
+    ).to(device_obj)
     
     # 4. Use mode='default' or disable compile if graph breaks occur
     if use_compile:
@@ -1170,21 +1209,31 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
                 va_sup += ld['sup_loss'].item() * n
 
         tr_loss /= len(train_ds); va_loss /= len(val_ds); va_sup /= len(val_ds)
-        scheduler.step(va_loss)
+        # scheduler.step(va_loss)
         log(logger=logger, msg=f"[F{fold}] Epoch {epoch:02d}/{epochs} [{time.time()-t0:.1f}s] | "
-                               f"Train {tr_loss:.4f} | Val {va_loss:.4f} | Conc MSE {va_sup:.4f}")
+                               f"Train {tr_loss:.4f} | Val {va_loss:.4f} | Conc MSE {va_sup:.7f}")
 
-        if va_loss < best_val:
-            best_val, best_epoch = va_loss, epoch
+        scheduler.step(va_sup)
+        if va_sup < best_val:
+            best_val, best_epoch = va_sup, epoch
             torch.save({
                 'epoch': epoch, 
                 'model_state_dict': raw_model.state_dict(), 
                 'scaler_state_dict': spec_scaler.state_dict(),                          # gemini recommendation
-                'val_loss': best_val
+                'va_sup': best_val
             }, save_path)
+        
+        # if va_loss < best_val:
+        #     best_val, best_epoch = va_loss, epoch
+        #     torch.save({
+        #         'epoch': epoch, 
+        #         'model_state_dict': raw_model.state_dict(), 
+        #         'scaler_state_dict': spec_scaler.state_dict(),                          # gemini recommendation
+        #         'val_loss': best_val
+        #     }, save_path)
 
-        if early_stopper(va_loss):
-            log(logger=logger, msg=f"[F{fold}] early stop at epoch {epoch}")
+        if early_stopper(va_sup):
+            log(logger=logger, msg=f"[F{fold}] early stop at epoch {epoch} (Conc MSE plateaued)")
             break
 
     # ---- Out-of-fold predictions from BEST epoch ----
@@ -1221,7 +1270,7 @@ def train_kfold_physics_vae(
 
     # Generate test holdout + CV fold indices with full dopant coverage guarantees
     seed_everything(seed=42)
-    split_path = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits') / f'max12_{num_folds}_folds_seed42.npz'
+    split_path = SPLIT_DIR / f'max12_{num_folds}_folds_seed42.npz'
     test_idx, cv_idx, cv_fold_id = build_splits_once(data, split_path, num_folds, seed=42)
 
     # Save test set indices so they can be re-loaded for final lockbox evaluation

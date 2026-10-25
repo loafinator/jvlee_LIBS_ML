@@ -17,4 +17,5 @@ LIBS/trn_val_split_LIBS.h5
 *.zip
 *.bin
 *.npz
+*.npy
 cache/
