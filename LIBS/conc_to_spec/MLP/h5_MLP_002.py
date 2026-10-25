@@ -392,7 +392,7 @@ def plot_sample_spectra(
 
         # Composition Inset
         if X is not None and feature_names is not None:
-            sample_conc = X[idx].cpu().numpy() if hasattr(X[idx], "cpu") else X[idx]
+            sample_conc = (X[idx].cpu().numpy() if hasattr(X[idx], "cpu") else X[idx]) * MAX_WT_PERCENT
             comp_items = [
                 f"{name}: {val:.2f} wt%" 
                 for name, val in zip(feature_names, sample_conc) 
@@ -401,7 +401,7 @@ def plot_sample_spectra(
             comp_text = "Composition:\n" + ("\n".join(comp_items) if comp_items else "Pure Host Matrix")
             
             ax_main.text(
-                0.02, 0.95, comp_text,
+                0.02, 0.05, comp_text,
                 transform=ax_main.transAxes,
                 fontsize=10,
                 family="monospace",
