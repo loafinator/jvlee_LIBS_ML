@@ -311,7 +311,7 @@ def plot_sample_spectra(
 
     fig, axes = plt.subplots(
         2, n_samples, 
-        figsize=(6.5 * n_samples, 3.5), 
+        figsize=(5.0 * n_samples, 4), 
         sharex='col', 
         gridspec_kw={'height_ratios': [2.5, 1]}
     )
@@ -354,7 +354,7 @@ def plot_sample_spectra(
             ax_main.text(
                 0.02, 0.95, comp_text,
                 transform=ax_main.transAxes,
-                fontsize=8,
+                fontsize=10,
                 family="monospace",
                 verticalalignment="top",
                 bbox=dict(
@@ -366,7 +366,7 @@ def plot_sample_spectra(
                 )
             )
 
-        ax_main.legend(loc="upper right", fontsize=8, frameon=True)
+        ax_main.legend(loc="lower left", fontsize=9, frameon=True)
 
         # --- BOTTOM PANEL: Residuals ---
         ax_res.plot(wavelengths, residual, color="#b25395", lw=0.75, label="Residual")
@@ -374,7 +374,7 @@ def plot_sample_spectra(
         ax_res.fill_between(wavelengths, 0, residual, color="#b25395", alpha=0.25)
 
         ax_res.set_xlabel("Wavelength (nm)", fontsize=9)
-        ax_res.set_ylabel("Residual", fontsize=9, color="#b25395")
+        ax_res.set_ylabel("Residual", fontsize=9)
         ax_res.grid(True, linestyle=":", alpha=0.4)
 
         max_abs = max(abs(np.min(residual)), abs(np.max(residual))) * 1.1

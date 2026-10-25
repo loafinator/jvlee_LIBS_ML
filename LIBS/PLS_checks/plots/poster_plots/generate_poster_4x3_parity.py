@@ -52,6 +52,7 @@ MAX_WT_PERCENT = 12.0
 SEED = 42
 HOST_ELEMENTS = {'Li', 'K', 'Cl'}
 TARGET_DOPANTS = ['Ce', 'Gd', 'Sm', 'U']  # The 4 rows in our 4x3 poster grid
+PLOT_DOPANTS = ['Sm']
 
 # Model Checkpoint Prefixes
 P3VAE_MODEL_PREFIX = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae6_model_20261024_211302"
@@ -240,7 +241,8 @@ def predict_batched(model: nn.Module, X: torch.Tensor, norms: torch.Tensor, idx:
 
 
 def get_model_predictions(data, cv_fold_id, test_idx, cv_idx):
-    dopant_indices = [i for i, name in enumerate(data['names']) if name in TARGET_DOPANTS]
+    # dopant_indices = [i for i, name in enumerate(data['names']) if name in TARGET_DOPANTS]
+    dopant_indices = [data['names'].index(elem) for elem in TARGET_DOPANTS]
     n_samples = len(test_idx) if EVAL_MODE == "lockbox" else len(cv_idx)
     
     y_true = (data['X'][test_idx][:, dopant_indices].numpy() if EVAL_MODE == "lockbox" 
@@ -368,7 +370,7 @@ def get_model_predictions(data, cv_fold_id, test_idx, cv_idx):
 # Main Plotting Routine: Poster 4x3 Parity Grid
 # =============================================================================
 def main():
-    print("=== Generating Master Poster 4x3 Parity Grid Plot ===")
+    print("=== Generating Master Poster Parity Grid Plot ===")
     data = load_crossval_data(H5_FILE)
     split_path = SPLIT_DIR / f'max12_{NUM_FOLDS}_folds_seed42.npz'
     d_split = np.load(split_path.with_suffix('.npz'))
@@ -377,28 +379,34 @@ def main():
     y_true, model_preds = get_model_predictions(data, cv_fold_id, test_idx, cv_idx)
     models = ['PLS', '1D CNN', 'P3VAE']
 
-    # Create 4 Rows x 3 Columns Figure
-    fig, axes = plt.subplots(nrows=4, ncols=3, figsize=(10.5, 13.5), dpi=300)
+    # Dynamic figure height & squeeze=False to preserve 2D grid indexing [row, col]
+    fig, axes = plt.subplots(
+        nrows=len(PLOT_DOPANTS), 
+        ncols=3, 
+        figsize=(10.5, 3.5 * len(PLOT_DOPANTS)), 
+        dpi=300, 
+        squeeze=False
+    )
 
-    for row_idx, elem_name in enumerate(TARGET_DOPANTS):
-        yt = y_true[:, row_idx]
+    for row_idx, elem_name in enumerate(PLOT_DOPANTS):
+        dopant_idx = TARGET_DOPANTS.index(elem_name)
+
+        yt = y_true[:, dopant_idx]
         
-        # Lock x/y limits identically per row based on maximum true or predicted value
-        active_preds = [model_preds[m][:, row_idx].max() for m in models if m != 'P3VAE' or ENABLE_P3VAE]
+        active_preds = [model_preds[m][:, dopant_idx].max() for m in models if m != 'P3VAE' or ENABLE_P3VAE]
         row_max_pred = max(active_preds) if active_preds else yt.max()
         max_bound = max(yt.max(), row_max_pred) * 1.05
         min_bound = 0.0
 
         for col_idx, model_name in enumerate(models):
             ax = axes[row_idx, col_idx]
-            yp = model_preds[model_name][:, row_idx]
+            yp = model_preds[model_name][:, dopant_idx]
 
             ax.set_xlim(min_bound, max_bound)
             ax.set_ylim(min_bound, max_bound)
             ax.grid(True, linestyle=":", alpha=0.5)
 
             if model_name == 'P3VAE' and not ENABLE_P3VAE:
-                # Placeholder overlay while P3VAE is actively training
                 ax.text(
                     0.5, 0.5, "P3VAE Training\nin Progress...",
                     transform=ax.transAxes, ha="center", va="center",
@@ -408,37 +416,33 @@ def main():
                 ax.plot([min_bound, max_bound], [min_bound, max_bound], "k--", alpha=0.3, lw=1.0)
                 ax.set_title("Training in Progress", fontsize=9.5, color="#777777")
             else:
-                # Compute quantitative metrics
                 r2 = r2_score(yt, yp)
                 rmse = np.sqrt(mean_squared_error(yt, yp))
                 mae = mean_absolute_error(yt, yp)
 
-                # Scatter Plot & Identity Line
                 ax.scatter(yt, yp, alpha=0.35, s=12, color="#1f77b4" if col_idx != 1 else "#d62728", edgecolors="none")
                 ax.plot([min_bound, max_bound], [min_bound, max_bound], "k--", alpha=0.7, lw=1.2)
                 ax.set_title(f"$R^2$: {r2:.3f} | RMSE: {rmse:.3f} wt%\nMAE: {mae:.3f} wt%", fontsize=9.5)
 
-            # Column Headers (Top Row Only)
             if row_idx == 0:
                 ax.set_title(f"{model_name}\n" + ax.get_title(), fontsize=12, fontweight="bold", pad=8)
 
-            # Row Labels (Left Column Only)
             if col_idx == 0:
                 ax.set_ylabel(f"{elem_name}\nPred wt%", fontsize=11, fontweight="bold")
             else:
                 ax.set_ylabel("Pred wt%", fontsize=9)
 
-            # X-axis Labels (Bottom Row Only)
-            if row_idx == 3:
+            # X-axis label only on bottom row
+            if row_idx == len(PLOT_DOPANTS) - 1:
                 ax.set_xlabel("True wt%", fontsize=11, fontweight="bold")
 
     plt.suptitle(f"Quantitative Performance Comparison — {EVAL_MODE.upper()} Set", fontsize=14, fontweight="bold", y=0.995)
     plt.tight_layout()
 
-    save_path = OUTPUT_DIR / f"poster_4x3_parity_grid_{EVAL_MODE}_{TIMESTAMP}.png"
+    save_path = OUTPUT_DIR / f"poster_parity_grid_{EVAL_MODE}_{TIMESTAMP}.png"
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close()
-    print(f"✅ Successfully saved poster 4x3 parity figure to: {save_path}")
+    print(f"✅ Successfully saved parity figure to: {save_path}")
 
 
 if __name__ == "__main__":
