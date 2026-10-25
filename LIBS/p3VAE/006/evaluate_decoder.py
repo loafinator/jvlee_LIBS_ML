@@ -352,11 +352,12 @@ def plot_sample_spectra(
             comp_text = "Composition:\n" + ("\n".join(comp_items) if comp_items else "Pure Host Matrix")
             
             ax_main.text(
-                0.02, 0.95, comp_text,
+                0.02, 0.05, comp_text,
                 transform=ax_main.transAxes,
+                horizontalalignment = "left",
+                verticalalignment = "bottom",
                 fontsize=10,
                 family="monospace",
-                verticalalignment="top",
                 bbox=dict(
                     boxstyle="round,pad=0.4",
                     facecolor="white",
@@ -366,7 +367,7 @@ def plot_sample_spectra(
                 )
             )
 
-        ax_main.legend(loc="lower left", fontsize=9, frameon=True)
+        ax_main.legend(loc="upper left", fontsize=9, frameon=True)
 
         # --- BOTTOM PANEL: Residuals ---
         ax_res.plot(wavelengths, residual, color="#b25395", lw=0.75, label="Residual")

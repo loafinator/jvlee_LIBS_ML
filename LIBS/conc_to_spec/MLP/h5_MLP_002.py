@@ -348,7 +348,7 @@ def plot_sample_spectra(
 
     fig, axes = plt.subplots(
         2, n_samples, 
-        figsize=(6.5 * n_samples, 3.5), 
+        figsize=(5.0 * n_samples, 4), 
         sharex='col', 
         gridspec_kw={'height_ratios': [2.5, 1]}
     )
@@ -403,9 +403,10 @@ def plot_sample_spectra(
             ax_main.text(
                 0.02, 0.95, comp_text,
                 transform=ax_main.transAxes,
-                fontsize=8,
+                fontsize=10,
                 family="monospace",
-                verticalalignment="top",
+                horizontalalignment="left",
+                verticalalignment="bottom",
                 bbox=dict(
                     boxstyle="round,pad=0.4",
                     facecolor="white",
@@ -415,7 +416,7 @@ def plot_sample_spectra(
                 )
             )
 
-        ax_main.legend(loc="upper right", fontsize=8, frameon=True)
+        ax_main.legend(loc="upper left", fontsize=8, frameon=True)
 
         # --- BOTTOM PANEL: Residuals ---
         ax_res.plot(wavelengths, residual, color="#b25395", lw=0.75, label="Residual")
