@@ -22,8 +22,8 @@ from setup import add_project_root_to_path
 add_project_root_to_path(parent_generation=1)
 from utils import get_h5_ds
 
-# Import model architecture and scaler from your P3VAE script
-from p3vae_006 import PhysicsInformedVAE, SpectralScaler, LIBSSpectraDataset
+# Import model architecture and scaler from P3VAE script
+from p3vae_610 import PhysicsInformedVAE, SpectralScaler, LIBSSpectraDataset # type: ignore
 
 
 # =============================================================================
@@ -32,7 +32,7 @@ from p3vae_006 import PhysicsInformedVAE, SpectralScaler, LIBSSpectraDataset
 H5_FILE = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5"
 SPLIT_DIR = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits_NoExtraDopants')
 MASTER_TABLE_PATH = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv').resolve()
-OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots/encoder_benchmarks")
+OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots/encoder_610")
 
 NUM_FOLDS = 7
 THRESH = 2.8
@@ -187,7 +187,7 @@ def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="P3VAE Encode
 # Main Evaluation Pipeline
 # =============================================================================
 def evaluate_p3vae_encoder(model_prefix: str | Path):
-    print(f"=== Evaluating P3VAE Encoder Benchmark [{DEVICE}] ===")
+    print(f"=== Evaluating_610 P3VAE Encoder [{DEVICE}] ===")
     
     # 1. Load data and canonical splits
     data = load_crossval_data(H5_FILE)
@@ -285,7 +285,7 @@ def evaluate_p3vae_encoder(model_prefix: str | Path):
         y_true=true_cv_wt, 
         y_pred_model=pred_cv_wt, 
         y_train_mean=train_mean_cv,
-        title_tag=f"P3VAE Encoder OOF Benchmarks ({loaded_folds} Folds)",
+        title_tag=f"P3VAE_610 Encoder OOF ({loaded_folds} Folds)",
         elem_names=target_names,
     )
 
@@ -298,26 +298,26 @@ def evaluate_p3vae_encoder(model_prefix: str | Path):
             y_true=true_test_wt, 
             y_pred_model=pred_test_wt, 
             y_train_mean=train_mean_cv,
-            title_tag=f"P3VAE Encoder Lockbox Benchmarks (Ensemble of {loaded_folds} Folds)",
+            title_tag=f"P3VAE_610 Encoder Lockbox (Ensemble of {loaded_folds} Folds)",
             elem_names=target_names,
         )
 
     # 5. Save Parity Plots
     plot_parity_grid(
         true_cv_wt, pred_cv_wt, target_names,
-        title_tag="P3VAE Encoder OOF",
-        save_path=OUTPUT_DIR / f"p3vae_encoder_oof_parity_{TIMESTAMP}.png"
+        title_tag="P3VAE_610 Encoder OOF",
+        save_path=OUTPUT_DIR / f"p3vae_610_encoder_oof_parity_{TIMESTAMP}.png"
     )
 
     if has_test:
         plot_parity_grid(
             true_test_wt, pred_test_wt, target_names,   # type: ignore
-            title_tag="P3VAE Encoder Lockbox Ensemble",
-            save_path=OUTPUT_DIR / f"p3vae_encoder_lockbox_parity_{TIMESTAMP}.png"
+            title_tag="P3VAE_610 Encoder Lockbox Ensemble",
+            save_path=OUTPUT_DIR / f"p3vae_610_encoder_lockbox_parity_{TIMESTAMP}.png"
         )
 
 
 if __name__ == "__main__":
     # Pass your trained model prefix here (without the _foldK.pt suffix)
-    MODEL_PREFIX = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae6_model_20261024_211302"
+    MODEL_PREFIX = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae610_model_20261027_091956"
     evaluate_p3vae_encoder(MODEL_PREFIX)

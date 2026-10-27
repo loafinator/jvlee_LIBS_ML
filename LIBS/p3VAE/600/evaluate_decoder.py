@@ -26,7 +26,7 @@ add_project_root_to_path(parent_generation=1)
 from utils import get_h5_ds
 
 # Import model architecture, scaler, and dataset from your P3VAE script
-from p3vae_006 import PhysicsInformedVAE, SpectralScaler, LIBSSpectraDataset
+from p3vae_600 import PhysicsInformedVAE, SpectralScaler, LIBSSpectraDataset
 
 
 # =============================================================================

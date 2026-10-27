@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 """
-jvlee_LIBS_ML > LIBS > p3VAE > p3vae_006.py
+jvlee_LIBS_ML > LIBS > p3VAE > 600 > p3vae_600.py
 """
 
 # region Imports

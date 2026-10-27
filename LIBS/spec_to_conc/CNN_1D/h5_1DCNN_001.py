@@ -82,7 +82,7 @@ class PyTorch1DCNN(nn.Module):
     Differences from the original:
       * Final pooling is AdaptiveAvgPool1d(pool_bins) + flatten instead of global average
         pooling, so the head knows *which part of the spectrum* each feature came from.
-        pool_bins=1 gives back the original behaviour.
+        pool_bins=1 gives back the original behavior.
       * Output layer starts small, with bias = mean training target, so epoch 0 of the
         loss curve equals the "predict the mean" baseline and any improvement is real.
     """
