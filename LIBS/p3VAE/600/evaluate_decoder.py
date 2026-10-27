@@ -569,7 +569,11 @@ def infer_batch(model, scaler, spec_np: np.ndarray):
     return rec, phy
 
 
-def evaluate_p3vae_decoder(model_prefix: str | Path, batch_size: int = 64):
+def evaluate_p3vae_decoder(
+        model_prefix: str | Path, 
+        batch_size: int = 64,
+        test_on_lockbox: bool = False
+):
     print(f"=== Running Standalone P3VAE Decoder Evaluation [{DEVICE}] ===")
 
     # 1. Load data and canonical splits
@@ -673,7 +677,7 @@ def evaluate_p3vae_decoder(model_prefix: str | Path, batch_size: int = 64):
     gc.collect()
 
     # 4. Lockbox evaluation pass (if present)
-    if has_test:
+    if test_on_lockbox and has_test:
         mean_te64 = rows_mean(y_np, test_idx)
         peak_cols_te = np.argsort(mean_te64.astype(np.float32))[-N_PEAKS:][::-1]
         stats_te, bw_te = RegionStats(mean_te64, train_mean_cv), BestWorst()

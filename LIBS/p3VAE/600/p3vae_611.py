@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 """
-jvlee_LIBS_ML > LIBS > p3VAE > 600 > p3vae_610.py
+jvlee_LIBS_ML > LIBS > p3VAE > 600 > p3vae_611.py
 
-This is switching the standard MLP sort of encoder for a 1D CNN since
-it outperformed the encoder in the comparison for the poster that I 
-presented at the Molten Salt Reactor Workshop.
+This is replacing the static elemental weighting with a learnable
+parameter so that ce/gd with wide peaks don't out compete u fine 
+peaks.
 """
 
 # region Imports
@@ -87,7 +87,7 @@ ELEMENT_WEIGHTS = torch.tensor([
 h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5"
 master_table_path = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv').resolve()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae610_model_{timestamp}.pt').resolve()
+model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae611_model_{timestamp}.pt').resolve()
 model_save_path.parent.mkdir(parents=True, exist_ok=True)
 # endregion
 
@@ -392,7 +392,8 @@ class PhysicsVAELoss(nn.Module):
 
     def __init__(
         self,
-        element_weights: torch.Tensor | None = None,
+        # element_weights: torch.Tensor | None = None,
+        n_elements: int = 19,
         alpha_recon: float = 1.0,
         beta_sup: float = 10.0,
         gamma_kl: float = 1e-4,
@@ -403,13 +404,14 @@ class PhysicsVAELoss(nn.Module):
         self.beta_sup = beta_sup
         self.gamma_kl = gamma_kl
         self.use_log_conc = use_log_conc
+        self.log_vars = nn.Parameter(torch.zeros(n_elements))
 
-        if element_weights is not None:
-            if not isinstance(element_weights, torch.Tensor):
-                element_weights = torch.tensor(element_weights, dtype=torch.float32)
-            self.register_buffer("element_weights", element_weights)
-        else:
-            self.element_weights = None
+        # if element_weights is not None:
+        #     if not isinstance(element_weights, torch.Tensor):
+        #         element_weights = torch.tensor(element_weights, dtype=torch.float32)
+        #     self.register_buffer("element_weights", element_weights)
+        # else:
+        #     self.element_weights = None
 
     @staticmethod
     def _kl_divergence(
@@ -441,10 +443,13 @@ class PhysicsVAELoss(nn.Module):
 
         element_errors = diff**2  # [Batch, N_elements]
 
-        if self.element_weights is not None:
-            element_errors = element_errors * self.element_weights
+        precision = torch.exp(-self.log_vars)
+        weighted_sup_loss = (precision * element_errors + self.log_vars).mean()
 
-        sup_loss = element_errors.mean()
+        # if self.element_weights is not None:
+        #     element_errors = element_errors * self.element_weights
+
+        # sup_loss = element_errors.mean()
 
         # 3. KL Divergence
         kl_phys = self._kl_divergence(
@@ -459,7 +464,8 @@ class PhysicsVAELoss(nn.Module):
 
         total_loss = (
             (self.alpha_recon * recon_loss)
-            + (self.beta_sup * sup_loss)
+            # + (self.beta_sup * sup_loss)
+            + (self.beta_sup * weighted_sup_loss)
             + (self.gamma_kl * kl_loss)
         )
         # total_loss = total_loss + 0.001 * l1_residual
@@ -467,7 +473,8 @@ class PhysicsVAELoss(nn.Module):
         return {
             "loss": total_loss,
             "recon_loss": recon_loss,
-            "sup_loss": sup_loss,
+            # "sup_loss": sup_loss,
+            "weighted_sup_loss": weighted_sup_loss,
             "kl_loss": kl_loss,
         }
 
@@ -1151,13 +1158,18 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
         model = raw_model
 
     criterion = PhysicsVAELoss(
-        element_weights=element_weights, 
+        # element_weights=element_weights,
+        n_elements=7,   # I think 7 (3 host + 4 dopants (not using the full synthetic))
         alpha_recon=1.0, 
         beta_sup=20.0,
         gamma_kl=1e-4, 
         use_log_conc=False
     ).to(device_obj)
-    optimizer = torch.optim.AdamW(raw_model.parameters(), lr=lr, weight_decay=weight_decay)
+    optimizer = torch.optim.AdamW(
+        list(raw_model.parameters()) + list(criterion.parameters()), 
+        lr=lr, 
+        weight_decay=weight_decay
+    )
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=lr_patience, min_lr=MIN_LR)
     use_amp = device_obj.type == 'cuda'
     
@@ -1444,7 +1456,7 @@ if __name__ == "__main__":
     results = train_kfold_physics_vae(
         h5_path=h5_file,
         master_table_path=master_table_path,
-        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/610__log.txt',
+        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/611__log.txt',
         save_path=model_save_path,
         num_folds=k,
         folds=None,              # [0] smoke test first, then None for all five

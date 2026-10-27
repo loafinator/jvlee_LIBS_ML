@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 """
-jvlee_LIBS_ML > LIBS > p3VAE > 600 > p3vae_610.py
+jvlee_LIBS_ML > LIBS > p3VAE > 600 > p3vae_612.py
 
-This is switching the standard MLP sort of encoder for a 1D CNN since
-it outperformed the encoder in the comparison for the poster that I 
-presented at the Molten Salt Reactor Workshop.
+This is attempting to fix the KL divergence oversmoothing. Essentially
+the u fine peaks were getting cut out because I was slimming all peaks
+in the same way. This was good for the wide peaks, but they dictated the
+slimming and got rid of u.
 """
 
 # region Imports
@@ -87,7 +88,7 @@ ELEMENT_WEIGHTS = torch.tensor([
 h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5"
 master_table_path = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv').resolve()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae610_model_{timestamp}.pt').resolve()
+model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae612_model_{timestamp}.pt').resolve()
 model_save_path.parent.mkdir(parents=True, exist_ok=True)
 # endregion
 
@@ -414,10 +415,16 @@ class PhysicsVAELoss(nn.Module):
     @staticmethod
     def _kl_divergence(
         mu: torch.Tensor,
-        logvar: torch.Tensor
+        logvar: torch.Tensor,
+        free_bits: float = 0.1
     ) -> torch.Tensor:
-        """Computes KL divergence between standard Gaussian N(0, I) and N(mu, std^2)."""
-        return -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1).mean()
+        # Compute KL per batch item and per latent dimension
+        kl_elementwise = -0.5 * (1 + logvar - mu.pow(2) - logvar.exp())
+
+        # Free bnits: only penalize KL divergence above tau
+        kl_clamped = torch.clamp(kl_elementwise, min=free_bits)
+
+        return kl_clamped.sum(dim=1).mean()
 
     def forward(
         self, 
@@ -1155,7 +1162,7 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
         alpha_recon=1.0, 
         beta_sup=20.0,
         gamma_kl=1e-4, 
-        use_log_conc=False
+        use_log_conc=True
     ).to(device_obj)
     optimizer = torch.optim.AdamW(raw_model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=lr_patience, min_lr=MIN_LR)
@@ -1444,7 +1451,7 @@ if __name__ == "__main__":
     results = train_kfold_physics_vae(
         h5_path=h5_file,
         master_table_path=master_table_path,
-        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/610__log.txt',
+        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/612_log.txt',
         save_path=model_save_path,
         num_folds=k,
         folds=None,              # [0] smoke test first, then None for all five

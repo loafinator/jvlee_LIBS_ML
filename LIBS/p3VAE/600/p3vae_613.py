@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 """
-jvlee_LIBS_ML > LIBS > p3VAE > 600 > p3vae_610.py
+jvlee_LIBS_ML > LIBS > p3VAE > 600 > p3vae_613.py
 
-This is switching the standard MLP sort of encoder for a 1D CNN since
-it outperformed the encoder in the comparison for the poster that I 
-presented at the Molten Salt Reactor Workshop.
+So the idea with this one is to change the 1d cnn encoder into two outputs
+one of physical concentrations and one for matrix continuum. This should
+help u from getting overpowered by ce.
 """
 
 # region Imports
@@ -87,7 +87,7 @@ ELEMENT_WEIGHTS = torch.tensor([
 h5_file = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5"
 master_table_path = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv').resolve()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae610_model_{timestamp}.pt').resolve()
+model_save_path = Path(f'/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae613_model_{timestamp}.pt').resolve()
 model_save_path.parent.mkdir(parents=True, exist_ok=True)
 # endregion
 
@@ -292,18 +292,34 @@ class PhysicsInformedVAE(nn.Module):
             nn.Conv1d(base_filters * 4, base_filters * 8, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm1d(base_filters * 8),
             nn.ReLU(),
-            nn.AdaptiveAvgPool1d(pool_bins),   # -> [Batch, base_filters * 8, pool_bins]
-            nn.Flatten(),
-            nn.Linear(conv_out_dim, 128),
+            # nn.AdaptiveAvgPool1d(pool_bins),   # -> [Batch, base_filters * 8, pool_bins]
+            # nn.Flatten(),
+            # nn.Linear(conv_out_dim, 128),
+            # nn.ReLU(),
+        )
+
+        self.conv_flatten = nn.Sequential(
+            nn.AdaptiveAvgPool1d(pool_bins),
+            nn.Flatten()
+        )
+
+        self.head_phys = nn.Sequential(
+            nn.Linear(conv_out_dim, 256),
+            nn.GroupNorm(8, 256),
+            nn.SiLU(),
+        )
+
+        self.head_matrix = nn.Sequential(
+            nn.Linear(conv_out_dim, 64),
             nn.ReLU(),
         )
 
         phys_dim = self.n_elements + self.n_broadening
-        self.fc_mean_phys = nn.Linear(128, phys_dim)
-        self.fc_logvar_phys = nn.Linear(128, phys_dim)
+        self.fc_mean_phys = nn.Linear(256, phys_dim)
+        self.fc_logvar_phys = nn.Linear(256, phys_dim)
 
-        self.fc_mean_matrix = nn.Linear(128, self.matrix_latent_dim)
-        self.fc_logvar_matrix = nn.Linear(128, self.matrix_latent_dim)
+        self.fc_mean_matrix = nn.Linear(64, self.matrix_latent_dim)
+        self.fc_logvar_matrix = nn.Linear(64, self.matrix_latent_dim)
 
         self.physics_decoder = BankedPhysicsDecoder(
             wl_grid=wl_grid, 
@@ -351,25 +367,31 @@ class PhysicsInformedVAE(nn.Module):
 
         return concentrations, broadening
 
-    def forward(
-            self, 
-            x: torch.Tensor
-    ) -> dict[str, torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> dict[str, torch.Tensor]:
         if x.dim() == 2:
             x = x.unsqueeze(1)
 
-        h = self.encoder(x)
+        # 1. Base Convolutional Feature Map
+        h_conv = self.encoder(x)
+        h_flat = self.conv_flatten(h_conv)
 
-        mu_p = torch.clamp(self.fc_mean_phys(h), min=-10.0, max=10.0)
-        logvar_p = torch.clamp(self.fc_logvar_phys(h), min=-6.0, max=6.0)
+        # 2. Split into Specialized Branching Heads
+        h_phys = self.head_phys(h_flat)
+        h_matrix = self.head_matrix(h_flat)
+
+        # 3. Physical Parameters
+        mu_p = torch.clamp(self.fc_mean_phys(h_phys), min=-10.0, max=10.0)
+        logvar_p = torch.clamp(self.fc_logvar_phys(h_phys), min=-6.0, max=6.0)
         z_phys = self.reparameterize(mu_p, logvar_p)
 
         concentrations, broadening = self._extract_physical_params(z_phys)
 
-        mu_m = self.fc_mean_matrix(h)
-        logvar_m = torch.clamp(self.fc_logvar_matrix(h), min=-8.0, max=8.0)
+        # 4. Matrix Continuum Parameters
+        mu_m = self.fc_mean_matrix(h_matrix)
+        logvar_m = torch.clamp(self.fc_logvar_matrix(h_matrix), min=-8.0, max=8.0)
         z_matrix = self.reparameterize(mu_m, logvar_m)
 
+        # 5. Spectrum Reconstruction
         ideal_physics_spectrum = self.physics_decoder(concentrations, broadening, chunk_size=CHUNK_SIZE)
         matrix_residual = self.matrix_decoder(z_matrix) * self.residual_scale
         
@@ -1444,7 +1466,7 @@ if __name__ == "__main__":
     results = train_kfold_physics_vae(
         h5_path=h5_file,
         master_table_path=master_table_path,
-        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/610__log.txt',
+        log_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/p3vae_logs/613_log.txt',
         save_path=model_save_path,
         num_folds=k,
         folds=None,              # [0] smoke test first, then None for all five

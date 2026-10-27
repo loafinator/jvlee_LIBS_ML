@@ -186,7 +186,10 @@ def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="P3VAE Encode
 # =============================================================================
 # Main Evaluation Pipeline
 # =============================================================================
-def evaluate_p3vae_encoder(model_prefix: str | Path):
+def evaluate_p3vae_encoder(
+        model_prefix: str | Path,
+        test_on_lockbox: bool = False
+):
     print(f"=== Evaluating_610 P3VAE Encoder [{DEVICE}] ===")
     
     # 1. Load data and canonical splits
@@ -255,7 +258,7 @@ def evaluate_p3vae_encoder(model_prefix: str | Path):
         oof_preds_np[va_idx] = np.concatenate(fold_preds, axis=0)
 
         # Evaluate Lockbox Test Set
-        if has_test:
+        if test_on_lockbox and has_test:
             te_spectra_scaled = scaler.transform(data["y"][test_idx])
             te_ds = LIBSSpectraDataset(te_spectra_scaled, data["X"][test_idx], data["is_synth"][test_idx], np.arange(len(test_idx)))
             te_loader = DataLoader(te_ds, batch_size=256, shuffle=False)
@@ -289,7 +292,7 @@ def evaluate_p3vae_encoder(model_prefix: str | Path):
         elem_names=target_names,
     )
 
-    if has_test and lockbox_preds is not None:
+    if has_test and test_on_lockbox and lockbox_preds is not None:
         lockbox_pred_avg = lockbox_preds.mean(dim=0).cpu().numpy()
         true_test_wt = Y_test_np * MAX_WT_PERCENT   # type: ignore
         pred_test_wt = lockbox_pred_avg * MAX_WT_PERCENT
@@ -309,7 +312,7 @@ def evaluate_p3vae_encoder(model_prefix: str | Path):
         save_path=OUTPUT_DIR / f"p3vae_610_encoder_oof_parity_{TIMESTAMP}.png"
     )
 
-    if has_test:
+    if has_test and test_on_lockbox:
         plot_parity_grid(
             true_test_wt, pred_test_wt, target_names,   # type: ignore
             title_tag="P3VAE_610 Encoder Lockbox Ensemble",
@@ -320,4 +323,4 @@ def evaluate_p3vae_encoder(model_prefix: str | Path):
 if __name__ == "__main__":
     # Pass your trained model prefix here (without the _foldK.pt suffix)
     MODEL_PREFIX = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae610_model_20261027_091956"
-    evaluate_p3vae_encoder(MODEL_PREFIX)
+    evaluate_p3vae_encoder(MODEL_PREFIX,test_on_lockbox=False)
