@@ -1227,7 +1227,7 @@ def train_one_fold(cv_data, fold_id, fold, master_table_path, save_path, logger,
                     ld = criterion(model(spectra), batch_gpu)
                 n = spectra.size(0)
                 va_loss += ld['loss'].item() * n
-                va_sup += ld['sup_loss'].item() * n
+                va_sup += ld['weighted_sup_loss'].item() * n
 
         tr_loss /= len(train_ds); va_loss /= len(val_ds); va_sup /= len(val_ds)
         # scheduler.step(va_loss)

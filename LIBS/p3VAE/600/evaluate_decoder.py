@@ -725,5 +725,5 @@ def evaluate_p3vae_decoder(
 
 if __name__ == "__main__":
     # Pass your trained model prefix here (without the _foldK.pt suffix)
-    MODEL_PREFIX = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/best_p3vae6_model_20261024_211302"
+    MODEL_PREFIX = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae613_model_20261028_094101"
     evaluate_p3vae_decoder(MODEL_PREFIX)

@@ -1,0 +1,391 @@
+=== CUDA & SLURM DIAGNOSTICS ===
+CUDA_VISIBLE_DEVICES = 0
+Wed Oct 28 09:31:37 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.178.04             Driver Version: 580.178.04     CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  Tesla V100S-PCIE-32GB          On  |   00000000:27:00.0 Off |                    0 |
+| N/A   37C    P0             25W /  250W |     403MiB /  32768MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A         2182226      G   xfce4-session                             5MiB |
+|    0   N/A  N/A         2182256      G   xfwm4                                     5MiB |
+|    0   N/A  N/A         2182270      G   xfsettingsd                               5MiB |
+|    0   N/A  N/A         2182274      G   xfce4-panel                               5MiB |
+|    0   N/A  N/A         2182279      G   Thunar                                    5MiB |
+|    0   N/A  N/A         2182285      G   xfdesktop                                 5MiB |
+|    0   N/A  N/A         2182291      G   ...lib64/xfce4/panel/wrapper-2.0          5MiB |
+|    0   N/A  N/A         2182292      G   ...lib64/xfce4/panel/wrapper-2.0          5MiB |
+|    0   N/A  N/A         2182293      G   ...lib64/xfce4/panel/wrapper-2.0          5MiB |
+|    0   N/A  N/A         2182302      G   ...server/evolution-alarm-notify          5MiB |
+|    0   N/A  N/A         2182306      G   ...lib64/xfce4/panel/wrapper-2.0          5MiB |
+|    0   N/A  N/A         2182310      G   xfce4-screensaver                         5MiB |
+|    0   N/A  N/A         2182313      G   nm-applet                                 5MiB |
+|    0   N/A  N/A         2183664      G   /usr/bin/xfce4-terminal                   5MiB |
+|    0   N/A  N/A         2184059      G   .../cortex/lnamd64/cortex.24.2.0        311MiB |
++-----------------------------------------------------------------------------------------+
+CUDA Available: True
+Device Count: 1
+=================================
+==========================================================================
+ 🚀 STARTING EXPERIMENT: p3vae_611.py
+==========================================================================
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+Starting run
+This is the max12 base experiment
+Saved test holdout indices (19308 samples) → best_p3vae611_model_20261028_093611_test_idx.npy
+[Range Check] Fold 0: Ce: val 0.105 / train 0.237 | Gd: val 0.149 / train 0.245 | Sm: val 0.301 / train 0.488 | U: val 0.165 / train 0.289
+[Range Check] Fold 1: Ce: val 0.237 / train 0.142 | Gd: val 0.156 / train 0.245 | Sm: val 0.381 / train 0.488 | U: val 0.281 / train 0.289
+[Range Check] Fold 2: Ce: val 0.137 / train 0.237 | Gd: val 0.245 / train 0.227 | Sm: val 0.390 / train 0.488 | U: val 0.289 / train 0.281
+[Range Check] Fold 3: Ce: val 0.142 / train 0.237 | Gd: val 0.184 / train 0.245 | Sm: val 0.375 / train 0.488 | U: val 0.166 / train 0.289
+[Range Check] Fold 4: Ce: val 0.134 / train 0.237 | Gd: val 0.227 / train 0.245 | Sm: val 0.439 / train 0.488 | U: val 0.160 / train 0.289
+[Range Check] Fold 5: Ce: val 0.132 / train 0.237 | Gd: val 0.184 / train 0.245 | Sm: val 0.488 / train 0.439 | U: val 0.229 / train 0.289
+[Range Check] Fold 6: Ce: val 0.054 / train 0.237 | Gd: val 0.138 / train 0.245 | Sm: val 0.417 / train 0.488 | U: val 0.222 / train 0.289
+[F0] spec_scaler scale_ = 1.4170
+exp max/mean 2.117/0.01224 | syn max/mean 1/0.148
+=== Fold 0: train 162714 | val 32462 (13 compositions) ===
+❌ FAILURE: p3vae_611.py failed with exit code 1. Moving to next experiment...
+
+==========================================================================
+ 🚀 STARTING EXPERIMENT: p3vae_612.py.py
+==========================================================================
+❌ FAILURE: p3vae_612.py.py failed with exit code 2. Moving to next experiment...
+
+==========================================================================
+ 🚀 STARTING EXPERIMENT: p3vae_613.py
+==========================================================================
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+Starting run
+This is the max12 base experiment
+Saved test holdout indices (19308 samples) → best_p3vae613_model_20261028_094101_test_idx.npy
+[Range Check] Fold 0: Ce: val 0.105 / train 0.237 | Gd: val 0.149 / train 0.245 | Sm: val 0.301 / train 0.488 | U: val 0.165 / train 0.289
+[Range Check] Fold 1: Ce: val 0.237 / train 0.142 | Gd: val 0.156 / train 0.245 | Sm: val 0.381 / train 0.488 | U: val 0.281 / train 0.289
+[Range Check] Fold 2: Ce: val 0.137 / train 0.237 | Gd: val 0.245 / train 0.227 | Sm: val 0.390 / train 0.488 | U: val 0.289 / train 0.281
+[Range Check] Fold 3: Ce: val 0.142 / train 0.237 | Gd: val 0.184 / train 0.245 | Sm: val 0.375 / train 0.488 | U: val 0.166 / train 0.289
+[Range Check] Fold 4: Ce: val 0.134 / train 0.237 | Gd: val 0.227 / train 0.245 | Sm: val 0.439 / train 0.488 | U: val 0.160 / train 0.289
+[Range Check] Fold 5: Ce: val 0.132 / train 0.237 | Gd: val 0.184 / train 0.245 | Sm: val 0.488 / train 0.439 | U: val 0.229 / train 0.289
+[Range Check] Fold 6: Ce: val 0.054 / train 0.237 | Gd: val 0.138 / train 0.245 | Sm: val 0.417 / train 0.488 | U: val 0.222 / train 0.289
+[F0] spec_scaler scale_ = 1.4170
+exp max/mean 2.117/0.01224 | syn max/mean 1/0.148
+=== Fold 0: train 162714 | val 32462 (13 compositions) ===
+[F0] Epoch 01/200 [31.1s] | Train 13.2800 | Val 0.2344 | Conc MSE 0.0100261
+[F0] Epoch 02/200 [27.7s] | Train 0.2753 | Val 0.1648 | Conc MSE 0.0072751
+[F0] Epoch 03/200 [27.8s] | Train 0.2152 | Val 3.3113 | Conc MSE 0.0376462
+[F0] Epoch 04/200 [27.6s] | Train 0.1831 | Val 2.4647 | Conc MSE 0.0113737
+[F0] Epoch 05/200 [27.7s] | Train 0.1646 | Val 53.4444 | Conc MSE 0.0360157
+[F0] Epoch 06/200 [27.4s] | Train 0.1457 | Val 35.7345 | Conc MSE 0.0125719
+[F0] Epoch 07/200 [27.1s] | Train 0.1302 | Val 2.7665 | Conc MSE 0.0141717
+[F0] Epoch 08/200 [27.5s] | Train 0.1100 | Val 20.5905 | Conc MSE 0.0539250
+[F0] Epoch 09/200 [27.4s] | Train 0.1055 | Val 0.2276 | Conc MSE 0.0107179
+[F0] Epoch 10/200 [27.5s] | Train 0.1029 | Val 2.7892 | Conc MSE 0.1264793
+[F0] Epoch 11/200 [27.4s] | Train 0.0993 | Val 2.8635 | Conc MSE 0.0515926
+[F0] Epoch 12/200 [27.4s] | Train 0.0970 | Val 19.1147 | Conc MSE 0.2569584
+[F0] Epoch 13/200 [27.3s] | Train 0.0894 | Val 7.8588 | Conc MSE 0.2586369
+[F0] Epoch 14/200 [27.5s] | Train 0.0875 | Val 0.9289 | Conc MSE 0.0309806
+[F0] Epoch 15/200 [27.2s] | Train 0.0859 | Val 0.1712 | Conc MSE 0.0078977
+[F0] Epoch 16/200 [27.0s] | Train 0.0849 | Val 1.4867 | Conc MSE 0.0363171
+[F0] Epoch 17/200 [27.6s] | Train 0.0835 | Val 3.6897 | Conc MSE 0.1658110
+[F0] Epoch 18/200 [27.3s] | Train 0.0798 | Val 0.1718 | Conc MSE 0.0071826
+[F0] Epoch 19/200 [27.5s] | Train 0.0790 | Val 0.6923 | Conc MSE 0.0101472
+[F0] Epoch 20/200 [27.0s] | Train 0.0781 | Val 0.5042 | Conc MSE 0.0242015
+[F0] Epoch 21/200 [27.4s] | Train 0.0770 | Val 1.9740 | Conc MSE 0.0972893
+[F0] Epoch 22/200 [27.5s] | Train 0.0764 | Val 0.2303 | Conc MSE 0.0109839
+[F0] Epoch 23/200 [27.5s] | Train 0.0760 | Val 1.6383 | Conc MSE 0.0809342
+[F0] Epoch 24/200 [27.4s] | Train 0.0737 | Val 0.1166 | Conc MSE 0.0051219
+[F0] Epoch 25/200 [27.4s] | Train 0.0728 | Val 0.2280 | Conc MSE 0.0107647
+[F0] Epoch 26/200 [27.5s] | Train 0.0726 | Val 0.2791 | Conc MSE 0.0135078
+[F0] Epoch 27/200 [27.8s] | Train 0.0720 | Val 0.1176 | Conc MSE 0.0048198
+[F0] Epoch 28/200 [26.8s] | Train 0.0718 | Val 0.2125 | Conc MSE 0.0100286
+[F0] Epoch 29/200 [27.5s] | Train 0.0712 | Val 0.6597 | Conc MSE 0.0322615
+[F0] Epoch 30/200 [27.5s] | Train 0.0710 | Val 0.3666 | Conc MSE 0.0178897
+[F0] Epoch 31/200 [27.4s] | Train 0.0706 | Val 0.2372 | Conc MSE 0.0098642
+[F0] Epoch 32/200 [27.4s] | Train 0.0703 | Val 1.3174 | Conc MSE 0.0648898
+[F0] Epoch 33/200 [27.4s] | Train 0.0688 | Val 0.2661 | Conc MSE 0.0128550
+[F0] Epoch 34/200 [27.1s] | Train 0.0684 | Val 0.2289 | Conc MSE 0.0109954
+[F0] Epoch 35/200 [27.5s] | Train 0.0679 | Val 0.3064 | Conc MSE 0.0148552
+[F0] Epoch 36/200 [27.5s] | Train 0.0678 | Val 0.0877 | Conc MSE 0.0035232
+[F0] Epoch 37/200 [27.4s] | Train 0.0676 | Val 0.0942 | Conc MSE 0.0039759
+[F0] Epoch 38/200 [27.4s] | Train 0.0676 | Val 0.2904 | Conc MSE 0.0140185
+[F0] Epoch 39/200 [27.1s] | Train 0.0673 | Val 0.1436 | Conc MSE 0.0064003
+[F0] Epoch 40/200 [27.6s] | Train 0.0670 | Val 0.2368 | Conc MSE 0.0113885
+[F0] Epoch 41/200 [27.6s] | Train 0.0672 | Val 0.2096 | Conc MSE 0.0099385
+[F0] Epoch 42/200 [27.5s] | Train 0.0658 | Val 0.2234 | Conc MSE 0.0105971
+[F0] Epoch 43/200 [27.4s] | Train 0.0657 | Val 0.2892 | Conc MSE 0.0139729
+[F0] Epoch 44/200 [27.4s] | Train 0.0659 | Val 0.3015 | Conc MSE 0.0146184
+[F0] Epoch 45/200 [27.2s] | Train 0.0657 | Val 0.5070 | Conc MSE 0.0249102
+[F0] Epoch 46/200 [27.3s] | Train 0.0656 | Val 0.2181 | Conc MSE 0.0103245
+[F0] Epoch 47/200 [27.5s] | Train 0.0651 | Val 0.2894 | Conc MSE 0.0140262
+[F0] Epoch 48/200 [27.0s] | Train 0.0646 | Val 0.2636 | Conc MSE 0.0126385
+[F0] Epoch 49/200 [27.4s] | Train 0.0647 | Val 0.2530 | Conc MSE 0.0121094
+[F0] Epoch 50/200 [27.3s] | Train 0.0647 | Val 0.2102 | Conc MSE 0.0099044
+[F0] Epoch 51/200 [27.9s] | Train 0.0645 | Val 0.2468 | Conc MSE 0.0117320
+[F0] Epoch 52/200 [27.5s] | Train 0.0646 | Val 0.2336 | Conc MSE 0.0110379
+[F0] Epoch 53/200 [27.7s] | Train 0.0642 | Val 0.2372 | Conc MSE 0.0112204
+[F0] Epoch 54/200 [27.3s] | Train 0.0643 | Val 0.3415 | Conc MSE 0.0166007
+[F0] Epoch 55/200 [28.3s] | Train 0.0639 | Val 0.2948 | Conc MSE 0.0142194
+[F0] Epoch 56/200 [28.0s] | Train 0.0641 | Val 0.2918 | Conc MSE 0.0140749
+[F0] early stop at epoch 56 (Conc MSE plateaued)
+[F0] done: best epoch 36, val 0.0035
+[F1] spec_scaler scale_ = 1.4198
+exp max/mean 1.402/0.01277 | syn max/mean 1/0.1465
+=== Fold 1: train 160671 | val 34505 (13 compositions) ===
+[F1] Epoch 01/200 [27.6s] | Train 12.9417 | Val 0.4377 | Conc MSE 0.0207608
+[F1] Epoch 02/200 [26.5s] | Train 0.2496 | Val 0.5670 | Conc MSE 0.0272525
+[F1] Epoch 03/200 [26.6s] | Train 0.1886 | Val 0.5309 | Conc MSE 0.0257943
+[F1] Epoch 04/200 [27.1s] | Train 0.1510 | Val 0.7314 | Conc MSE 0.0359491
+[F1] Epoch 05/200 [27.2s] | Train 0.1303 | Val 0.5991 | Conc MSE 0.0293180
+[F1] Epoch 06/200 [27.1s] | Train 0.1214 | Val 1.8927 | Conc MSE 0.0365797
+[F1] Epoch 07/200 [27.1s] | Train 0.0987 | Val 0.8125 | Conc MSE 0.0328479
+[F1] Epoch 08/200 [27.2s] | Train 0.0935 | Val 1.0125 | Conc MSE 0.0324104
+[F1] Epoch 09/200 [28.0s] | Train 0.0894 | Val 2.8087 | Conc MSE 0.0613606
+[F1] Epoch 10/200 [27.3s] | Train 0.0871 | Val 0.6031 | Conc MSE 0.0296645
+[F1] Epoch 11/200 [27.2s] | Train 0.0842 | Val 5.5863 | Conc MSE 0.0338862
+[F1] Epoch 12/200 [26.8s] | Train 0.0776 | Val 0.6814 | Conc MSE 0.0312267
+[F1] Epoch 13/200 [27.0s] | Train 0.0759 | Val 2.1726 | Conc MSE 0.0401277
+[F1] Epoch 14/200 [27.6s] | Train 0.0743 | Val 0.5690 | Conc MSE 0.0272784
+[F1] Epoch 15/200 [27.2s] | Train 0.0736 | Val 0.6745 | Conc MSE 0.0319971
+[F1] Epoch 16/200 [28.0s] | Train 0.0725 | Val 0.6561 | Conc MSE 0.0323661
+[F1] Epoch 17/200 [27.2s] | Train 0.0689 | Val 1.1050 | Conc MSE 0.0544618
+[F1] Epoch 18/200 [26.9s] | Train 0.0681 | Val 2.6915 | Conc MSE 0.1340300
+[F1] Epoch 19/200 [27.2s] | Train 0.0671 | Val 0.6994 | Conc MSE 0.0325331
+[F1] Epoch 20/200 [27.2s] | Train 0.0665 | Val 0.7081 | Conc MSE 0.0304218
+[F1] Epoch 21/200 [26.9s] | Train 0.0661 | Val 3.0245 | Conc MSE 0.1504785
+[F1] early stop at epoch 21 (Conc MSE plateaued)
+[F1] done: best epoch 1, val 0.0208
+[F2] spec_scaler scale_ = 1.4025
+exp max/mean 1.459/0.009921 | syn max/mean 1/0.1486
+=== Fold 2: train 179527 | val 15649 (13 compositions) ===
+[F2] Epoch 01/200 [29.1s] | Train 11.0037 | Val 0.2789 | Conc MSE 0.0033975
+[F2] Epoch 02/200 [28.5s] | Train 0.2596 | Val 0.3523 | Conc MSE 0.0024890
+[F2] Epoch 03/200 [29.0s] | Train 0.2086 | Val 1.3188 | Conc MSE 0.0039657
+[F2] Epoch 04/200 [29.5s] | Train 0.1838 | Val 17.6440 | Conc MSE 0.0043559
+[F2] Epoch 05/200 [29.1s] | Train 0.1683 | Val 20.1204 | Conc MSE 0.0049179
+[F2] Epoch 06/200 [28.7s] | Train 0.1521 | Val 22.2879 | Conc MSE 0.0065259
+[F2] Epoch 07/200 [29.7s] | Train 0.1402 | Val 12.4666 | Conc MSE 0.0029194
+[F2] Epoch 08/200 [28.8s] | Train 0.1193 | Val 60.9962 | Conc MSE 0.0301091
+[F2] Epoch 09/200 [28.7s] | Train 0.1124 | Val 8.7146 | Conc MSE 0.0481489
+[F2] Epoch 10/200 [28.9s] | Train 0.1070 | Val 19.8125 | Conc MSE 0.0173981
+[F2] Epoch 11/200 [29.3s] | Train 0.1005 | Val 3.1005 | Conc MSE 0.0167412
+[F2] Epoch 12/200 [28.3s] | Train 0.0945 | Val 102.6914 | Conc MSE 0.0108865
+[F2] Epoch 13/200 [28.8s] | Train 0.0848 | Val 10.3366 | Conc MSE 0.0179931
+[F2] Epoch 14/200 [28.9s] | Train 0.0818 | Val 0.4203 | Conc MSE 0.0185253
+[F2] Epoch 15/200 [29.2s] | Train 0.0796 | Val 18.4674 | Conc MSE 0.0436496
+[F2] Epoch 16/200 [29.3s] | Train 0.0779 | Val 3.8572 | Conc MSE 0.0059629
+[F2] Epoch 17/200 [29.4s] | Train 0.0762 | Val 15.5782 | Conc MSE 0.0453122
+[F2] Epoch 18/200 [29.3s] | Train 0.0720 | Val 0.3729 | Conc MSE 0.0170918
+[F2] Epoch 19/200 [29.1s] | Train 0.0710 | Val 7.4424 | Conc MSE 0.0485810
+[F2] Epoch 20/200 [28.9s] | Train 0.0702 | Val 5.1288 | Conc MSE 0.0490190
+[F2] Epoch 21/200 [29.3s] | Train 0.0694 | Val 0.6127 | Conc MSE 0.0279957
+[F2] Epoch 22/200 [29.5s] | Train 0.0690 | Val 16.2462 | Conc MSE 0.0085363
+[F2] early stop at epoch 22 (Conc MSE plateaued)
+[F2] done: best epoch 2, val 0.0025
+[F3] spec_scaler scale_ = 1.4121
+exp max/mean 1.332/0.01175 | syn max/mean 1/0.1527
+=== Fold 3: train 169321 | val 25855 (13 compositions) ===
+[F3] Epoch 01/200 [27.9s] | Train 12.1702 | Val 0.0795 | Conc MSE 0.0021977
+[F3] Epoch 02/200 [27.4s] | Train 0.2877 | Val 0.0822 | Conc MSE 0.0024297
+[F3] Epoch 03/200 [28.3s] | Train 0.2352 | Val 0.0600 | Conc MSE 0.0018433
+[F3] Epoch 04/200 [28.2s] | Train 0.2136 | Val 0.2134 | Conc MSE 0.0029545
+[F3] Epoch 05/200 [27.5s] | Train 0.1938 | Val 0.2289 | Conc MSE 0.0101365
+[F3] Epoch 06/200 [27.5s] | Train 0.1799 | Val 528.6283 | Conc MSE 0.0026095
+[F3] Epoch 07/200 [27.3s] | Train 0.1696 | Val 2.8695 | Conc MSE 0.0079596
+[F3] Epoch 08/200 [27.6s] | Train 0.1618 | Val 4.6709 | Conc MSE 0.0104679
+[F3] Epoch 09/200 [27.7s] | Train 0.1439 | Val 0.8195 | Conc MSE 0.0068744
+[F3] Epoch 10/200 [27.4s] | Train 0.1363 | Val 1.1839 | Conc MSE 0.0474233
+[F3] Epoch 11/200 [27.4s] | Train 0.1299 | Val 0.4807 | Conc MSE 0.0152662
+[F3] Epoch 12/200 [27.0s] | Train 0.1252 | Val 39.4907 | Conc MSE 0.2693997
+[F3] Epoch 13/200 [27.8s] | Train 0.1220 | Val 0.3445 | Conc MSE 0.0161041
+[F3] Epoch 14/200 [28.0s] | Train 0.1137 | Val 0.6540 | Conc MSE 0.0068169
+[F3] Epoch 15/200 [27.9s] | Train 0.1114 | Val 0.7766 | Conc MSE 0.0101304
+[F3] Epoch 16/200 [27.8s] | Train 0.1095 | Val 0.4370 | Conc MSE 0.0209123
+[F3] Epoch 17/200 [27.7s] | Train 0.1083 | Val 9.6020 | Conc MSE 0.2164747
+[F3] Epoch 18/200 [27.5s] | Train 0.1067 | Val 1.7002 | Conc MSE 0.0610971
+[F3] Epoch 19/200 [28.3s] | Train 0.1019 | Val 0.1879 | Conc MSE 0.0054256
+[F3] Epoch 20/200 [27.9s] | Train 0.1013 | Val 0.5912 | Conc MSE 0.0283853
+[F3] Epoch 21/200 [27.5s] | Train 0.0996 | Val 8.1628 | Conc MSE 0.0084587
+[F3] Epoch 22/200 [28.0s] | Train 0.0982 | Val 0.4184 | Conc MSE 0.0197677
+[F3] Epoch 23/200 [27.7s] | Train 0.0971 | Val 1.3664 | Conc MSE 0.0664512
+[F3] early stop at epoch 23 (Conc MSE plateaued)
+[F3] done: best epoch 3, val 0.0018
+[F4] spec_scaler scale_ = 1.4079
+exp max/mean 1.388/0.00541 | syn max/mean 1/0.148
+=== Fold 4: train 172598 | val 22578 (14 compositions) ===
+[F4] Epoch 01/200 [28.4s] | Train 12.1874 | Val 0.9651 | Conc MSE 0.0192820
+[F4] Epoch 02/200 [27.1s] | Train 0.2352 | Val 0.8556 | Conc MSE 0.0154034
+[F4] Epoch 03/200 [27.3s] | Train 0.1865 | Val 2.0585 | Conc MSE 0.0222046
+[F4] Epoch 04/200 [27.5s] | Train 0.1673 | Val 294.9706 | Conc MSE 0.0251622
+[F4] Epoch 05/200 [27.8s] | Train 0.1504 | Val 2.8896 | Conc MSE 0.0118674
+[F4] Epoch 06/200 [28.1s] | Train 0.1424 | Val 11.5813 | Conc MSE 0.0281683
+[F4] Epoch 07/200 [28.6s] | Train 0.1325 | Val 9.2681 | Conc MSE 0.0313556
+[F4] Epoch 08/200 [27.8s] | Train 0.1223 | Val 2.5299 | Conc MSE 0.0104754
+[F4] Epoch 09/200 [28.3s] | Train 0.1104 | Val 689.9972 | Conc MSE 0.0132447
+[F4] Epoch 10/200 [28.1s] | Train 0.1004 | Val 2.6053 | Conc MSE 0.0153933
+[F4] Epoch 11/200 [27.5s] | Train 0.0900 | Val 7.3701 | Conc MSE 0.0296188
+[F4] Epoch 12/200 [28.5s] | Train 0.0814 | Val 78.3467 | Conc MSE 0.0240374
+[F4] Epoch 13/200 [28.3s] | Train 0.0758 | Val 217.9436 | Conc MSE 0.0850594
+[F4] Epoch 14/200 [28.4s] | Train 0.0666 | Val 45.5357 | Conc MSE 0.0357411
+[F4] Epoch 15/200 [28.1s] | Train 0.0624 | Val 45.5959 | Conc MSE 0.0183675
+[F4] Epoch 16/200 [28.6s] | Train 0.0606 | Val 0.4876 | Conc MSE 0.0143311
+[F4] Epoch 17/200 [28.4s] | Train 0.0586 | Val 65.5148 | Conc MSE 0.0354366
+[F4] Epoch 18/200 [28.2s] | Train 0.0583 | Val 66.4074 | Conc MSE 0.0222287
+[F4] Epoch 19/200 [28.2s] | Train 0.0534 | Val 51.3272 | Conc MSE 0.0273513
+[F4] Epoch 20/200 [27.9s] | Train 0.0525 | Val 0.3895 | Conc MSE 0.0097458
+[F4] Epoch 21/200 [28.5s] | Train 0.0516 | Val 41.5815 | Conc MSE 0.0283384
+[F4] Epoch 22/200 [28.7s] | Train 0.0511 | Val 38.4591 | Conc MSE 0.0181045
+[F4] Epoch 23/200 [27.7s] | Train 0.0506 | Val 1.4345 | Conc MSE 0.0115597
+[F4] Epoch 24/200 [27.6s] | Train 0.0498 | Val 3.8006 | Conc MSE 0.0210091
+[F4] Epoch 25/200 [27.9s] | Train 0.0496 | Val 50.1283 | Conc MSE 0.0193808
+[F4] Epoch 26/200 [28.2s] | Train 0.0476 | Val 0.5404 | Conc MSE 0.0078352
+[F4] Epoch 27/200 [28.2s] | Train 0.0472 | Val 23.1413 | Conc MSE 0.0178792
+[F4] Epoch 28/200 [27.6s] | Train 0.0469 | Val 2.1200 | Conc MSE 0.0115358
+[F4] Epoch 29/200 [28.1s] | Train 0.0466 | Val 25.5664 | Conc MSE 0.0255756
+[F4] Epoch 30/200 [27.5s] | Train 0.0467 | Val 22.2814 | Conc MSE 0.0154249
+[F4] Epoch 31/200 [27.9s] | Train 0.0461 | Val 6.6614 | Conc MSE 0.0265499
+[F4] Epoch 32/200 [28.2s] | Train 0.0453 | Val 5.5815 | Conc MSE 0.0123456
+[F4] Epoch 33/200 [28.2s] | Train 0.0454 | Val 0.3644 | Conc MSE 0.0109754
+[F4] Epoch 34/200 [28.4s] | Train 0.0452 | Val 0.3548 | Conc MSE 0.0102793
+[F4] Epoch 35/200 [27.9s] | Train 0.0450 | Val 4.9196 | Conc MSE 0.0116126
+[F4] Epoch 36/200 [27.6s] | Train 0.0447 | Val 16.0416 | Conc MSE 0.0176064
+[F4] Epoch 37/200 [28.3s] | Train 0.0442 | Val 0.3805 | Conc MSE 0.0108743
+[F4] Epoch 38/200 [28.1s] | Train 0.0442 | Val 0.4359 | Conc MSE 0.0121603
+[F4] Epoch 39/200 [28.5s] | Train 0.0440 | Val 13.0742 | Conc MSE 0.0145413
+[F4] Epoch 40/200 [28.1s] | Train 0.0440 | Val 0.7752 | Conc MSE 0.0166313
+[F4] Epoch 41/200 [28.2s] | Train 0.0437 | Val 3.1372 | Conc MSE 0.0096777
+[F4] Epoch 42/200 [28.2s] | Train 0.0435 | Val 0.4022 | Conc MSE 0.0109597
+[F4] Epoch 43/200 [28.5s] | Train 0.0434 | Val 0.4508 | Conc MSE 0.0107865
+[F4] Epoch 44/200 [28.3s] | Train 0.0435 | Val 3.0857 | Conc MSE 0.0103186
+[F4] Epoch 45/200 [28.3s] | Train 0.0434 | Val 7.7855 | Conc MSE 0.0114799
+[F4] Epoch 46/200 [28.3s] | Train 0.0434 | Val 0.3419 | Conc MSE 0.0109727
+[F4] early stop at epoch 46 (Conc MSE plateaued)
+[F4] done: best epoch 26, val 0.0078
+[F5] spec_scaler scale_ = 1.0000
+exp max/mean 0.976/0.007338 | syn max/mean 1/0.1495
+=== Fold 5: train 181783 | val 13393 (14 compositions) ===
+[F5] Epoch 01/200 [28.8s] | Train 27.2243 | Val 7.4228 | Conc MSE 0.0570388
+[F5] Epoch 02/200 [27.9s] | Train 0.2998 | Val 7.4679 | Conc MSE 0.0569686
+[F5] Epoch 03/200 [28.6s] | Train 0.2238 | Val 5.6509 | Conc MSE 0.0430355
+[F5] Epoch 04/200 [28.3s] | Train 0.1893 | Val 19.2596 | Conc MSE 0.0417967
+[F5] Epoch 05/200 [28.5s] | Train 0.1661 | Val 4.3591 | Conc MSE 0.0541445
+[F5] Epoch 06/200 [28.9s] | Train 0.1636 | Val 3.8796 | Conc MSE 0.0505989
+[F5] Epoch 07/200 [29.2s] | Train 0.1485 | Val 16.4220 | Conc MSE 0.0420586
+[F5] Epoch 08/200 [29.2s] | Train 0.1414 | Val 5.0481 | Conc MSE 0.0574938
+[F5] Epoch 09/200 [29.6s] | Train 0.1365 | Val 3.6543 | Conc MSE 0.0558579
+[F5] Epoch 10/200 [28.6s] | Train 0.1173 | Val 46.7423 | Conc MSE 0.0390463
+[F5] Epoch 11/200 [28.8s] | Train 0.1118 | Val 5.0286 | Conc MSE 0.0652285
+[F5] Epoch 12/200 [28.8s] | Train 0.1086 | Val 5.1006 | Conc MSE 0.0678546
+[F5] Epoch 13/200 [29.2s] | Train 0.1045 | Val 3.5390 | Conc MSE 0.0517081
+[F5] Epoch 14/200 [29.6s] | Train 0.1006 | Val 16.8047 | Conc MSE 0.0528503
+[F5] Epoch 15/200 [29.1s] | Train 0.0950 | Val 5.0986 | Conc MSE 0.1118557
+[F5] Epoch 16/200 [29.5s] | Train 0.0857 | Val 4.1579 | Conc MSE 0.0995747
+[F5] Epoch 17/200 [29.6s] | Train 0.0830 | Val 3.3254 | Conc MSE 0.0613183
+[F5] Epoch 18/200 [29.5s] | Train 0.0804 | Val 4.3891 | Conc MSE 0.0716828
+[F5] Epoch 19/200 [29.2s] | Train 0.0783 | Val 3.4304 | Conc MSE 0.0710976
+[F5] Epoch 20/200 [29.2s] | Train 0.0761 | Val 3.7700 | Conc MSE 0.0705593
+[F5] Epoch 21/200 [29.3s] | Train 0.0718 | Val 3.2682 | Conc MSE 0.0629185
+[F5] Epoch 22/200 [29.2s] | Train 0.0705 | Val 3.2765 | Conc MSE 0.0657476
+[F5] Epoch 23/200 [29.4s] | Train 0.0691 | Val 3.9963 | Conc MSE 0.0836021
+[F5] Epoch 24/200 [28.8s] | Train 0.0681 | Val 3.3731 | Conc MSE 0.0742393
+[F5] Epoch 25/200 [28.5s] | Train 0.0673 | Val 3.4725 | Conc MSE 0.0707204
+[F5] Epoch 26/200 [29.3s] | Train 0.0650 | Val 3.2920 | Conc MSE 0.0681049
+[F5] Epoch 27/200 [28.9s] | Train 0.0644 | Val 3.3498 | Conc MSE 0.0699687
+[F5] Epoch 28/200 [29.2s] | Train 0.0639 | Val 3.3177 | Conc MSE 0.0701128
+[F5] Epoch 29/200 [29.0s] | Train 0.0636 | Val 3.2741 | Conc MSE 0.0683953
+[F5] Epoch 30/200 [29.4s] | Train 0.0630 | Val 3.3168 | Conc MSE 0.0672980
+[F5] early stop at epoch 30 (Conc MSE plateaued)
+[F5] done: best epoch 10, val 0.0390
+[F6] spec_scaler scale_ = 1.4078
+exp max/mean 1.408/0.01139 | syn max/mean 1/0.1482
+=== Fold 6: train 175194 | val 19982 (13 compositions) ===
+[F6] Epoch 01/200 [29.6s] | Train 11.7789 | Val 0.3634 | Conc MSE 0.0143259
+[F6] Epoch 02/200 [26.6s] | Train 0.2468 | Val 0.5688 | Conc MSE 0.0266183
+[F6] Epoch 03/200 [27.9s] | Train 0.1868 | Val 0.3767 | Conc MSE 0.0177033
+[F6] Epoch 04/200 [28.4s] | Train 0.1628 | Val 0.3212 | Conc MSE 0.0140404
+[F6] Epoch 05/200 [29.0s] | Train 0.1503 | Val 0.6019 | Conc MSE 0.0268614
+[F6] Epoch 06/200 [28.8s] | Train 0.1379 | Val 0.4403 | Conc MSE 0.0204625
+[F6] Epoch 07/200 [29.0s] | Train 0.1309 | Val 0.5944 | Conc MSE 0.0213049
+[F6] Epoch 08/200 [28.1s] | Train 0.1234 | Val 0.4882 | Conc MSE 0.0212031
+[F6] Epoch 09/200 [28.7s] | Train 0.1195 | Val 2.0193 | Conc MSE 0.0140556
+[F6] Epoch 10/200 [28.3s] | Train 0.1042 | Val 0.3606 | Conc MSE 0.0169561
+[F6] Epoch 11/200 [28.3s] | Train 0.0961 | Val 0.3817 | Conc MSE 0.0163552
+[F6] Epoch 12/200 [28.4s] | Train 0.0901 | Val 0.2394 | Conc MSE 0.0098867
+[F6] Epoch 13/200 [28.8s] | Train 0.0862 | Val 0.2917 | Conc MSE 0.0116258
+[F6] Epoch 14/200 [28.8s] | Train 0.0833 | Val 0.3583 | Conc MSE 0.0171903
+[F6] Epoch 15/200 [28.8s] | Train 0.0808 | Val 0.3115 | Conc MSE 0.0123579
+[F6] Epoch 16/200 [28.0s] | Train 0.0790 | Val 0.2562 | Conc MSE 0.0085928
+[F6] Epoch 17/200 [29.1s] | Train 0.0772 | Val 0.3208 | Conc MSE 0.0143407
+[F6] Epoch 18/200 [28.7s] | Train 0.0749 | Val 0.2137 | Conc MSE 0.0099526
+[F6] Epoch 19/200 [28.0s] | Train 0.0739 | Val 9.6457 | Conc MSE 0.0210508
+[F6] Epoch 20/200 [36.8s] | Train 0.0725 | Val 0.2951 | Conc MSE 0.0139395
+[F6] Epoch 21/200 [27.3s] | Train 0.0713 | Val 0.2027 | Conc MSE 0.0072084
+[F6] Epoch 22/200 [27.7s] | Train 0.0695 | Val 0.2884 | Conc MSE 0.0112955
+[F6] Epoch 23/200 [28.9s] | Train 0.0692 | Val 0.3204 | Conc MSE 0.0111519
+[F6] Epoch 24/200 [28.0s] | Train 0.0679 | Val 0.7004 | Conc MSE 0.0334831
+[F6] Epoch 25/200 [27.6s] | Train 0.0671 | Val 0.2398 | Conc MSE 0.0107632
+[F6] Epoch 26/200 [27.5s] | Train 0.0666 | Val 0.2713 | Conc MSE 0.0087957
+[F6] Epoch 27/200 [27.2s] | Train 0.0610 | Val 0.1794 | Conc MSE 0.0076041
+[F6] Epoch 28/200 [27.2s] | Train 0.0604 | Val 32.0247 | Conc MSE 0.0194367
+[F6] Epoch 29/200 [27.2s] | Train 0.0599 | Val 0.2239 | Conc MSE 0.0084058
+[F6] Epoch 30/200 [27.7s] | Train 0.0590 | Val 0.0897 | Conc MSE 0.0038083
+[F6] Epoch 31/200 [28.0s] | Train 0.0587 | Val 0.2228 | Conc MSE 0.0088644
+[F6] Epoch 32/200 [28.5s] | Train 0.0585 | Val 0.2022 | Conc MSE 0.0092781
+[F6] Epoch 33/200 [27.8s] | Train 0.0580 | Val 0.3696 | Conc MSE 0.0178601
+[F6] Epoch 34/200 [27.4s] | Train 0.0578 | Val 0.1287 | Conc MSE 0.0057594
+[F6] Epoch 35/200 [27.3s] | Train 0.0577 | Val 0.3391 | Conc MSE 0.0154004
+[F6] Epoch 36/200 [27.6s] | Train 0.0541 | Val 0.1096 | Conc MSE 0.0045675
+[F6] Epoch 37/200 [27.8s] | Train 0.0536 | Val 0.1312 | Conc MSE 0.0058096
+[F6] Epoch 38/200 [27.7s] | Train 0.0531 | Val 0.3072 | Conc MSE 0.0147104
+[F6] Epoch 39/200 [27.5s] | Train 0.0525 | Val 0.0937 | Conc MSE 0.0040299
+[F6] Epoch 40/200 [27.8s] | Train 0.0530 | Val 0.2609 | Conc MSE 0.0121940
+[F6] Epoch 41/200 [28.0s] | Train 0.0504 | Val 0.0963 | Conc MSE 0.0039494
+[F6] Epoch 42/200 [27.9s] | Train 0.0503 | Val 0.1569 | Conc MSE 0.0070588
+[F6] Epoch 43/200 [28.3s] | Train 0.0501 | Val 0.0989 | Conc MSE 0.0043076
+[F6] Epoch 44/200 [28.2s] | Train 0.0499 | Val 0.2568 | Conc MSE 0.0121663
+[F6] Epoch 45/200 [28.2s] | Train 0.0494 | Val 0.1268 | Conc MSE 0.0054326
+[F6] Epoch 46/200 [28.1s] | Train 0.0482 | Val 0.1113 | Conc MSE 0.0048777
+[F6] Epoch 47/200 [28.3s] | Train 0.0483 | Val 0.3623 | Conc MSE 0.0174456
+[F6] Epoch 48/200 [28.2s] | Train 0.0482 | Val 0.1147 | Conc MSE 0.0045641
+[F6] Epoch 49/200 [28.7s] | Train 0.0479 | Val 0.2521 | Conc MSE 0.0117762
+[F6] Epoch 50/200 [28.4s] | Train 0.0482 | Val 0.1746 | Conc MSE 0.0078685
+[F6] early stop at epoch 50 (Conc MSE plateaued)
+[F6] done: best epoch 30, val 0.0038
+=== Out-Of-Fold (OOF) Group Diagnostic ===
+=== Top 5 Worst Performing Composition Groups ===
+Group 417  | Shots: 2078 | Log-MSE: 0.0449 | True: [0.    0.    0.488 0.   ] | Pred Mean: [0.007 0.123 0.003 0.104]
+Group 71970 | Shots: 10   | Log-MSE: 0.0232 | True: [0.    0.229 0.    0.289] | Pred Mean: [0.013 0.022 0.103 0.033]
+Group 489  | Shots: 110  | Log-MSE: 0.0220 | True: [0.    0.    0.375 0.   ] | Pred Mean: [0.069 0.022 0.059 0.014]
+Group 524  | Shots: 110  | Log-MSE: 0.0156 | True: [0.    0.    0.312 0.   ] | Pred Mean: [0.069 0.023 0.054 0.016]
+Group 570  | Shots: 20   | Log-MSE: 0.0151 | True: [0.    0.    0.    0.273] | Pred Mean: [0.023 0.053 0.085 0.018]
+Training Results (fold, best_epoch, best_val_loss):
+[(0, 36, 0.0035232460242703278), (1, 1, 0.02076082432100331), (2, 2, 0.0024889633442766864), (3, 3, 0.0018432898997897901), (4, 26, 0.007835189334076205), (5, 10, 0.03904634350665313), (6, 30, 0.0038083197002552398)]
+Run completed in 117.94 minutes.
+✅ SUCCESS: p3vae_613.py finished cleanly.
+
+==========================================================================
+ ALL EXPERIMENT RUNS COMPLETED
+==========================================================================

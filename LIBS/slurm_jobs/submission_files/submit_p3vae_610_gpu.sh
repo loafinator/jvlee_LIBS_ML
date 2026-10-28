@@ -49,8 +49,8 @@ run_experiment() {
 
 # Run the experiments sequentially
 run_experiment "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/600/p3vae_611.py"
-run_experiment "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/600/p3vae_612.py.py"
-run_experiment "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/600/p3vae_613.py"
+run_experiment "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/600/p3vae_612.py"
+# run_experiment "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/600/p3vae_613.py"
 
 echo "=========================================================================="
 echo " ALL EXPERIMENT RUNS COMPLETED"
