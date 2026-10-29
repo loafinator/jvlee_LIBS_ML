@@ -6,6 +6,8 @@ jvlee_LIBS_ML > LIBS > p3VAE > 600 > p3vae_614.py
 So the idea with this one is that there are no peaks in any of the 
 experimental datasets in the 200nm-600nm range. I am going to try
 cutting out all of that and see what it does to the model.
+
+I'm an idiot. DO NOT DO THIS!!!!!!!!!!!!!!!!
 """
 
 # region Imports

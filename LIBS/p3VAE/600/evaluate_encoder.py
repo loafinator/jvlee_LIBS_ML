@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import sys
 import time
+import re
+import importlib
 import h5py
 import torch
 import numpy as np
@@ -22,9 +24,6 @@ from setup import add_project_root_to_path
 add_project_root_to_path(parent_generation=1)
 from utils import get_h5_ds
 
-# Import model architecture and scaler from P3VAE script
-from p3vae_610 import PhysicsInformedVAE, SpectralScaler, LIBSSpectraDataset # type: ignore
-
 
 # =============================================================================
 # Global Configuration & File Paths (Matched to 1D CNN Benchmark)
@@ -32,7 +31,7 @@ from p3vae_610 import PhysicsInformedVAE, SpectralScaler, LIBSSpectraDataset # t
 H5_FILE = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5"
 SPLIT_DIR = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits_NoExtraDopants')
 MASTER_TABLE_PATH = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv').resolve()
-OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots/encoder_610")
+OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/plots/encoder_eval")
 
 NUM_FOLDS = 7
 THRESH = 2.8
@@ -44,6 +43,18 @@ EXP_DOPANTS = {'Ce', 'Gd', 'Sm', 'U'}
 TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def get_model_module(model_prefix: str | Path):
+    """Dynamically loads the matching module (e.g. p3vae_611) based on prefix name."""
+    prefix_str = str(model_prefix)
+    match = re.search(r'p3vae_?(\d+)', prefix_str, re.IGNORECASE)
+    if not match:
+        raise ValueError(f"Could not infer p3vae version number from checkpoint path: {model_prefix}")
+    
+    version = match.group(1)
+    module_name = f"p3vae_{version}"
+    return importlib.import_module(module_name)
 
 
 # =============================================================================
@@ -109,7 +120,7 @@ def build_splits_once(data, split_path, num_folds):
 
 
 # =============================================================================
-# Metric & Plotting Utilities (Matched to 1D CNN Layout)
+# Metric & Plotting Utilities
 # =============================================================================
 def print_benchmark_table(y_true, y_pred_model, y_train_mean, title_tag, elem_names):
     """Prints element-wise metrics comparing P3VAE Encoder against Dummy Baselines."""
@@ -175,7 +186,7 @@ def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="P3VAE Encode
     for idx_plot in range(n_active, len(axes_flat)):
         fig.delaxes(axes_flat[idx_plot])
 
-    plt.suptitle(f"{title_tag} - Concentration Parity Grid", fontsize=12, fontweight="bold", y=1.02)
+    plt.suptitle(f"{title_tag} Concentration Parity Grid", fontsize=12, fontweight="bold", y=1.02)
     plt.tight_layout()
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches="tight")
@@ -190,7 +201,13 @@ def evaluate_p3vae_encoder(
         model_prefix: str | Path,
         test_on_lockbox: bool = False
 ):
-    print(f"=== Evaluating_610 P3VAE Encoder [{DEVICE}] ===")
+    # Dynamically resolve model architecture classes from matching script version
+    p3vae_module = get_model_module(model_prefix)
+    PhysicsInformedVAE = p3vae_module.PhysicsInformedVAE
+    SpectralScaler = p3vae_module.SpectralScaler
+    LIBSSpectraDataset = p3vae_module.LIBSSpectraDataset
+
+    print(f"\n=== Evaluating P3VAE Encoder module [{p3vae_module.__name__}] on [{DEVICE}] ===")
     
     # 1. Load data and canonical splits
     data = load_crossval_data(H5_FILE)
@@ -288,7 +305,7 @@ def evaluate_p3vae_encoder(
         y_true=true_cv_wt, 
         y_pred_model=pred_cv_wt, 
         y_train_mean=train_mean_cv,
-        title_tag=f"P3VAE_610 Encoder OOF ({loaded_folds} Folds)",
+        title_tag=f"P3VAE ({p3vae_module.__name__}) Encoder OOF ({loaded_folds} Folds)",
         elem_names=target_names,
     )
 
@@ -301,40 +318,41 @@ def evaluate_p3vae_encoder(
             y_true=true_test_wt, 
             y_pred_model=pred_test_wt, 
             y_train_mean=train_mean_cv,
-            title_tag=f"P3VAE_610 Encoder Lockbox (Ensemble of {loaded_folds} Folds)",
+            title_tag=f"P3VAE ({p3vae_module.__name__}) Encoder Lockbox (Ensemble of {loaded_folds} Folds)",
             elem_names=target_names,
         )
 
     # 5. Save Parity Plots
     plot_parity_grid(
         true_cv_wt, pred_cv_wt, target_names,
-        title_tag="P3VAE_610 Encoder OOF",
-        save_path=OUTPUT_DIR / f"p3vae_610_encoder_oof_parity_{TIMESTAMP}.png"
+        title_tag=f"P3VAE ({p3vae_module.__name__}) Encoder OOF",
+        save_path=OUTPUT_DIR / f"{p3vae_module.__name__}_encoder_oof_parity_{TIMESTAMP}.png"
     )
 
     if has_test and test_on_lockbox:
         plot_parity_grid(
             true_test_wt, pred_test_wt, target_names,   # type: ignore
-            title_tag="P3VAE_610 Encoder Lockbox Ensemble",
-            save_path=OUTPUT_DIR / f"p3vae_610_encoder_lockbox_parity_{TIMESTAMP}.png"
+            title_tag=f"P3VAE ({p3vae_module.__name__}) Encoder Lockbox Ensemble",
+            save_path=OUTPUT_DIR / f"{p3vae_module.__name__}_encoder_lockbox_parity_{TIMESTAMP}.png"
         )
 
 
 if __name__ == "__main__":
-    # Pass your trained model prefix here (without the _foldK.pt suffix)
     M610_PREFIX = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae610_model_20261027_091956'
     M611_PREFIX = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae611_model_20261028_101952'
     M612_PREFIX = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae612_model_20261028_122036'
     M613_PREFIX = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae613_model_20261028_094101'
     M614_PREFIX = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae614_model_20261028_131204'
+    M615_PREFIX = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae615_model_20261029_141348'
     
     models = [
-        M610_PREFIX,
-        M611_PREFIX,
-        M612_PREFIX,
-        M613_PREFIX,
-        M614_PREFIX
+        # M610_PREFIX,
+        # M611_PREFIX,
+        # M612_PREFIX,
+        # M613_PREFIX,
+        # M614_PREFIX,
+        M615_PREFIX,
     ]
 
     for model in models:
-        evaluate_p3vae_encoder(model,test_on_lockbox=False)
+        evaluate_p3vae_encoder(model, test_on_lockbox=False)

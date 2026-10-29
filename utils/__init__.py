@@ -54,7 +54,8 @@ __all__: list[str] = [
     "sanitize_path",
     "long_path",
     "worker_init",
-    "hf_get",
+    "get_h5_ds",
+    # "hf_get",
     # endregion
 
     # region plotting

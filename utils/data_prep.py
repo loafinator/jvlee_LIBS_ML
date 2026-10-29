@@ -158,42 +158,42 @@ _SAMPLE_1_THRU_T10_MAP: dict[str, list[float]] = {
 
 # Lookup table mapping Keith-series experiment replicate strings to: [CeCl3 wt%, GdCl3 wt%]
 _KEITH_CECL3_MAP: dict[str, list[float]] = {
-    '1 rep ' : [0.288, 0.269],
-    '2 rep ' : [0.294, 0.565],
-    '3 rep ' : [0.327, 1.247],
-    '4 rep ' : [0.306, 1.744],
-    '5 rep ' : [0.287, 2.309],
-    '6 rep ' : [0.318, 3.138],
-    '7 rep ' : [0.674, 0.370],
-    '8 rep ' : [0.674, 0.632],
-    '9 rep ' : [0.556, 1.088],
-    '10 rep ' : [0.580, 1.657],
-    '11 rep ' : [0.592, 2.244],
-    '12 rep ' : [0.586, 2.779],
-    '13 rep ' : [1.138, 0.287],
-    '14 rep ' : [1.147, 0.540],
-    '15 rep ' : [1.153, 1.121],
-    '16 rep ' : [1.165, 1.685],
-    '17 rep ' : [1.135, 2.217],
-    '18 rep ' : [1.146, 2.768],
-    '19 rep ' : [1.741, 0.292],
-    '20 rep ' : [1.693, 0.541],
-    '21 rep ' : [1.671, 1.056],
-    '22 rep ' : [1.687, 1.606],
-    '23 rep ' : [1.746, 2.219],
-    '24 rep ' : [1.738, 2.764],
-    '25 rep ' : [2.212, 0.279],
-    '26 rep ' : [2.212, 0.527],
-    '27 rep ' : [2.273, 1.037],
-    '28 rep ' : [2.192, 1.509],
-    '29 rep ' : [2.257, 2.179],
-    '30 rep ' : [2.284, 2.740],
-    '31 rep ' : [2.823, 0.284],
-    '32 rep ' : [2.792, 0.539],
-    '33 rep ' : [2.819, 1.067],
-    '34 rep ' : [2.796, 1.605],
-    '35 rep ' : [2.896, 2.277],
-    '36 rep ' : [2.817, 2.755],
+    '1 rep' : [0.288, 0.269],
+    '2 rep' : [0.294, 0.565],
+    '3 rep' : [0.327, 1.247],
+    '4 rep' : [0.306, 1.744],
+    '5 rep' : [0.287, 2.309],
+    '6 rep' : [0.318, 3.138],
+    '7 rep' : [0.674, 0.370],
+    '8 rep' : [0.674, 0.632],
+    '9 rep' : [0.556, 1.088],
+    '10 rep' : [0.580, 1.657],
+    '11 rep' : [0.592, 2.244],
+    '12 rep' : [0.586, 2.779],
+    '13 rep' : [1.138, 0.287],
+    '14 rep' : [1.147, 0.540],
+    '15 rep' : [1.153, 1.121],
+    '16 rep' : [1.165, 1.685],
+    '17 rep' : [1.135, 2.217],
+    '18 rep' : [1.146, 2.768],
+    '19 rep' : [1.741, 0.292],
+    '20 rep' : [1.693, 0.541],
+    '21 rep' : [1.671, 1.056],
+    '22 rep' : [1.687, 1.606],
+    '23 rep' : [1.746, 2.219],
+    '24 rep' : [1.738, 2.764],
+    '25 rep' : [2.212, 0.279],
+    '26 rep' : [2.212, 0.527],
+    '27 rep' : [2.273, 1.037],
+    '28 rep' : [2.192, 1.509],
+    '29 rep' : [2.257, 2.179],
+    '30 rep' : [2.284, 2.740],
+    '31 rep' : [2.823, 0.284],
+    '32 rep' : [2.792, 0.539],
+    '33 rep' : [2.819, 1.067],
+    '34 rep' : [2.796, 1.605],
+    '35 rep' : [2.896, 2.277],
+    '36 rep' : [2.817, 2.755],
 }
 
 # Lookup table mapping Trial 1 and 2 glovebox file strings to SmCl3 concentration (wt%)
@@ -441,127 +441,6 @@ def clean_single_technique_file(
         log(logger=logger, msg=f"  ❌ Failed to clean {path.name}: {e}")
         return None
 
-def combine_hdf5_flexible_metadata(
-    file1_path: str | Path,
-    file2_path: str | Path,
-    output_path: str | Path,
-    compression: str = 'gzip',
-    compression_level: int = 3,
-) -> Optional[Path]:
-    """ Merge two separate HDF5 spectral datasets into a unified dataset.
-
-    Aligns target spectra shape and wavelength axes, resolving column discrepancies 
-    by calculating the union across metadata keys and padding unpopulated records with NaN 
-    or empty strings.
-
-    Parameters:
-        file1_path (str | Path): Primary source HDF5 file location.
-        file2_path (str | Path): Secondary source HDF5 file location.
-        output_path (str | Path): Path designation for combined output dataset.
-        compression (str): Compression setting for dataset storage ('gzip' or 'lzf').
-        compression_level (int): Specific compression density setting for Gzip operations.
-
-    Returns:
-        Optional[Path]: Filepath to the merged dataset, or None if validation fails.
-    """
-    file1_path = Path(file1_path).resolve()
-    file2_path = Path(file2_path).resolve()
-    output_path = Path(output_path).resolve()
-
-    if not file1_path.exists() or not file2_path.exists():
-        print("❌ One or both input HDF5 files do not exist.")
-        return None
-
-    print(f"Comparing structures: {file1_path.name} ↔ {file2_path.name}")
-
-    with h5py.File(file1_path, 'r') as hf1, h5py.File(file2_path, 'r') as hf2:
-        # Step 1: Structural Integrity Verification
-        required_keys = {'spectra', 'wavelengths', 'metadata'}
-        if not required_keys.issubset(hf1.keys()) or not required_keys.issubset(hf2.keys()):
-            print("❌ Structure Mismatch: One or both files lack required datasets.")
-            return None
-
-        # Verify grid compatibility across files
-        wl_ds1: Dataset = hf1['wavelengths']  # type: ignore[assignment]
-        wl_ds2: Dataset = hf2['wavelengths']  # type: ignore[assignment]
-
-        wl1 = wl_ds1[:]
-        wl2 = wl_ds2[:]
-        if len(wl1) != len(wl2) or not np.allclose(wl1, wl2, atol=1e-3):
-            print("❌ Grid Mismatch: Wavelength axes length or values do not match.")
-            return None
-
-        spec_ds1: Dataset = hf1['spectra']  # type: ignore[assignment]
-        spec_ds2: Dataset = hf2['spectra']  # type: ignore[assignment]
-
-        spectra1 = spec_ds1[:]
-        spectra2 = spec_ds2[:]
-        combined_spectra = np.vstack([spectra1, spectra2])
-
-        n_rows1 = spectra1.shape[0]
-        n_rows2 = spectra2.shape[0]
-
-        # Step 2: Compute Metadata Key Union
-        meta_grp1: Group = hf1['metadata']  # type: ignore[assignment]
-        meta_grp2: Group = hf2['metadata']  # type: ignore[assignment]
-
-        meta_cols1 = set(meta_grp1.keys())
-        meta_cols2 = set(meta_grp2.keys())
-        all_meta_cols = sorted(list(meta_cols1 | meta_cols2))
-
-        print(f"  File 1 Rows: {n_rows1} | File 2 Rows: {n_rows2}")
-        print(f"  Merging {len(all_meta_cols)} total metadata columns across union...")
-
-        combined_metadata: dict[str, np.ndarray] = {}
-
-        for col in all_meta_cols:
-            arr1: Optional[np.ndarray] = meta_grp1[col][:] if col in meta_cols1 else None  # type: ignore
-            arr2: Optional[np.ndarray] = meta_grp2[col][:] if col in meta_cols2 else None  # type: ignore
-
-            ref_arr: np.ndarray = arr1 if arr1 is not None else arr2  # type: ignore
-            is_numeric = np.issubdtype(ref_arr.dtype, np.number)
-
-            val1: np.ndarray = arr1 if arr1 is not None else np.full(n_rows1, np.nan if is_numeric else '', dtype=ref_arr.dtype)
-            val2: np.ndarray = arr2 if arr2 is not None else np.full(n_rows2, np.nan if is_numeric else '', dtype=ref_arr.dtype)
-
-            combined_metadata[col] = np.concatenate((val1, val2))
-
-        attrs = dict(hf1.attrs)
-
-    # Step 3: Write Combined Dataset to Disk
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    comp_kwargs: dict[str, Any] = {'compression': compression}
-    if compression == 'gzip':
-        comp_kwargs['compression_opts'] = compression_level
-
-    print(f"Writing combined HDF5 → {output_path.name}")
-    with h5py.File(output_path, 'w') as hf_out:
-        hf_out.create_dataset(
-            'spectra',
-            data=combined_spectra,
-            chunks=(min(1000, combined_spectra.shape[0]), combined_spectra.shape[1]),
-            **comp_kwargs
-        )
-        hf_out.create_dataset('wavelengths', data=wl1)
-
-        meta_grp_out = hf_out.create_group('metadata')
-        for col, data_arr in combined_metadata.items():
-            if np.issubdtype(data_arr.dtype, np.number):
-                meta_grp_out.create_dataset(col, data=data_arr, **comp_kwargs)
-            else:
-                dt = h5py.string_dtype(encoding='utf-8')
-                meta_grp_out.create_dataset(col, data=data_arr, dtype=dt)
-
-        for k, v in attrs.items():
-            hf_out.attrs[k] = v
-        hf_out.attrs['n_rows'] = combined_spectra.shape[0]
-        hf_out.attrs['metadata_cols'] = list(all_meta_cols)
-
-    size_mb = output_path.stat().st_size / 1_048_576
-    print(f"✅ Combine Complete: Saved {output_path.name} | Total Rows: {combined_spectra.shape[0]} | Size: {size_mb:.1f} MB")
-    
-    return output_path
-
 def parent_concentration_data(
         source_data_paths: List[str | Path],
         composition_columns: Optional[List[str]] = None,
@@ -606,8 +485,8 @@ def parent_concentration_data(
         data: dict[str, float | str | int | None] = {
             col: 0.0 for col in composition_columns if 'conc_' in col
         }
-        data['frac_LiCl'] = 0.59  # Default LiCl-KCl eutectic mole fraction
-        data['frac_KCl'] = 0.41
+        data['frac_LiCl'] = 0.45  # Default LiCl eutectic wt% fraction
+        data['frac_KCl'] = 0.55   # Default KCl eutectic wt% fraction
         data['temperature_C'] = None
         data['scan_rate_mVs'] = None
         data['technique'] = None
@@ -854,47 +733,6 @@ def parent_concentration_data(
     
     df = pd.DataFrame(rows, columns=required_columns)
     return df
-
-def recombine_h5_splits(
-        h5_path: str | Path
-) -> tuple[np.ndarray, np.ndarray, pd.DataFrame, list[str], np.ndarray]:
-    """ Recombine train and validation dataset splits stored in an HDF5 container into unified arrays. """
-    with h5py.File(h5_path, "r") as hf:
-        y_train = hf_get(hf, "train/spectra")
-        y_val = hf_get(hf, "val/spectra")
-        y_combined = np.concatenate([y_train, y_val], axis=0)
-
-        train_meta_grp = hf["train/metadata"]
-        assert isinstance(train_meta_grp, h5py.Group)
-
-        all_cols = list(train_meta_grp.keys())
-        feature_cols = [c for c in all_cols if np.issubdtype(train_meta_grp[c].dtype, np.number)]  # type: ignore[index]
-
-        X_train = np.stack([hf_get(hf, f"train/metadata/{c}") for c in feature_cols], axis=1).astype(np.float32)
-        X_val = np.stack([hf_get(hf, f"val/metadata/{c}") for c in feature_cols], axis=1).astype(np.float32)
-        X_combined = np.concatenate([X_train, X_val], axis=0)
-
-        train_meta_dict = {}
-        val_meta_dict = {}
-
-        for c in all_cols:
-            tr_data = hf_get(hf, f"train/metadata/{c}")
-            va_data = hf_get(hf, f"val/metadata/{c}")
-
-            if tr_data.dtype.kind in ("O", "S", "V"):
-                tr_data = [x.decode("utf-8") if isinstance(x, bytes) else x for x in tr_data]
-                va_data = [x.decode("utf-8") if isinstance(x, bytes) else x for x in va_data]
-
-            train_meta_dict[c] = tr_data
-            val_meta_dict[c] = va_data
-
-        train_meta_df = pd.DataFrame(train_meta_dict)
-        val_meta_df = pd.DataFrame(val_meta_dict)
-        meta_combined_df = pd.concat([train_meta_df, val_meta_df], axis=0, ignore_index=True)
-
-        wavelengths = hf_get(hf, "wavelengths")
-
-    return X_combined, y_combined, meta_combined_df, feature_cols, wavelengths
 
 def remove_nans_h5(
     input_path: Path | str,
@@ -1172,8 +1010,8 @@ def convert_to_elemental_comp(
         if matched_key:
             chloride_wt = df_raw[matched_key].values.astype(np.float32)
 
-            if chloride_wt.max() <= 1.0: # type: ignore
-                chloride_wt = chloride_wt * 100.0 # type: ignore
+            # if chloride_wt.max() <= 1.0: # type: ignore
+            #     chloride_wt = chloride_wt * 100.0 # type: ignore
 
             dopant_salt_wt_total += chloride_wt # type: ignore
             elemental_df[elem] = chloride_wt * metal_factors[elem]
@@ -1614,63 +1452,66 @@ def standardize_wavelength_grid(
 # region: Dataset Loaders & I/O Helpers
 # =============================================================================
 
-def hf_get(hf: h5py.File, key: str) -> np.ndarray:
-    """ Extract a dataset array from an HDF5 group or container safely and reutrn it as a ndarray. """
-    return hf[key][:] # type: ignore[index]
-
 def get_h5_ds(hf: h5py.File, key: str) -> h5py.Dataset:
     """ Extract a dataset array from a .h5 files and return it as a dataset. """
     from typing import cast
     return cast(h5py.Dataset, hf[key])
 
-def h5_column_update(
-    file_path: Path | str, target_columns: list[str]
-) -> list[str]:
-    """ Append missing metadata target columns filled with zero vectors to an HDF5 file. """
-    file_path = Path(file_path)
+def load_h5_split_dataset(
+        h5_path: str | Path,
+        allowed_cols: set[str] | None = None,
+        log_path: Path | None = None,
+        conc_to_spec: bool = True
+) -> tuple[
+    NDArray[np.float32], NDArray[np.float32], NDArray[np.float32],
+    NDArray[np.float32], NDArray[np.float32], NDArray[np.float32],
+    NDArray[np.int_], NDArray[np.int_], NDArray[np.int_],
+    list[str],
+    NDArray[np.float32] | None
+]:
+    """ Load train, val, and test dataset splits from a pre-partitioned HDF5 file. """
+    with h5py.File(h5_path, 'r') as hf:
+        # Load datasets into memory as np.float32 arrays
+        y_train_raw     = np.asarray(get_h5_ds(hf, 'train/spectra'), dtype=np.float32)
+        y_val_raw       = np.asarray(get_h5_ds(hf, 'val/spectra'), dtype=np.float32)
+        y_test_raw      = np.asarray(get_h5_ds(hf, 'test/spectra'), dtype=np.float32)
 
-    with h5py.File(file_path, "a") as hf:
-        if "spectra" in hf:
-            spectra_ds = hf["spectra"]
-        elif "train/spectra" in hf:
-            spectra_ds = hf["train/spectra"]
-        else:
-            raise KeyError(f"Could not locate 'spectra' or 'train/spectra' in {file_path}")
+        wavelengths_ds  = get_h5_ds(hf, 'wavelengths') if 'wavelengths' in hf else None
+        wavelengths     = np.asarray(wavelengths_ds, dtype=np.float32) if wavelengths_ds is not None else None
 
-        assert isinstance(spectra_ds, h5py.Dataset)
-        n_rows = spectra_ds.shape[0]
+        raw_elem_names  = get_h5_ds(hf, 'train/metadata/elem_names')[:]
+        feature_cols    = [
+            e.decode('utf-8') if hasattr(e, 'decode') else str(e)
+            for e in raw_elem_names
+        ]
 
-        if "metadata" in hf:
-            meta_grp = hf["metadata"]
-        elif "train/metadata" in hf:
-            meta_grp = hf["train/metadata"]
-        else:
-            meta_grp = hf.create_group("metadata")
+        X_train_raw     = np.asarray(get_h5_ds(hf, 'train/metadata/elem_comp_wt%'), dtype=np.float32)
+        X_val_raw       = np.asarray(get_h5_ds(hf, 'val/metadata/elem_comp_wt%'), dtype=np.float32)
+        X_test_raw      = np.asarray(get_h5_ds(hf, 'test/metadata/elem_comp_wt%'), dtype=np.float32)
 
-        assert isinstance(meta_grp, h5py.Group)
+        if allowed_cols:
+            col_indices     = [i for i, col in enumerate(feature_cols) if col in allowed_cols]
+            feature_cols    = [feature_cols[i] for i in col_indices]
+            X_train_raw     = X_train_raw[:, col_indices]
+            X_val_raw       = X_val_raw[:, col_indices]
+            X_test_raw      = X_test_raw[:, col_indices]
 
-        existing_cols = set(meta_grp.keys())
-        comp_kwargs = {"compression": "gzip", "compression_opts": 3}
+        train_syn       = np.asarray(get_h5_ds(hf, 'train/metadata/is_synthetic'), dtype=np.int_)
+        val_syn         = np.asarray(get_h5_ds(hf, 'val/metadata/is_synthetic'), dtype=np.int_)
+        test_syn        = np.asarray(get_h5_ds(hf, 'test/metadata/is_synthetic'), dtype=np.int_)
 
-        added_cols = []
-        for col in target_columns:
-            if col not in existing_cols:
-                zeros_arr = np.zeros(n_rows, dtype=np.float32)
-                meta_grp.create_dataset(col, data=zeros_arr, **comp_kwargs)
-                added_cols.append(col)
+        # Invert input (X) and target (y) array roles if inverse modeling is selected
+        if not conc_to_spec:
+            y_train_raw, X_train_raw    = X_train_raw, y_train_raw
+            y_val_raw, X_val_raw        = X_val_raw, y_val_raw
+            y_test_raw, X_test_raw      = X_test_raw, y_test_raw
 
-        current_attrs = hf.attrs.get("metadata_cols", [])
-        if isinstance(current_attrs, np.ndarray):
-            current_attrs = [x.decode("utf-8") if isinstance(x, bytes) else str(x) for x in current_attrs]
-        else:
-            current_attrs = list(current_attrs)
-
-        updated_attrs = list(dict.fromkeys(current_attrs + target_columns))
-        hf.attrs["metadata_cols"] = np.array(updated_attrs, dtype=h5py.string_dtype())
-
-        print(f"Successfully updated {file_path.name}: Added {len(added_cols)} missing column(s).")
-
-    return added_cols
+    return (
+        X_train_raw, X_val_raw, X_test_raw, 
+        y_train_raw, y_val_raw, y_test_raw, 
+        train_syn, val_syn, test_syn,
+        feature_cols, wavelengths
+    )
 
 def h5_to_xandy(
     input_h5: Path | str,
@@ -1805,60 +1646,6 @@ def h5_to_xandy(
 
     print(f"Dataset successfully saved to {output_h5}")
 
-def load_h5_split_dataset(
-        h5_path: str | Path,
-        allowed_cols: set[str] | None = None,
-        log_path: Path | None = None,
-        conc_to_spec: bool = True
-) -> tuple[
-    NDArray[np.float32], NDArray[np.float32], NDArray[np.float32],
-    NDArray[np.float32], NDArray[np.float32], NDArray[np.float32],
-    NDArray[np.int_], NDArray[np.int_], NDArray[np.int_],
-    list[str],
-    NDArray[np.float32] | None
-]:
-    """ Load train, val, and test dataset splits from a pre-partitioned HDF5 file. """
-    with h5py.File(h5_path, 'r') as hf:
-        y_train_raw     = hf_get(hf, 'train/spectra')
-        y_val_raw       = hf_get(hf, 'val/spectra')
-        y_test_raw      = hf_get(hf, 'test/spectra')
-
-        wavelengths     = hf_get(hf, 'wavelengths') if 'wavelengths' in hf else None
-
-        raw_elem_names  = hf_get(hf, 'train/metadata/elem_names')
-        feature_cols    = [
-            e.decode('utf-8') if hasattr(e, 'decode') else str(e)
-            for e in raw_elem_names
-        ]
-
-        X_train_raw     = hf_get(hf, 'train/metadata/elem_comp_wt%').astype(np.float32)
-        X_val_raw       = hf_get(hf, 'val/metadata/elem_comp_wt%').astype(np.float32)
-        X_test_raw      = hf_get(hf, 'test/metadata/elem_comp_wt%').astype(np.float32)
-
-        if allowed_cols:
-            col_indices     = [i for i, col in enumerate(feature_cols) if col in allowed_cols]
-            feature_cols    = [feature_cols[i] for i in col_indices]
-            X_train_raw     = X_train_raw[:, col_indices]
-            X_val_raw       = X_val_raw[:, col_indices]
-            X_test_raw      = X_test_raw[:, col_indices]
-
-        train_syn       = hf_get(hf, 'train/metadata/is_synthetic').astype(int)
-        val_syn         = hf_get(hf, 'val/metadata/is_synthetic').astype(int)
-        test_syn        = hf_get(hf, 'test/metadata/is_synthetic').astype(int)
-
-        # Invert input (X) and target (y) array roles if inverse modeling is selected
-        if not conc_to_spec:
-            y_train_raw, X_train_raw    = X_train_raw, y_train_raw
-            y_val_raw, X_val_raw        = X_val_raw, y_val_raw
-            y_test_raw, X_test_raw      = X_test_raw, y_test_raw
-
-    return (
-        X_train_raw, X_val_raw, X_test_raw, 
-        y_train_raw, y_val_raw, y_test_raw, 
-        train_syn, val_syn, test_syn,
-        feature_cols, wavelengths
-    )
-
 def load_h5_base_dataset(
     h5_path: str | Path,
     allowed_cols: Container[str],
@@ -1910,11 +1697,11 @@ def load_h5_base_dataset(
         if not concentration_cols:
             raise KeyError(f"No numeric concentration columns found in {h5_path} matching allowed_cols!")
 
-        X_raw = np.stack([hf_get(hf, f"{meta_path}/{c}") for c in concentration_cols], axis=1).astype(np.float32)
+        X_raw = np.stack([get_h5_ds(hf, f"{meta_path}/{c}") for c in concentration_cols], axis=1).astype(np.float32)
 
         meta_dict = {}
         for col in all_cols:
-            data = hf_get(hf, f"{meta_path}/{col}")
+            data = get_h5_ds(hf, f"{meta_path}/{col}")
             if data.dtype.kind in ("O", "S", "V"):
                 meta_dict[col] = [x.decode("utf-8") if isinstance(x, bytes) else x for x in data]
             else:
@@ -1931,45 +1718,29 @@ def load_prepped_training_dataset(
     prepped_h5_path = str(prepped_h5_path)
     
     with h5py.File(prepped_h5_path, 'r') as hf:
-        X_trn = hf_get(hf, 'X_trn')
-        X_val = hf_get(hf, 'X_val')
-        y_trn = hf_get(hf, 'y_trn')
-        y_val = hf_get(hf, 'y_val')
-        y_val_physical = hf_get(hf, 'y_val_physical')
+        # Load arrays into memory as np.ndarray before the file handle closes
+        X_trn = np.asarray(get_h5_ds(hf, 'X_trn'))
+        X_val = np.asarray(get_h5_ds(hf, 'X_val'))
+        y_trn = np.asarray(get_h5_ds(hf, 'y_trn'))
+        y_val = np.asarray(get_h5_ds(hf, 'y_val'))
+        y_val_physical = np.asarray(get_h5_ds(hf, 'y_val_physical'))
         
-        target_cols = [c.decode('utf-8') for c in hf_get(hf, 'target_cols')]
-        surviving_cols = [c.decode('utf-8') for c in hf_get(hf, 'surviving_cols')]
+        target_cols = [c.decode('utf-8') if hasattr(c, 'decode') else str(c) for c in get_h5_ds(hf, 'target_cols')[:]]
+        surviving_cols = [c.decode('utf-8') if hasattr(c, 'decode') else str(c) for c in get_h5_ds(hf, 'surviving_cols')[:]]
         
         meta_dict = {}
         meta_grp = hf.get('metadata_val')
         if isinstance(meta_grp, h5py.Group):
             for col_name in meta_grp.keys():
-                data = hf_get(hf, f'metadata_val/{col_name}')
+                data = get_h5_ds(hf, f'metadata_val/{col_name}')
                 if data.dtype.kind in ('O', 'S', 'V'):
-                    meta_dict[col_name] = [x.decode('utf-8') if isinstance(x, bytes) else x for x in data]
+                    meta_dict[col_name] = [x.decode('utf-8') if hasattr(x, 'decode') else str(x) for x in data[:]]
                 else:
-                    meta_dict[col_name] = data
+                    meta_dict[col_name] = data[:]
                 
         meta_val_df = pd.DataFrame(meta_dict)
         
     return X_trn, X_val, y_trn, y_val, y_val_physical, surviving_cols, meta_val_df
-
-def load_scalers(
-        y_scaler_path: str | Path | None = None,
-        X_scaler_path: str | Path | None = None,
-) -> tuple[Any, Any]:
-    """ Unpickle and load fitted feature and target scalers from disk. """
-    if y_scaler_path is None:
-        y_scaler_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\y_scaler.pkl"
-    if X_scaler_path is None:
-        X_scaler_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\X_scaler.pkl"
-
-    with open(y_scaler_path, "rb") as f:
-        y_scaler = pickle.load(f)
-    with open(X_scaler_path, "rb") as f:
-        X_scaler = pickle.load(f)
-
-    return (y_scaler, X_scaler)
 
 def long_path(
         path: Path | str,
@@ -2013,55 +1784,6 @@ def worker_init(log_q: Any) -> None:
 # =============================================================================
 # region: File Saving
 # =============================================================================
-
-def combine_and_save_as_CSV(
-        individuals_root: str | Path,
-        combined_root: str | Path,
-        technique: Optional[str] = None,
-        log_path: Path | None = None,
-) -> Optional[Path]:
-    """ Concatenate multiple enriched CSV data files into a single master CSV dataset.
-
-    Parameters:
-        individuals_root (str | Path): Directory containing enriched individual CSV files.
-        combined_root (str | Path): Output directory for saving the concatenated CSV.
-        technique (Optional[str]): Technique label used in naming the output file.
-        log_path (Path | None): Custom log file location.
-
-    Returns:
-        Optional[Path]: Filepath to the saved master CSV, or None if concatenation fails.
-    """
-    individuals_root = Path(individuals_root).resolve()
-    combined_root = Path(combined_root).resolve()
-    combined_root.mkdir(parents=True, exist_ok=True)
-    
-    if log_path is None:
-        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
-    logger = get_worker_logger(Path(log_path).stem)
-
-    technique = technique or 'libs'
-    enriched_files = list(individuals_root.glob('*.csv'))
-    if not enriched_files:
-        log(logger=logger, msg=f'  ❌ No {technique} files found.')
-        return None
-    
-    log(logger=logger, msg=f'Found files: {len(enriched_files)}')
-    log(logger=logger, msg='Reading files...')
-
-    try:
-        combined_df = pd.concat(
-            [pd.read_csv(f) for f in enriched_files],
-            ignore_index=True,
-            sort=False
-        )
-        label = technique.upper()
-        combined_path = combined_root / f'cleaned_combined_{label}.csv'
-        combined_df.to_csv(combined_path, index=False)
-        log(logger=logger, msg=f'Saved: {combined_path.name}  |  shape={combined_df.shape}')
-        return combined_path
-    except Exception as e:
-        log(logger=logger, msg=f'  ❌ {e}')
-        return None
 
 def combine_and_save_as_HDF5(
         individuals_root: str | Path,
@@ -2191,230 +1913,6 @@ def combine_and_save_as_HDF5(
     log(logger=logger, msg=f'✅ Saved: {h5_path.name}  |  {size_mb:.1f} MB')
     return h5_path
 
-def combine_and_save_as_HDF5_one_at_a_time(
-        individuals_root: str | Path,
-        combined_root: str | Path,
-        technique: Optional[str] = None,
-        compression: str = 'gzip',
-        compression_level: int = 3,
-        log_path: Path | None = None,
-        transpose_needed: bool = False,
-) -> Optional[Path]:
-    """ Sequentially parse and accumulate CSV files into an HDF5 dataset.
-
-    Operates on a single thread to reduce memory overhead during dataset compilation on low-RAM systems.
-
-    Parameters:
-        individuals_root (str | Path): Folder path containing target individual CSVs.
-        combined_root (str | Path): Folder destination for storing output HDF5 data.
-        technique (Optional[str]): System diagnostic technique identifier tag.
-        compression (str): HDF5 compression type ('gzip', 'lzf', or None).
-        compression_level (int): Numerical scaling parameter for gzip compression algorithms.
-        log_path (Path | None): File path specifying output log location.
-        transpose_needed (bool): Standard flag enforcing orientation transpositions.
-
-    Returns:
-        Optional[Path]: Filepath targeting generated output dataset, or None if processing fails.
-    """
-    individuals_root = Path(individuals_root).resolve()
-    combined_root = Path(combined_root).resolve()
-    combined_root.mkdir(parents=True, exist_ok=True)
-    
-    if log_path is None:
-        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
-    logger = get_worker_logger(Path(log_path).stem)
-
-    technique = technique or 'libs'
-    enriched_files = list(individuals_root.glob('*.csv'))
-    if not enriched_files:
-        log(logger=logger, msg=f'  ❌ No {technique} files found.')
-        return None
-    
-    log(logger=logger, msg=f'Found files: {len(enriched_files)}')
-    log(logger=logger, msg='Reading files...')
-
-    all_spectra = []
-    all_metadata = []
-    target_grid = None
-
-    for i, f in enumerate(enriched_files):
-        try:
-            swlg = standardize_wavelength_grid(
-                file_path=f,
-                min_wl=TARGET_MIN_WL,
-                max_wl=TARGET_MAX_WL,
-                n_points=TARGET_N_PTS,
-                transpose=transpose_needed
-            )
-            if swlg is None:
-                log(logger=logger, msg=f'  ⚠️  Skipping {f.name} (standardize returned None)')
-                continue
-            std_df, target_grid = swlg
-        except Exception as e:
-            log(logger=logger, msg=f'  ❌ Could not read {f.name}: {e}')
-            continue
-
-        col_index = std_df.columns.astype(str).str.strip().tolist()
-        numeric_vals = pd.to_numeric(col_index, errors='coerce')
-        numeric_mask = pd.Series(numeric_vals).notna().to_numpy().astype(bool)
-
-        spectra = std_df.loc[:, numeric_mask].values.astype(np.float32)
-        meta_df = std_df.loc[:, ~numeric_mask]
-
-        all_spectra.append(spectra)
-        all_metadata.append(meta_df)
-
-        if (i + 1) % 100 == 0:
-            log(logger=logger, msg=f'  Read {i+1}/{len(enriched_files)}')
-
-    if not all_spectra:
-        log(logger=logger, msg='  ❌ No valid files loaded.')
-        return None
-
-    log(logger=logger, msg='Stacking arrays...')
-    spectra_array = np.vstack(all_spectra)
-    metadata_df = pd.concat(all_metadata, ignore_index=True, sort=False)
-
-    log(logger=logger, msg=f'  Spectra shape : {spectra_array.shape}')
-    log(logger=logger, msg=f'  Metadata shape: {metadata_df.shape}')
-    log(logger=logger, msg=f'  Wavelength range: {target_grid[0]:.1f} – {target_grid[-1]:.1f} nm')
-
-    label = technique.upper()
-    h5_path = combined_root / f'combined_{label}.h5'
-    comp_kwargs = {'compression': compression}
-    if compression == 'gzip':
-        comp_kwargs['compression_opts'] = compression_level
-
-    log(logger=logger, msg=f'Writing HDF5 → {h5_path.name}')
-
-    with h5py.File(h5_path, 'w') as hf:
-        hf.create_dataset(
-            'spectra',
-            data=spectra_array,
-            chunks=(min(1000, spectra_array.shape[0]), spectra_array.shape[1]),
-            **comp_kwargs
-        )
-
-        hf.create_dataset('wavelengths', data=target_grid)
-
-        meta_grp = hf.create_group('metadata')
-        for col in metadata_df.columns:
-            series = metadata_df[col]
-            if pd.api.types.is_numeric_dtype(series):
-                arr = series.to_numpy(dtype=np.float32, na_value=np.nan)
-                meta_grp.create_dataset(col, data=arr, **comp_kwargs)
-            else:
-                arr = series.fillna('').astype(str).to_numpy()
-                dt = h5py.string_dtype(encoding='utf-8')
-                meta_grp.create_dataset(col, data=arr, dtype=dt)
-
-        hf.attrs['n_rows'] = spectra_array.shape[0]
-        hf.attrs['n_wavelengths'] = spectra_array.shape[1]
-        hf.attrs['min_wavelength'] = float(target_grid[0])
-        hf.attrs['max_wavelength'] = float(target_grid[-1])
-        hf.attrs['metadata_cols'] = list(metadata_df.columns)
-        hf.attrs['technique'] = label
-
-    size_mb = h5_path.stat().st_size / 1_048_576
-    log(logger=logger, msg=f'✅ Saved: {h5_path.name}  |  {size_mb:.1f} MB')
-    return h5_path
-
-def save_merged_h5_dataset(
-    output_h5_path: str | Path,
-    X_raw: np.ndarray,
-    y_raw: np.ndarray,
-    feature_cols: list[str],
-    wavelengths: np.ndarray | None,
-    meta_df: pd.DataFrame,
-    compression_level: int = 4,
-) -> None:
-    """ Write merged spectral features, target compositions, and metadata directly to an HDF5 container. """
-    output_h5_path = Path(output_h5_path)
-    output_h5_path.parent.mkdir(parents=True, exist_ok=True)
-
-    comp_kwargs = {
-        "compression": "gzip",
-        "compression_opts": compression_level,
-        "shuffle": True,
-    }
-
-    print(f"Writing merged dataset to {output_h5_path}...")
-
-    with h5py.File(output_h5_path, "w") as hf:
-        hf.create_dataset("spectra", data=y_raw.astype(np.float32), **comp_kwargs)
-
-        if wavelengths is not None:
-            hf.create_dataset(
-                "wavelengths",
-                data=wavelengths.astype(np.float32),
-                **comp_kwargs,
-            )
-
-        meta_grp = hf.create_group("metadata")
-        string_dt = h5py.string_dtype(encoding="utf-8")
-
-        for col in meta_df.columns:
-            series = meta_df[col]
-            if pd.api.types.is_numeric_dtype(series):
-                arr = series.to_numpy(dtype=np.float32, na_value=np.nan)
-                meta_grp.create_dataset(col, data=arr, **comp_kwargs)
-            else:
-                arr = series.fillna("").astype(str).to_numpy()
-                meta_grp.create_dataset(col, data=arr, dtype=string_dt)
-
-        hf.attrs["n_rows"] = y_raw.shape[0]
-        hf.attrs["n_wavelengths"] = y_raw.shape[1]
-        hf.attrs["metadata_cols"] = list(meta_df.columns)
-
-    print(f"Successfully saved merged HDF5 dataset to {output_h5_path}")
-
-def save_recombined_h5(
-    output_path: str | Path,
-    X: np.ndarray,
-    y: np.ndarray,
-    meta_df: pd.DataFrame,
-    wavelengths: np.ndarray,
-) -> None:
-    """Saves combined spectral features, target variables, wavelengths, and metadata to HDF5 format.
-
-    Parameters
-    ----------
-    output_path : str | Path
-        Destination path where the output HDF5 file will be written.
-    X : np.ndarray
-        Feature matrix (e.g., input intensities or preprocessed features).
-    y : np.ndarray
-        Target labels or elemental concentration matrix (saved under dataset 'spectra').
-    meta_df : pd.DataFrame
-        DataFrame containing sample-level metadata (categorical string attributes and/or numeric properties).
-    wavelengths : np.ndarray
-        1D array containing the wavelength axis values.
-    """
-    output_path = Path(output_path).resolve()
-    
-    with h5py.File(output_path, "w") as hf:
-        # --- 1. Root Datasets ---
-        hf.create_dataset("spectra", data=y)
-        hf.create_dataset("wavelengths", data=wavelengths)
-
-        # --- 2. Metadata Group ---
-        # Iterate over metadata columns and assign appropriate fixed or variable-length string types
-        meta_grp = hf.create_group("metadata")
-        for col_name in meta_df.columns:
-            data = meta_df[col_name].values
-            
-            # Identify object/string dtypes for dynamic variable-length string encoding
-            if data.dtype == object or isinstance(
-                data[0] if len(data) > 0 else "", str
-            ):
-                string_dt = h5py.special_dtype(vlen=str)
-                meta_grp.create_dataset(
-                    col_name, data=data.astype(object), dtype=string_dt
-                )
-            else:
-                meta_grp.create_dataset(col_name, data=data)
-
-    print(f"Successfully saved recombined dataset to {output_path}")
 # endregion
 
 
@@ -2841,238 +2339,6 @@ def train_val_test_splitter_HDF5(
     size_mb = output_path.stat().st_size / 1_048_576
     log(logger=logger, msg=f'✅ Saved: {output_path.name}  |  {size_mb:.1f} MB')
     return output_path
-
-def trn_val_splitter_CSV( 
-    df_path: str | Path,
-    trn_path: str | Path,
-    val_path: str | Path,
-    test_size: float = 0.2,
-    random_state: int = 42,
-    shuffle: bool = True,
-    log_path: Path | None = None,
-) -> None:
-    """Splits a tabular CSV dataset into training and validation CSV files.
-
-    Parameters
-    ----------
-    df_path : str | Path
-        Path to the source CSV dataset.
-    trn_path : str | Path
-        Destination path for saving the training CSV split.
-    val_path : str | Path
-        Destination path for saving the validation CSV split.
-    test_size : float, default=0.2
-        Proportion of dataset samples to include in the validation split.
-    random_state : int, default=42
-        Random state seed.
-    shuffle : bool, default=True
-        Whether to shuffle data before splitting.
-    log_path : Path | None, optional
-        Path for logger output.
-    """
-    df_path = Path(df_path)
-    trn_path = Path(trn_path)
-    val_path = Path(val_path)
-    from sklearn.model_selection import train_test_split
-
-    # --- Logger Setup ---
-    if log_path is None:
-        log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
-    logger = get_worker_logger(Path(log_path).stem)
-
-    # --- Validate Input File ---
-    if not df_path.is_file():
-        raise FileNotFoundError(f'  ❌ Input file not found: {df_path}')
-    
-    log(logger=logger, msg=f'  ✅ Loading DataFrame from: {df_path}')
-    df = pd.read_csv(df_path)
-
-    if df.empty:
-        raise ValueError('  ❌ Loaded DataFrame is empty!')
-    
-    log(logger=logger, msg=f'Original DataFrame Shape: {df.shape}')
-    
-    # --- Perform Split ---
-    trn_df, val_df = train_test_split(
-        df,
-        test_size=test_size,
-        random_state=random_state,
-        shuffle=shuffle
-    )
-
-    # --- Save Split Datasets ---
-    trn_path.parent.mkdir(parents=True, exist_ok=True)
-    val_path.parent.mkdir(parents=True, exist_ok=True)
-    log(logger=logger, msg=f'Training DataFrame Shape: {trn_df.shape}')
-    log(logger=logger, msg=f'Validation DataFrame Shape: {val_df.shape}')
-
-    trn_df.to_csv(trn_path, index=False)
-    val_df.to_csv(val_path, index=False)
-    log(logger=logger, msg="Training and Validation Data have been split and saved.")
-
-def training_ready_h5(
-    h5_path: str | Path,
-    prepped_h5_path: str | Path,
-    allowed_cols: set[str] | None = None,
-    downsample: bool = True
-) -> None:
-    """Preprocesses and normalizes raw spectral HDF5 datasets into a model-ready format for machine learning.
-
-    Pipeline operations include:
-      1. Dropping shots with high (>10%) NaN counts.
-      2. Intensity clipping at 99.5th percentile to remove bright saturation artifacts.
-      3. Variance thresholding to remove zero/constant target target features.
-      4. MinMax scaling on features and target variables.
-      5. Spectral 1D grid downsampling (optional factor of 4).
-      6. Expanding dimensions to (N, 1, Channels) for 1D CNN frameworks.
-      7. Exporting prepared datasets, metadata, and fitted scalers.
-
-    Parameters
-    ----------
-    h5_path : str | Path
-        Path to input raw split HDF5 file.
-    prepped_h5_path : str | Path
-        Path to output preprocessed HDF5 file.
-    allowed_cols : set[str] | None, optional
-        Target concentration columns to keep. Uses default suite if None.
-    downsample : bool, default=True
-        Whether to downsample spectral resolution by a factor of 4.
-    """
-    from sklearn.feature_selection import VarianceThreshold
-    from sklearn.preprocessing import StandardScaler, MinMaxScaler
-
-    if h5_path is None:
-        h5_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\trn_val_split_LIBS.h5"
-    if prepped_h5_path is None:
-        prepped_h5_path = r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\LIBS\training_ready_LIBS.h5"
-    if allowed_cols is None:
-        allowed_cols = {
-            'frac_LiCl', 'frac_KCl',
-            'conc_Ce_wt%', 'conc_CeCl3_wt%', 'conc_CeN_wt%',
-            'conc_Ca_wt%', 'conc_CaCl3_wt%',
-            'conc_U_wt%', 'conc_UCl3_wt%',
-            'conc_Sm_wt%', 'conc_SmCl3_wt%',
-            'conc_Gd_wt%', 'conc_GdCl3_wt%',
-            'conc_La_wt%', 'conc_LaCl3_wt%',
-            'conc_Mg_wt%', 'conc_MgCl2_wt%',
-            'conc_H2o_wt%', 'conc_Nd_wt%',
-        }
-
-    prepped_h5_path = Path(prepped_h5_path)
-    output_dir = prepped_h5_path.parent
-
-    # --- Load Data Split arrays ---
-    y_trn_raw, y_val_raw, y_test_raw, X_trn_raw, X_val_raw, X_test_raw, train_syn, val_syn, test_syn, target_cols, wavelengths = load_h5_split_dataset(
-        h5_path=h5_path,
-        allowed_cols=allowed_cols,
-        log_path=None
-    )
-
-    assert X_trn_raw.shape[0] == y_trn_raw.shape[0], \
-        f'X/y row mismatch: {X_trn_raw.shape[0]} vs {y_trn_raw.shape[0]}'
-
-    selector = VarianceThreshold(threshold=1e-10)
-    X_scaler = MinMaxScaler(feature_range=(0, 1))
-    y_scaler = MinMaxScaler(feature_range=(0, 1))
-
-    # --- 1. Filter Invalid Sample Rows ---
-    nan_frac_trn = np.isnan(X_trn_raw).mean(axis=1)
-    nan_frac_val = np.isnan(X_val_raw).mean(axis=1)
-
-    bad_rows_trn = nan_frac_trn > 0.1
-    bad_rows_val = nan_frac_val > 0.1
-
-    X_trn_raw = X_trn_raw[~bad_rows_trn]
-    X_val_raw = X_val_raw[~bad_rows_val]
-    y_trn_raw = y_trn_raw[~bad_rows_trn]
-    y_val_raw = y_val_raw[~bad_rows_val]
-
-    meta_val_df = meta_val_df[~bad_rows_val].reset_index(drop=True) # type: ignore # TODO: needs to be fixed before using
-                                                                                    # This will definitely throw an error 
-                                                                                    # since the meta_val_df is no longer
-                                                                                    # part of load_h5_split_dataset. 
-
-    # --- 2. Clip Extreme Peak Intensities ---
-    clip_threshold = np.nanpercentile(X_trn_raw, 99.5)
-    X_trn_raw = np.clip(X_trn_raw, 0, clip_threshold)
-    X_val_raw = np.clip(X_val_raw, 0, clip_threshold)
-
-    # --- 3. Retain Unscaled Target Values for Benchmark Evaluation ---
-    y_val_physical = y_val_raw.copy()
-
-    # --- 4. Target Feature Selection (Variance Thresholding) ---
-    selector.fit(y_trn_raw)
-    surviving_cols = [c for c, keep in zip(target_cols, selector.get_support()) if keep]
-    y_trn_filtered = pd.DataFrame(
-        np.array(selector.transform(y_trn_raw)),
-        columns=surviving_cols)
-    y_val_filtered = pd.DataFrame(
-        np.array(selector.transform(y_val_raw)),
-        columns=surviving_cols)
-    meta_val_df = meta_val_df[[c for c in surviving_cols if c in meta_val_df.columns]]
-
-    # --- 5. Feature MinMax Scaling ---
-    X_trn_scaled = np.nan_to_num(X_scaler.fit_transform(X_trn_raw), nan=0.0, posinf=0.0, neginf=0.0)
-    X_val_scaled = np.nan_to_num(X_scaler.transform(X_val_raw), nan=0.0, posinf=0.0, neginf=0.0)
-
-    # --- 6. Wavelength Downsampling ---
-    if downsample:
-        downsample_factor = 4
-        X_trn_scaled = X_trn_scaled[:, ::downsample_factor]
-        X_val_scaled = X_val_scaled[:, ::downsample_factor]
-
-    # --- 7. Reshape to Channel-First Tensor Format (N, C=1, L) ---
-    X_trn = np.expand_dims(X_trn_scaled, axis=1).astype(np.float32)
-    X_val = np.expand_dims(X_val_scaled, axis=1).astype(np.float32)
-
-    # --- 8. Target Scaling ---
-    y_trn = np.nan_to_num(y_scaler.fit_transform(y_trn_filtered), nan=0.0).astype(np.float32)
-    y_val = np.nan_to_num(y_scaler.transform(y_val_filtered), nan=0.0).astype(np.float32)
-
-    meta_val_df = meta_val_df.reset_index(drop=True)
-
-    # --- 9. Export Preprocessed Dataset to HDF5 ---
-    comp_kwargs = {'compression': 'gzip', 'compression_opts': 3}
-
-    print(f"Writing HDF5 → {prepped_h5_path.name}")
-    with h5py.File(str(prepped_h5_path), 'w') as hf:
-        # Save arrays
-        hf.create_dataset('X_trn', data=X_trn, **comp_kwargs)
-        hf.create_dataset('X_val', data=X_val, **comp_kwargs)
-        hf.create_dataset('y_trn', data=y_trn, **comp_kwargs)
-        hf.create_dataset('y_val', data=y_val, **comp_kwargs)
-        hf.create_dataset('y_val_physical', data=y_val_physical, **comp_kwargs)
-        hf.create_dataset('wavelengths', data=wavelengths)
-
-        # Save string column vectors
-        dt_str = h5py.string_dtype(encoding='utf-8')
-        hf.create_dataset('target_cols', data=np.array(target_cols, dtype=object), dtype=dt_str)
-        hf.create_dataset('surviving_cols', data=np.array(surviving_cols, dtype=object), dtype=dt_str)
-
-        # Save Validation Metadata natively
-        meta_grp = hf.create_group('metadata_val')
-        for col in meta_val_df.columns:
-            series = meta_val_df[col]
-            if pd.api.types.is_numeric_dtype(series):
-                arr = series.to_numpy(dtype=np.float32, na_value=np.nan)
-                meta_grp.create_dataset(col, data=arr, **comp_kwargs)
-            else:
-                arr = series.fillna('').astype(str).to_numpy()
-                meta_grp.create_dataset(col, data=arr, dtype=dt_str)
-
-        # Attach attributes
-        hf.attrs['X_trn_shape'] = list(X_trn.shape)
-        hf.attrs['X_val_shape'] = list(X_val.shape)
-        hf.attrs['metadata_cols'] = list(meta_val_df.columns)
-
-    # --- 10. Save Fitted Scalers to Disk ---
-    with open(output_dir / "X_scaler.pkl", "wb") as f:
-        pickle.dump(X_scaler, f)
-    with open(output_dir / "y_scaler.pkl", "wb") as f:
-        pickle.dump(y_scaler, f)
-
-    size_mb = prepped_h5_path.stat().st_size / 1_048_576
-    print(f"✅ Successfully saved training dataset: {prepped_h5_path.name} | {size_mb:.1f} MB")
 
 def xandy_to_crossval(
     input_file,
