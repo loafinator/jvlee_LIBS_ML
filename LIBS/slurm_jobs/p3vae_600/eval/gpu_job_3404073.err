@@ -1,0 +1,35 @@
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/600/evaluate_decoder.py", line 729, in <module>
+    evaluate_p3vae_decoder(MODEL_PREFIX)
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/600/evaluate_decoder.py", line 641, in evaluate_p3vae_decoder
+    model, scaler = fm.get(k)
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/600/evaluate_decoder.py", line 547, in get
+    model, scaler = load_fold(self.args[0], k, *self.args[1:])
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/600/evaluate_decoder.py", line 527, in load_fold
+    model.load_state_dict(checkpoint["model_state_dict"])
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/.venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 2189, in load_state_dict
+    raise RuntimeError('Error(s) in loading state_dict for {}:\n\t{}'.format(
+RuntimeError: Error(s) in loading state_dict for PhysicsInformedVAE:
+	Unexpected key(s) in state_dict: "head_phys.0.weight", "head_phys.0.bias", "head_phys.1.weight", "head_phys.1.bias", "head_matrix.0.weight", "head_matrix.0.bias", "encoder.1.running_mean", "encoder.1.running_var", "encoder.1.num_batches_tracked", "encoder.5.running_mean", "encoder.5.running_var", "encoder.5.num_batches_tracked", "encoder.9.running_mean", "encoder.9.running_var", "encoder.9.num_batches_tracked", "encoder.13.running_mean", "encoder.13.running_var", "encoder.13.num_batches_tracked". 
+	size mismatch for encoder.0.weight: copying a param with shape torch.Size([32, 1, 11]) from checkpoint, the shape in current model is torch.Size([4096, 10000]).
+	size mismatch for encoder.0.bias: copying a param with shape torch.Size([32]) from checkpoint, the shape in current model is torch.Size([4096]).
+	size mismatch for encoder.1.weight: copying a param with shape torch.Size([32]) from checkpoint, the shape in current model is torch.Size([4096]).
+	size mismatch for encoder.1.bias: copying a param with shape torch.Size([32]) from checkpoint, the shape in current model is torch.Size([4096]).
+	size mismatch for encoder.4.weight: copying a param with shape torch.Size([64, 32, 5]) from checkpoint, the shape in current model is torch.Size([1024, 4096]).
+	size mismatch for encoder.4.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([1024]).
+	size mismatch for encoder.5.weight: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([1024]).
+	size mismatch for encoder.5.bias: copying a param with shape torch.Size([64]) from checkpoint, the shape in current model is torch.Size([1024]).
+	size mismatch for encoder.8.weight: copying a param with shape torch.Size([128, 64, 3]) from checkpoint, the shape in current model is torch.Size([256, 1024]).
+	size mismatch for encoder.8.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([256]).
+	size mismatch for encoder.9.weight: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([256]).
+	size mismatch for encoder.9.bias: copying a param with shape torch.Size([128]) from checkpoint, the shape in current model is torch.Size([256]).
+	size mismatch for encoder.12.weight: copying a param with shape torch.Size([256, 128, 3]) from checkpoint, the shape in current model is torch.Size([128, 256]).
+	size mismatch for encoder.12.bias: copying a param with shape torch.Size([256]) from checkpoint, the shape in current model is torch.Size([128]).
+	size mismatch for encoder.13.weight: copying a param with shape torch.Size([256]) from checkpoint, the shape in current model is torch.Size([128]).
+	size mismatch for encoder.13.bias: copying a param with shape torch.Size([256]) from checkpoint, the shape in current model is torch.Size([128]).
+	size mismatch for fc_mean_phys.weight: copying a param with shape torch.Size([8, 256]) from checkpoint, the shape in current model is torch.Size([8, 128]).
+	size mismatch for fc_logvar_phys.weight: copying a param with shape torch.Size([8, 256]) from checkpoint, the shape in current model is torch.Size([8, 128]).
+	size mismatch for fc_mean_matrix.weight: copying a param with shape torch.Size([8, 64]) from checkpoint, the shape in current model is torch.Size([8, 128]).
+	size mismatch for fc_logvar_matrix.weight: copying a param with shape torch.Size([8, 64]) from checkpoint, the shape in current model is torch.Size([8, 128]).
+/var/spool/slurm/d/job3404073/slurm_script: line 56: unexpected EOF while looking for matching `"'
+/var/spool/slurm/d/job3404073/slurm_script: line 61: syntax error: unexpected end of file

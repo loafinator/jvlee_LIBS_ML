@@ -322,5 +322,19 @@ def evaluate_p3vae_encoder(
 
 if __name__ == "__main__":
     # Pass your trained model prefix here (without the _foldK.pt suffix)
-    MODEL_PREFIX = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae613_model_20261028_094101"
-    evaluate_p3vae_encoder(MODEL_PREFIX,test_on_lockbox=False)
+    M610_PREFIX = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae610_model_20261027_091956'
+    M611_PREFIX = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae611_model_20261028_101952'
+    M612_PREFIX = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae612_model_20261028_122036'
+    M613_PREFIX = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae613_model_20261028_094101'
+    M614_PREFIX = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/trained_models/600/best_p3vae614_model_20261028_131204'
+    
+    models = [
+        M610_PREFIX,
+        M611_PREFIX,
+        M612_PREFIX,
+        M613_PREFIX,
+        M614_PREFIX
+    ]
+
+    for model in models:
+        evaluate_p3vae_encoder(model,test_on_lockbox=False)

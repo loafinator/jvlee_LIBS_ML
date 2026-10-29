@@ -1705,17 +1705,17 @@ def h5_to_xandy(
         conc_to_spec=conc_to_spec
     )
 
-    # 1. Clip spectral intensity spikes at 99.5th percentile threshold
-    if conc_to_spec:
-        clip_threshold = np.nanpercentile(y_train_raw, 99.5)
-        y_train_raw = np.clip(y_train_raw, 0, clip_threshold)
-        y_val_raw   = np.clip(y_val_raw, 0, clip_threshold)
-        y_test_raw  = np.clip(y_test_raw, 0, clip_threshold)
-    else:
-        clip_threshold = np.nanpercentile(X_train_raw, 99.5)
-        X_train_raw = np.clip(X_train_raw, 0, clip_threshold)
-        X_val_raw   = np.clip(X_val_raw, 0, clip_threshold)
-        X_test_raw  = np.clip(X_test_raw, 0, clip_threshold)
+    # # 1. Clip spectral intensity spikes at 99.5th percentile threshold
+    # if conc_to_spec:
+    #     clip_threshold = np.nanpercentile(y_train_raw, 99.5)
+    #     y_train_raw = np.clip(y_train_raw, 0, clip_threshold)
+    #     y_val_raw   = np.clip(y_val_raw, 0, clip_threshold)
+    #     y_test_raw  = np.clip(y_test_raw, 0, clip_threshold)
+    # else:
+    #     clip_threshold = np.nanpercentile(X_train_raw, 99.5)
+    #     X_train_raw = np.clip(X_train_raw, 0, clip_threshold)
+    #     X_val_raw   = np.clip(X_val_raw, 0, clip_threshold)
+    #     X_test_raw  = np.clip(X_test_raw, 0, clip_threshold)
 
     X_train_backup = X_train_raw.copy()
     X_val_backup   = X_val_raw.copy()
@@ -3220,6 +3220,72 @@ def summarize_compositions_in_h5(
         ng = len(np.unique(inv[nz])) if nz.any() else 0
         print(f"{e:<4} {nz.sum():>9} {ng:>9} {Xr[:, j].max():>9.3f}")
 
+def plot_host_mean():
+    import matplotlib
+    matplotlib.use('Agg')  # Set non-interactive backend before pyplot import to avoid $DISPLAY errors
+    import matplotlib.pyplot as plt
+    import h5py
+    import numpy as np
+
+    path = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5"
+    HOST = {'Li', 'K', 'Cl'}
+
+    with h5py.File(path, 'r') as hf:
+        names = [n.decode() if isinstance(n, bytes) else n for n in hf['feature_cols'][:]]  # type: ignore
+        wl    = hf['wavelengths'][:]  # type: ignore
+        X     = hf['X'][:]  # type: ignore
+        gid   = hf['group_id'][:]  # type: ignore
+        exp   = hf['is_synthetic'][:] == 0  # type: ignore
+
+        dop = [i for i, n in enumerate(names) if n not in HOST]
+
+        # Masks: pure host, plus the highest-conc single-dopant group for each element
+        masks = {'PureHost': exp & (X[:, dop].max(axis=1) == 0)}  # type: ignore
+        for el in ['Gd', 'Ce', 'U', 'Sm']:
+            j = names.index(el)
+            others = [i for i in dop if i != j]
+            sel = exp & (X[:, j] > 0) & (X[:, others].max(axis=1) == 0)  # type: ignore
+            if sel.any():
+                best = np.where(sel)[0][np.argmax(X[sel, j])]  # type: ignore
+                masks[el] = exp & (gid == gid[best])  # type: ignore
+
+        for k, m in masks.items():
+            print(f"{k}: {m.sum()} shots")
+
+        # One pass over y, accumulating sums
+        y = hf['y']
+        sums = {k: np.zeros(y.shape[1], dtype=np.float64) for k in masks}  # type: ignore
+        block = 4000
+        for a in range(0, y.shape[0], block):  # type: ignore
+            blk = None
+            for k, m in masks.items():
+                mb = m[a:a + block]
+                if mb.any():
+                    if blk is None:
+                        blk = y[a:a + block]  # type: ignore
+                    sums[k] += blk[mb].sum(axis=0)  # type: ignore
+        means = {k: sums[k] / masks[k].sum() for k in masks if masks[k].any()}
+
+    fig, ax = plt.subplots(2, 1, figsize=(14, 8), sharex=True)
+    for k, v in means.items():
+        ax[0].plot(wl, v, lw=0.6, label=k)
+        if k != 'PureHost':
+            ax[1].plot(wl, v - means['PureHost'], lw=0.6, label=f'{k} − PureHost')
+
+    ax[0].legend()
+    ax[1].legend()
+    ax[0].set_ylabel('mean y (scaled)')
+    ax[1].set_ylabel('difference')
+    ax[1].set_xlabel('wavelength (nm)')
+    plt.tight_layout()
+
+    # Save the plot and release memory
+    output_filename = "libs_spectra_comparison.png"
+    plt.savefig(output_filename, dpi=300, bbox_inches='tight')
+    plt.close(fig)
+
+    print(f"Plot saved successfully to {output_filename}")
+
 def check_h5_compositions(h5_path: str | Path):
     """
     Inspects an HDF5 dataset to count overall unique experimental compositions
@@ -3305,48 +3371,54 @@ def check_h5_compositions(h5_path: str | Path):
 if __name__ == "__main__":
     print('Hi')
 
-    # 1. Define File Paths
-    raw_combined_h5 = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/combined_exp_syn_max12_12345s_dataset.h5")
-    split_h5        = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/max12_split.h5")
-    xandy_h5        = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/max12_xandy.h5")
-    final_crossval  = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5")
+    plot_host_mean()
 
-    # Step 1: Split raw dataset into Train/Val/Test compositional groups
-    print("--- Step 1: Splitting train/val/test groups ---")
-    train_val_test_splitter_HDF5(
-        h5_path=raw_combined_h5,
-        output_path=split_h5,
-        val_frac=0.1,
-        test_frac=0.1,
-        random_state=42
-    )
+    # check_h5_compositions(
+    #     h5_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5'
+    # )
 
-    # Step 2: Scale, clip, and structure into X and y split arrays
-    print("\n--- Step 2: Formatting to X and y features ---")
-    h5_to_xandy(
-        input_h5=split_h5,
-        output_h5=xandy_h5,
-        feature_selector=False,
-        conc_to_spec=True
-    )
+    # # 1. Define File Paths
+    # raw_combined_h5 = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/combined_exp_syn_max12_12345s_dataset.h5")
+    # split_h5        = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/max12_split.h5")
+    # xandy_h5        = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/max12_xandy.h5")
+    # final_crossval  = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5")
 
-    # Step 3: Combine splits into unified matrices & generate group lookup tables
-    print("\n--- Step 3: Generating crossval groups and system codes ---")
-    xandy_to_crossval(
-        input_file=xandy_h5,
-        output_file=final_crossval
-    )
+    # # Step 1: Split raw dataset into Train/Val/Test compositional groups
+    # print("--- Step 1: Splitting train/val/test groups ---")
+    # train_val_test_splitter_HDF5(
+    #     h5_path=raw_combined_h5,
+    #     output_path=split_h5,
+    #     val_frac=0.1,
+    #     test_frac=0.1,
+    #     random_state=42
+    # )
 
-    # Step 4: Stamp permanent lockbox test set mask
-    print("\n--- Step 4: Stamping lockbox mask ---")
-    stamp_lockbox_to_h5(
-        h5_path=final_crossval,
-        n_splits=7,
-        min_groups_per_dopant=2,
-        seed=42
-    )
+    # # Step 2: Scale, clip, and structure into X and y split arrays
+    # print("\n--- Step 2: Formatting to X and y features ---")
+    # h5_to_xandy(
+    #     input_h5=split_h5,
+    #     output_h5=xandy_h5,
+    #     feature_selector=False,
+    #     conc_to_spec=True
+    # )
 
-    print("\n Pipeline complete! Target crossval dataset generated successfully.")
+    # # Step 3: Combine splits into unified matrices & generate group lookup tables
+    # print("\n--- Step 3: Generating crossval groups and system codes ---")
+    # xandy_to_crossval(
+    #     input_file=xandy_h5,
+    #     output_file=final_crossval
+    # )
+
+    # # Step 4: Stamp permanent lockbox test set mask
+    # print("\n--- Step 4: Stamping lockbox mask ---")
+    # stamp_lockbox_to_h5(
+    #     h5_path=final_crossval,
+    #     n_splits=7,
+    #     min_groups_per_dopant=2,
+    #     seed=42
+    # )
+
+    # print("\n Pipeline complete! Target crossval dataset generated successfully.")
 
     # xandy_path = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_xandy.h5"
     # crossval_path = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/cts_noleak_crossval.h5"
