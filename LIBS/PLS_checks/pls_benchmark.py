@@ -3,26 +3,24 @@ from __future__ import annotations
 import sys
 import time
 import h5py
+import torch
+import hashlib
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from joblib import Parallel, delayed
 from pathlib import Path
 from datetime import datetime
-from sklearn.cross_decomposition import PLSRegression
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 
 # Add project root setup matching your directory layout
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-try:
-    from setup import add_project_root_to_path
-    add_project_root_to_path(parent_generation=1)
-    from utils import get_h5_ds
-except ImportError:
-    pass
+
+from setup import add_project_root_to_path
+add_project_root_to_path(parent_generation=1)
+from utils import get_h5_ds
+
 
 # =============================================================================
 # Global Configuration & File Paths
@@ -32,47 +30,143 @@ SPLIT_DIR = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_spl
 OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark")
 
 NUM_FOLDS = 7
+SEEDS = [42]    # for non pls up seed count to like 7: [42,43,44,45,46,47,48]
 THRESH = 2.8
 MAX_WT_PERCENT = 12.0
 SEED = 42
+HOST_ELEMENTS = {'Li', 'K', 'Cl'}
+EXP_DOPANTS = {'Ce', 'Gd', 'Sm', 'U'}
 
 # Candidate range for PLS components
-N_COMPONENTS_GRID = [2, 5, 10, 15, 20, 25, 30, 40, 50]
+N_COMPONENTS_GRID = [13,14,15,16,17,23,24,25,26,27]
 
-TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # =============================================================================
-# Helper & Data Functions (Matching P3VAE Pipeline)
+# Fast GPU SIMPLS Algorithm (In-Place Memory Optimized)
+# =============================================================================
+class PyTorchPLS:
+    """Fast GPU-accelerated PLS2 (SIMPLS Algorithm) in PyTorch."""
+    def __init__(self, n_components: int = 10):
+        self.n_components = n_components
+        self.mean_X: torch.Tensor | None = None
+        self.std_X: torch.Tensor | None = None
+        self.mean_Y: torch.Tensor | None = None
+        self.B: torch.Tensor | None = None
+
+    def fit(self, X: torch.Tensor, Y: torch.Tensor):
+        N, P = X.shape
+        M = Y.shape[1]
+
+        # Standardize X and center Y
+        self.mean_X = X.mean(dim=0, keepdim=True)
+        self.std_X = X.std(dim=0, keepdim=True).clamp(min=1e-6)
+        self.mean_Y = Y.mean(dim=0, keepdim=True)
+
+        # In-place standardization on GPU tensor to save VRAM
+        X.sub_(self.mean_X).div_(self.std_X)
+        Y0 = Y - self.mean_Y
+
+        # Initial Cross-Covariance Matrix S [P x M]
+        S = torch.matmul(X.T, Y0)
+
+        R = torch.zeros((P, self.n_components), dtype=X.dtype, device=X.device)
+        Q = torch.zeros((M, self.n_components), dtype=X.dtype, device=X.device)
+        V = torch.zeros((P, self.n_components), dtype=X.dtype, device=X.device)
+
+        for a in range(self.n_components):
+            # Compute dominant left singular vector of S via GPU SVD
+            U, _, _ = torch.linalg.svd(S, full_matrices=False)
+            r_a = U[:, 0]
+
+            # Compute score t_a and normalize
+            t_a = torch.matmul(X, r_a)
+            t_a = t_a - t_a.mean()
+            norm_t = torch.linalg.norm(t_a)
+            t_a = t_a / norm_t
+            r_a = r_a / norm_t
+
+            # Compute loadings
+            p_a = torch.matmul(X.T, t_a)
+            q_a = torch.matmul(Y0.T, t_a)
+
+            # Deflation vector v_a (orthogonalized against previous V)
+            v_a = p_a.clone()
+            if a > 0:
+                V_prev = V[:, :a]
+                v_a = v_a - torch.matmul(V_prev, torch.matmul(V_prev.T, p_a))
+            v_a = v_a / torch.linalg.norm(v_a)
+
+            # Deflate cross-covariance matrix
+            S = S - v_a.unsqueeze(1) @ (v_a.unsqueeze(0) @ S)
+
+            R[:, a] = r_a
+            Q[:, a] = q_a
+            V[:, a] = v_a
+
+        # Compute final regression weight matrix B
+        self.B = torch.matmul(R, Q.T)
+        return self
+
+    def predict(self, X: torch.Tensor) -> torch.Tensor:
+        if self.B is None or self.mean_X is None or self.std_X is None or self.mean_Y is None:
+            raise RuntimeError("Model must be fitted via `.fit()` before calling `.predict()`!")
+
+        X0 = (X - self.mean_X) / self.std_X
+        pred = torch.matmul(X0, self.B) + self.mean_Y
+        return pred
+
+
+# =============================================================================
+# Helper & Data Functions
 # =============================================================================
 def load_crossval_data(h5_path: str, spike_thresh: float = THRESH) -> dict:
-    """Loads dataset and filters corrupted saturation shots (matching P3VAE)."""
+    """Loads dataset as float32 tensors stored in System CPU RAM."""
     with h5py.File(h5_path, 'r') as hf:
-        y = hf['y'][:].astype(np.float32)           # Spectral intensities [N, Wavelengths]    # type: ignore
-        X = hf['X'][:].astype(np.float32)           # Target concentrations [N, Elements]    # type: ignore
-        is_synth = hf['is_synthetic'][:]    # type: ignore
-        is_lockbox = hf['is_lockbox'][:].astype(bool)    # type: ignore
-        group_id = hf['group_id'][:]    # type: ignore
-        wavelengths = hf['wavelengths'][:]    # type: ignore
+        spectra_raw = get_h5_ds(hf, 'X')[:].astype(np.float32)
+        targets_raw = get_h5_ds(hf, 'y')[:].astype(np.float32)
+        name_key = 'target_elements' if 'target_elements' in hf else 'feature_cols'
+
+        if 'meta/is_synthetic' in hf:
+            is_synth = hf['meta/is_synthetic'][:] # type: ignore
+        elif 'is_synthetic' in hf:
+            is_synth = get_h5_ds(hf, 'is_synthetic')[:]
+        else:
+            is_synth = np.zeros(len(spectra_raw), dtype=np.int32)
+
+        group_key = 'groups' if 'groups' in hf else 'group_id'
+        group_id = get_h5_ds(hf, group_key)[:] if group_key in hf else np.arange(len(spectra_raw))
+        wavelengths = get_h5_ds(hf, 'wavelengths')[:]
         names = [
             n.decode('utf-8') if isinstance(n, bytes) else str(n) 
-            for n in hf['feature_cols'][:]    # type: ignore
+            for n in get_h5_ds(hf, name_key)[:]
         ]
 
-    row_maxes = y.max(axis=1)    # type: ignore
-    clean_mask = row_maxes <= spike_thresh
-    
-    n_dropped = len(y) - np.sum(clean_mask)    # type: ignore
-    if n_dropped > 0:
-        print(f"Dropped {n_dropped} corrupted saturation shots (max intensity > {spike_thresh}).")
+        if 'is_lockbox' not in hf:
+            raise KeyError(
+                "HDF5 file missing 'is_lockbox'. Re-run data preprocessing to write "
+                "a group-stratified lockbox split."
+            )
+        is_lockbox = get_h5_ds(hf, 'is_lockbox')[:].astype(bool)
+
+    # Filter saturation shots
+    # clean_mask = spectra_raw.max(axis=1) <= spike_thresh
+    # X_tensor = torch.from_numpy(spectra_raw[clean_mask])
+    clean_mask = spectra_raw.max(axis=1)
+    X_tensor = torch.from_numpy(spectra_raw[clean_mask])
+
+    # L2 Normalization on Spectra ONLY
+    l2_norms = torch.norm(X_tensor, p=2, dim=1, keepdim=True).clamp(min=1e-08)
+    X_tensor = X_tensor / l2_norms
 
     return dict(
-        X=X[clean_mask],    # type: ignore
-        y=y[clean_mask],    # type: ignore
-        is_synth=is_synth[clean_mask],    # type: ignore
-        is_lockbox=is_lockbox[clean_mask],    # type: ignore
-        group_id=group_id[clean_mask],    # type: ignore
+        X=X_tensor,
+        y=torch.from_numpy(targets_raw[clean_mask]),
+        is_synth=is_synth[clean_mask], # type: ignore
+        is_lockbox=is_lockbox[clean_mask],
+        group_id=group_id[clean_mask],
         wavelengths=wavelengths,
         names=names,
     )
@@ -80,7 +174,7 @@ def load_crossval_data(h5_path: str, spike_thresh: float = THRESH) -> dict:
 
 def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
                        n_splits=5, n_trials=2000, min_groups_per_dopant=1, seed=42):
-    """Stratified group fold assignment matching original p3vae script."""
+    """Stratified group fold assignment matching original P3VAE script."""
     exp = np.where(is_synthetic == 0)[0]
     groups, inv = np.unique(group_id[exp], return_inverse=True)
     inv = inv.ravel()
@@ -97,7 +191,8 @@ def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
     sig = (present.astype(int) * (1 << np.arange(len(active_dopant_idx)))).sum(axis=1)
     classes = np.unique(sig)
 
-    best_fog, best_score = None, None
+    best_fog: np.ndarray | None = None
+    best_score = None
     for t in range(n_trials):
         rng = np.random.default_rng(seed + t)
         fog = np.empty(n_groups, dtype=int)
@@ -113,39 +208,72 @@ def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
         if best_score is None or score < best_score:
             best_fog, best_score = fog, score
 
+    if best_fog is None:
+        raise ValueError("Failed to assign fold groups: n_trials must be > 0.")
+
     fold_id = np.full(len(X), -1, dtype=np.int32)
-    fold_id[exp] = best_fog[inv]    # type: ignore
+    fold_id[exp] = best_fog[inv]
     return fold_id
 
 
-def build_splits_once(data, split_path, num_folds, seed=42):
-    """Loads existing pre-computed CV splits or creates them if absent."""
-    split_path = Path(split_path).with_suffix('.npz')
-    if split_path.exists():
-        print(f"Loading cached splits from: {split_path}")
-        d = np.load(split_path)
-        return d['test_idx'], d['cv_idx'], d['cv_fold_id']
+def compute_dataset_fingerprint(data: dict) -> str:
+    """Computes a fast cryptographic hash of targets, groups, and lockbox flags."""
+    h = hashlib.blake2b(digest_size=16)
+    
+    # Hash y array, group IDs, and lockbox mask
+    h.update(data['y'].numpy().tobytes())
+    h.update(np.ascontiguousarray(data['group_id']).tobytes())
+    h.update(np.ascontiguousarray(data['is_lockbox']).tobytes())
+    
+    return h.hexdigest()
 
-    split_path.parent.mkdir(parents=True, exist_ok=True)
+
+def build_splits_for_seed(data, split_dir, num_folds, seed):
+    """Loads existing pre-computed CV splits for a given seed or creates them if absent or stale."""
+    split_dir = Path(split_dir)
+    split_path = split_dir / f'max12_{num_folds}_folds_seed{seed}.npz'
+    
+    # Compute fingerprint for the current in-memory dataset
+    current_fp = compute_dataset_fingerprint(data)
+    
+    if split_path.exists():
+        d = np.load(split_path)
+        cached_fp = str(d['fingerprint']) if 'fingerprint' in d else None
+        
+        # Verify hash match and fold count before reusing cache
+        if cached_fp == current_fp and d.get('num_folds', None) == num_folds:
+            return d['test_idx'], d['cv_idx'], d['cv_fold_id']
+        else:
+            print(f"⚠️ Stale or un-fingerprinted split cache detected in {split_path.name}. Recomputing folds...")
+
+    split_dir.mkdir(parents=True, exist_ok=True)
     test_idx = np.where(data['is_lockbox'])[0]
     cv_idx = np.where(~data['is_lockbox'])[0]
 
-    X_cv = data['X'][cv_idx]
+    y_cv = data['y'][cv_idx].numpy()
     is_synth_cv = data['is_synth'][cv_idx]
 
     host_elements = {'Li', 'K', 'Cl'}
     dopant_idx = [
         i for i, name in enumerate(data['names']) 
-        if name not in host_elements and (X_cv[:, i] > 0).any()
+        if name not in host_elements and (y_cv[:, i] > 0).any()
     ]
 
     cv_fold_id = assign_group_folds(
-        X=X_cv, group_id=data['group_id'][cv_idx], is_synthetic=is_synth_cv,
+        X=y_cv, group_id=data['group_id'][cv_idx], is_synthetic=is_synth_cv,
         dopant_idx=dopant_idx, elem_names=data['names'], n_splits=num_folds, seed=seed
     )
 
-    np.savez(split_path, test_idx=test_idx, cv_idx=cv_idx, cv_fold_id=cv_fold_id,
-             num_folds=num_folds, seed=seed)
+    # Save splits along with current dataset fingerprint
+    np.savez(
+        split_path, 
+        test_idx=test_idx, 
+        cv_idx=cv_idx, 
+        cv_fold_id=cv_fold_id,
+        num_folds=num_folds, 
+        seed=seed,
+        fingerprint=current_fp
+    )
     return test_idx, cv_idx, cv_fold_id
 
 
@@ -158,13 +286,10 @@ def r2_calcs(y_true, y_pred):
     for col in np.where(active_cols)[0]:
         r2 = r2_score(y_true[:, col], y_pred[:, col])
         r2_scores.append(r2)
-    return float(np.mean(r2_scores))
+    return float(np.nanmean(r2_scores))
 
 
-# =============================================================================
-# Plotting & Diagnostics
-# =============================================================================
-def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="PLS Benchmark", save_path=None):
+def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="GPU PLS Benchmark", save_path=None):
     """Generates an NxM parity grid plot matching P3VAE visualization."""
     active_elem_idx = [j for j in range(y_true_wt.shape[1]) if y_true_wt[:, j].max() > 1e-5]
     n_active = len(active_elem_idx)
@@ -196,7 +321,7 @@ def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="PLS Benchmar
     for idx_plot in range(n_active, len(axes_flat)):
         fig.delaxes(axes_flat[idx_plot])
 
-    plt.suptitle(f"{title_tag} - Concentration Parity Grid", fontsize=12, fontweight="bold", y=1.02)
+    plt.suptitle(f"{title_tag} \n Concentration Parity Grid", fontsize=12, fontweight="bold", y=1.02)
     plt.tight_layout()
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches="tight")
@@ -204,151 +329,254 @@ def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="PLS Benchmar
     plt.close()
 
 
+def print_benchmark_table(y_true, y_pred_model, y_train_mean, title_tag, elem_names):
+    """
+    Prints element-wise metrics comparing PLS against Dummy Baselines.
+    """
+    active_idx = [j for j in range(y_true.shape[1]) if y_true[:, j].max() > 1e-5]
+    
+    print("\n" + "=" * 95)
+    print(f" {title_tag}")
+    print("=" * 95)
+    print(f"{'Element':<8} | {'Strategy':<18} | {'R^2':<8} | {'MAE (wt%)':<10} | {'RMSE (wt%)':<10} | {'Max True':<10}")
+    print("-" * 95)
+    
+    for j in active_idx:
+        name = elem_names[j]
+        yt = y_true[:, j]
+        yp = y_pred_model[:, j]
+        
+        # Baselines
+        pred_zero = np.zeros_like(yt)
+        pred_mean = np.full_like(yt, y_train_mean[j])
+        
+        strategies = [
+            ("Predict Zero", pred_zero),
+            ("Predict Mean", pred_mean),
+            ("PLS Model", yp)
+        ]
+        
+        for strat_name, y_hat in strategies:
+            r2 = r2_score(yt, y_hat)
+            mae = mean_absolute_error(yt, y_hat)
+            rmse = np.sqrt(mean_squared_error(yt, y_hat))
+            print(f"{name:<8} | {strat_name:<18} | {r2:8.3f} | {mae:10.4f} | {rmse:10.4f} | {yt.max():10.3f}")
+        print("-" * 95)
+
+
 # =============================================================================
 # Main Execution Pipeline
 # =============================================================================
-def _evaluate_single_fold(n_comp, k, cv_fold_id, X_cv_spec, Y_cv_conc):
-    """Helper function to run PLS on a single fold across workers."""
-    train_mask = (cv_fold_id != k)
-    val_mask = (cv_fold_id == k)
-
-    X_tr, Y_tr = X_cv_spec[train_mask], Y_cv_conc[train_mask]
-    X_va = X_cv_spec[val_mask]
-
-    scaler = StandardScaler()
-    X_tr_scaled = scaler.fit_transform(X_tr)
-    X_va_scaled = scaler.transform(X_va)
-
-    pls = PLSRegression(n_components=n_comp, scale=False)
-    pls.fit(X_tr_scaled, Y_tr)
-
-    val_pred = pls.predict(X_va_scaled)
-    return n_comp, k, val_mask, val_pred
-
-
-def main():
-    print("=== Starting Parallel PLS Benchmark Pipeline ===")
+def main(
+        h5_file: Path | str = H5_FILE,
+        split_dir: Path | str = SPLIT_DIR,
+        output_dir: Path | str = OUTPUT_DIR,
+        include_synthetic: bool = False,
+        seeds: list[int] = SEEDS,
+):
+    TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
+    dataset_tag = Path(h5_file).stem
+    print(f"=== Starting GPU-Accelerated PLS Benchmark Pipeline [{DEVICE}] ===")
+    print(f"Dataset: {dataset_tag} | Repeated K-Fold: {NUM_FOLDS} Folds x {len(seeds)} Seeds ({len(seeds)*NUM_FOLDS} models per grid point)")
     t0_start = time.perf_counter()
 
-    # Set worker pool size from SLURM task allocation
-    N_JOBS = 2
+    h5_file = str(h5_file)
+    split_dir = Path(split_dir).resolve()
+    output_dir = Path(output_dir).resolve()
 
-    # 1. Load Data
-    data = load_crossval_data(H5_FILE)
-    split_path = SPLIT_DIR / f'max12_{NUM_FOLDS}_folds_seed{SEED}.npz'
-    test_idx, cv_idx, cv_fold_id = build_splits_once(data, split_path, NUM_FOLDS, seed=SEED)
-
-    X_cv_spec = data['y'][cv_idx]
-    Y_cv_conc = data['X'][cv_idx]
-    X_test_spec = data['y'][test_idx]
-    Y_test_conc = data['X'][test_idx]
-    target_names = data['names']
-
-    print(f"Dataset Loaded | CV Pool: {len(cv_idx)} samples | Lockbox Test Set: {len(test_idx)} samples")
-
-    # 2. Parallel Hyperparameter Grid Search
-    print(f"\n--- Tuning PLS Components via Parallel CV ({N_JOBS} Workers) ---")
+    # 1. Load Data & Prepare Multi-Seed Splits
+    data = load_crossval_data(h5_file)
     
-    # Generate all (n_components, fold) tasks
-    tasks = [(n_comp, k) for n_comp in N_COMPONENTS_GRID for k in range(NUM_FOLDS)]
-    
-    # Run all 63 tasks in parallel across 8 CPUs
-    cv_results = Parallel(n_jobs=N_JOBS)(
-        delayed(_evaluate_single_fold)(n_comp, k, cv_fold_id, X_cv_spec, Y_cv_conc)
-        for n_comp, k in tasks
-    )
+    # Load fold IDs for all seeds
+    seed_splits = {}
+    for seed in seeds:
+        test_idx, cv_idx, cv_fold_id = build_splits_for_seed(data, split_dir, NUM_FOLDS, seed=seed)
+        seed_splits[seed] = (test_idx, cv_idx, cv_fold_id)
 
-    # Reconstruct OOF predictions per n_component option
-    oof_by_ncomp = {n_comp: np.zeros_like(Y_cv_conc) for n_comp in N_COMPONENTS_GRID}
-    for n_comp, k, val_mask, val_pred in cv_results:    # type: ignore
-        oof_by_ncomp[n_comp][val_mask] = val_pred
+    # Note: test_idx & cv_idx are fixed across seeds (only fold partitioning inside cv_idx varies)
+    test_idx = seed_splits[seeds[0]][0]
+    cv_idx = seed_splits[seeds[0]][1]
 
-    # Identify optimal n_components
+    # X_cv_cpu = data['X'][cv_idx]
+    # Y_cv_cpu = data['y'][cv_idx]
+    # X_test_cpu = data['X'][test_idx]
+    # Y_test_cpu = data['y'][test_idx]
+    # is_synth_cv = data['is_synth'][cv_idx]
+
+    # Move CV pool directly to GPU memory once to avoid CPU slicing OOMs
+    X_cv_gpu = data['X'][cv_idx].to(DEVICE)
+    Y_cv_gpu = data['y'][cv_idx].to(DEVICE)
+    X_test_gpu = data['X'][test_idx].to(DEVICE)
+    Y_test_gpu = data['y'][test_idx].to(DEVICE)
+    is_synth_cv_gpu = torch.from_numpy(data['is_synth'][cv_idx]).to(DEVICE)
+
+    # Target slicing
+    dopant_indices = [i for i, name in enumerate(data['names']) if name in EXP_DOPANTS or name in {'Ce', 'Gd', 'Sm', 'U'}]
+    if dopant_indices:
+        Y_cv_gpu = Y_cv_gpu[:, dopant_indices]
+        Y_test_gpu = Y_test_gpu[:, dopant_indices]
+        target_names = [data['names'][i] for i in dopant_indices]
+    else:
+        target_names = data['names']
+
+    # print(f"Dataset Stored in CPU RAM | CV Pool: {len(cv_idx)} samples | Lockbox Test Set: {len(test_idx)} samples")
+
+    # 2. Hyperparameter Grid Search (Ensembled OOF across N Seeds)
+    print("\n--- Tuning PLS Components via Multi-Seed GPU Cross-Validation ---")
     best_n_comp = N_COMPONENTS_GRID[0]
     best_overall_r2 = -float('inf')
+    # oof_ens_by_ncomp = {}
+    best_oof_preds_np = None
 
     for n_comp in N_COMPONENTS_GRID:
-        oof_clipped = np.clip(oof_by_ncomp[n_comp], a_min=0.0, a_max=None)
-        mean_r2 = r2_calcs(Y_cv_conc * MAX_WT_PERCENT, oof_clipped * MAX_WT_PERCENT)
-        print(f"n_components = {n_comp:2d} | OOF Mean R^2: {mean_r2:7.4f}")
+        t_grid_start = time.perf_counter()
+        
+        # Tensor to accumulate OOF predictions across all seeds
+        oof_sum_gpu = torch.zeros((len(cv_idx), Y_cv_gpu.shape[1]), device=DEVICE)
 
-        if mean_r2 > best_overall_r2:
+        for seed in seeds:
+            _, _, cv_fold_id = seed_splits[seed]
+            seed_oof_gpu = torch.zeros((len(cv_idx), Y_cv_gpu.shape[1]), device=DEVICE)
+
+            for k in range(NUM_FOLDS):
+                if include_synthetic:
+                    train_mask = torch.from_numpy(cv_fold_id != k).to(DEVICE)
+                else:
+                    train_mask = torch.from_numpy((cv_fold_id != k) & (data['is_synth'][cv_idx] == 0)).to(DEVICE)
+                val_mask = torch.from_numpy(cv_fold_id == k).to(DEVICE)
+
+                # GPU-to-GPU slicing (0 ms overhead, 0 CPU RAM used)
+                X_tr_gpu = X_cv_gpu[train_mask]
+                Y_tr_gpu = Y_cv_gpu[train_mask]
+                X_va_gpu = X_cv_gpu[val_mask]
+
+                # NOTE: SIMPLS modifies X_tr_gpu in-place during fit(), 
+                # so pass a clone if you want to reuse X_cv_gpu
+                pls = PyTorchPLS(n_components=n_comp)
+                pls.fit(X_tr_gpu.clone(), Y_tr_gpu)
+
+                seed_oof_gpu[val_mask] = pls.predict(X_va_gpu)
+
+                del X_tr_gpu, Y_tr_gpu, X_va_gpu, pls
+                torch.cuda.empty_cache()
+
+            oof_sum_gpu += seed_oof_gpu
+
+        # Multi-seed ensembled OOF prediction (Leak-free average across N seeds)
+        oof_ens_gpu = oof_sum_gpu / len(seeds)
+        oof_ens_np = torch.clamp(oof_ens_gpu, min=0.0).cpu().numpy()
+        # oof_ens_by_ncomp[n_comp] = oof_ens_np
+
+        # Evaluate ensembled OOF R^2 on experimental validation samples
+        exp_mask = seed_splits[seeds[0]][2] >= 0
+        mean_r2 = r2_calcs(Y_cv_gpu.cpu().numpy()[exp_mask], oof_ens_np[exp_mask])
+        dt = time.perf_counter() - t_grid_start
+        print(f"n_components = {n_comp:2d} | Ensembled OOF Mean R^2 ({len(seeds)} seeds): {mean_r2:7.4f} | Elapsed: {dt:.2f}s")
+
+        if best_oof_preds_np is None or (not np.isnan(mean_r2) and mean_r2 > best_overall_r2):
             best_overall_r2 = mean_r2
             best_n_comp = n_comp
+            best_oof_preds_np = oof_ens_np
 
-    print(f"\nOptimal PLS Components: {best_n_comp} (Mean OOF R^2: {best_overall_r2:.4f})")
+    print(f"\nOptimal PLS Components: {best_n_comp} (Ensembled OOF Mean R^2: {best_overall_r2:.4f})")
 
-    # 3. Final Evaluation & Lockbox Ensembling
-    print("\n--- Running Final Lockbox Evaluation ---")
-    oof_preds = np.clip(oof_by_ncomp[best_n_comp], a_min=0.0, a_max=None)
-    lockbox_ensemble_preds = np.zeros((NUM_FOLDS, len(test_idx), Y_test_conc.shape[1]))
+    if best_oof_preds_np is None:
+        raise RuntimeError("No valid out-of-fold predictions were captured during hyperparamater tuning.")
+    # 3. Final Lockbox Evaluation (Ensemble of N_seeds x K_folds models)
+    total_models = len(seeds) * NUM_FOLDS
+    print(f"\n--- Running Final Lockbox Ensemble Evaluation on GPU ({total_models} total models) ---")
+    
+    lockbox_sum_gpu = torch.zeros((len(test_idx), Y_test_gpu.shape[1]), device=DEVICE)
+    X_test_gpu = X_test_gpu.to(DEVICE)
 
-    # Parallelize the 7 fold models for the lockbox prediction
-    def _train_and_predict_lockbox(k):
-        train_mask = (cv_fold_id != k)
-        X_tr, Y_tr = X_cv_spec[train_mask], Y_cv_conc[train_mask]
+    for seed in seeds:
+        _, _, cv_fold_id = seed_splits[seed]
 
-        scaler = StandardScaler()
-        X_tr_scaled = scaler.fit_transform(X_tr)
-        X_test_scaled = scaler.transform(X_test_spec)
+        for k in range(NUM_FOLDS):
+            if include_synthetic:
+                train_mask = torch.from_numpy(cv_fold_id != k).to(DEVICE)
+            else:
+                train_mask = torch.from_numpy((cv_fold_id != k) & (data['is_synth'][cv_idx] == 0)).to(DEVICE)
 
-        pls = PLSRegression(n_components=best_n_comp, scale=False)
-        pls.fit(X_tr_scaled, Y_tr)
-        return pls.predict(X_test_scaled)
+            X_tr_gpu = X_cv_gpu[train_mask]
+            Y_tr_gpu = Y_cv_gpu[train_mask]
 
-    lockbox_preds_list = Parallel(n_jobs=N_JOBS)(
-        delayed(_train_and_predict_lockbox)(k) for k in range(NUM_FOLDS)
+            pls = PyTorchPLS(n_components=best_n_comp)
+            pls.fit(X_tr_gpu.clone(), Y_tr_gpu)
+
+            lockbox_sum_gpu += pls.predict(X_test_gpu)
+
+            del X_tr_gpu, Y_tr_gpu, pls
+            torch.cuda.empty_cache()
+
+    lockbox_pred_avg = torch.clamp(lockbox_sum_gpu / total_models, min=0.0).cpu().numpy()
+
+    # 4. Reporting
+    exp_mask = seed_splits[seeds[0]][2] >= 0
+    true_cv_wt = Y_cv_gpu[exp_mask].cpu().numpy()
+    # pred_cv_wt = oof_ens_by_ncomp[best_n_comp][exp_mask]
+    pred_cv_wt = best_oof_preds_np[exp_mask]
+    train_mean_cv = true_cv_wt.mean(axis=0)
+
+    true_test_wt = Y_test_gpu.cpu().numpy()
+    pred_test_wt = lockbox_pred_avg
+    train_mean_full = true_cv_wt.mean(axis=0)
+
+    print_benchmark_table(
+        y_true=true_cv_wt,
+        y_pred_model=pred_cv_wt,
+        y_train_mean=train_mean_cv,
+        title_tag=f"GPU PLS Ensembled OOF Benchmarks (n_components={best_n_comp}, {len(seeds)} Seeds) [{'Syn+Exp' if include_synthetic else 'Exp Only'}]",
+        elem_names=target_names
     )
 
-    for k, pred in enumerate(lockbox_preds_list):
-        lockbox_ensemble_preds[k] = pred
+    print_benchmark_table(
+        y_true=true_test_wt,
+        y_pred_model=pred_test_wt,
+        y_train_mean=train_mean_full,
+        title_tag=f"GPU PLS Lockbox Benchmarks (Ensemble of {total_models} Models)",
+        elem_names=target_names
+    )
 
-    lockbox_pred_avg = np.clip(lockbox_ensemble_preds.mean(axis=0), a_min=0.0, a_max=None)
+    # 5. Parity Plots with Unique Dataset & Timestamp Tagging
+    oof_parity_path = output_dir / f"gpu_pls_oof_parity_{dataset_tag}_{TIMESTAMP}.png"
+    lockbox_parity_path = output_dir / f"gpu_pls_lockbox_parity_{dataset_tag}_{TIMESTAMP}.png"
 
-    # 4. Convert back to physical wt% and report metrics
-    true_cv_wt = Y_cv_conc * MAX_WT_PERCENT
-    pred_cv_wt = oof_preds * MAX_WT_PERCENT
+    plot_parity_grid(true_cv_wt, pred_cv_wt, target_names, title_tag=f"PLS ENSEMBLED OOF ({len(seeds)} Seeds)", save_path=oof_parity_path)
+    plot_parity_grid(true_test_wt, pred_test_wt, target_names, title_tag=f"PLS LOCKBOX ENSEMBLE ({total_models} Models)", save_path=lockbox_parity_path)
 
-    true_test_wt = Y_test_conc * MAX_WT_PERCENT
-    pred_test_wt = lockbox_pred_avg * MAX_WT_PERCENT
+    print(f"GPU Pipeline completed in {(time.perf_counter() - t0_start):.2f} seconds.")
 
-    active_elem_idx = [j for j in range(true_test_wt.shape[1]) if true_test_wt[:, j].max() > 1e-5]
-
-    print("\n" + "=" * 80)
-    print(f" PLS Benchmark - Out-Of-Fold (OOF) Performance (n_components={best_n_comp})")
-    print("=" * 80)
-    for j in active_elem_idx:
-        name = target_names[j]
-        yt = true_cv_wt[:, j]
-        yp = pred_cv_wt[:, j]
-        r2 = r2_score(yt, yp)
-        mae = mean_absolute_error(yt, yp)
-        rmse = np.sqrt(mean_squared_error(yt, yp))
-        print(f"Element {name:<5} | R^2: {r2:7.3f} | MAE: {mae:.4f} wt% | RMSE: {rmse:.4f} wt% | Max True: {yt.max():.3f} wt%")
-
-    print("\n" + "=" * 80)
-    print(f" PLS Benchmark - Lockbox Test Set Performance (Ensemble of {NUM_FOLDS} Folds)")
-    print("=" * 80)
-    for j in active_elem_idx:
-        name = target_names[j]
-        yt = true_test_wt[:, j]
-        yp = pred_test_wt[:, j]
-        r2 = r2_score(yt, yp)
-        mae = mean_absolute_error(yt, yp)
-        rmse = np.sqrt(mean_squared_error(yt, yp))
-        print(f"Element {name:<5} | R^2: {r2:7.3f} | MAE: {mae:.4f} wt% | RMSE: {rmse:.4f} wt% | Max True: {yt.max():.3f} wt%")
-    print("=" * 80 + "\n")
-
-    # 5. Generate Parity Plots
-    oof_parity_path = OUTPUT_DIR / f"pls_oof_parity_{TIMESTAMP}.png"
-    lockbox_parity_path = OUTPUT_DIR / f"pls_lockbox_parity_{TIMESTAMP}.png"
-
-    plot_parity_grid(true_cv_wt, pred_cv_wt, target_names, 
-                     title_tag=f"PLS OOF (n_comp={best_n_comp})", save_path=oof_parity_path)
-    plot_parity_grid(true_test_wt, pred_test_wt, target_names, 
-                     title_tag=f"PLS Lockbox Ensemble (n_comp={best_n_comp})", save_path=lockbox_parity_path)
-
-    print(f"Pipeline completed in {(time.perf_counter() - t0_start) / 60:.2f} minutes.")
 
 if __name__ == "__main__":
-    main()
+    # main(
+    #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TD14_TEN.h5",
+    #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/exp_TD14_TEN",
+    #     output_dir=OUTPUT_DIR,
+    #     include_synthetic=False,
+    #     seeds=SEEDS,
+    # )
+    
+    # main(
+    #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TDN_TEN.h5",
+    #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/exp_TDN_TEN",
+    #     output_dir=OUTPUT_DIR,
+    #     include_synthetic=False,
+    #     seeds=SEEDS,
+    # )
+    
+    main(
+        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TD14_TEN.h5",
+        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/exp-syn_TD14_TEN",
+        output_dir=OUTPUT_DIR,
+        include_synthetic=True,
+        seeds=SEEDS,
+    )
+    
+    main(
+        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TDN_TEN.h5",
+        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/exp-syn_TDN_TEN",
+        output_dir=OUTPUT_DIR,
+        include_synthetic=True,
+        seeds=SEEDS,
+    )

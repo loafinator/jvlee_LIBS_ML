@@ -14,38 +14,35 @@ concentration maps, stoichiometric conversion tables, and standard experimental 
 
 print('data_prep.py loading ...')
 
-# =============================================================================
-# region: Imports
-# =============================================================================
 # Standard Library Imports
 import re 
 import logging
 import os
 import warnings
 import h5py
-import pickle
+import hashlib
+import time
+import csv
 
 # Third-Party Scientific & Data Processing Imports
 import pandas as pd 
 import numpy as np
 import multiprocessing as mp
+import matplotlib.pyplot as plt
 
 # Typing, Concurrency, and Functional Utilities
 from pathlib import Path 
 from typing import List, Optional, cast, Any
 from tqdm import tqdm
 from h5py import Group, Dataset
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed, wait, FIRST_COMPLETED
 from functools import partial
 from logging import handlers
 from collections.abc import Container
 from numpy.typing import NDArray
 from sklearn.feature_selection import VarianceThreshold
-# endregion
+from scipy.ndimage import minimum_filter1d, uniform_filter1d
 
-# =============================================================================
-# region: Warnings & Global Runtime Configurations
-# =============================================================================
 # Suppress performance warnings caused by step-by-step DataFrame modifications (fragmentation)
 warnings.filterwarnings('ignore', message='DataFrame is highly fragmented', category=pd.errors.PerformanceWarning)
 
@@ -59,12 +56,6 @@ TARGET_N_PTS: int = 10000       # Target resolution (number of interpolated poin
 
 # Pre-computed linear wavelength vector for uniform resampling across raw spectral files
 target_grid: NDArray[np.float64] = np.linspace(TARGET_MIN_WL, TARGET_MAX_WL, TARGET_N_PTS)
-
-# endregion
-
-# =============================================================================
-# region: Lookups & Mapping Dictionaries
-# =============================================================================
 
 # Map individual element symbols to their target output weight percentage column names
 _SINGLES_CONC_MAP: dict[str, str] = {
@@ -94,12 +85,20 @@ _MS_CONC_MAP: dict[str, float] = {
     'ms4': 3.0,
     'ms5': 3.0,
     'ms6': 0.0,
+    'ms7': 0.1,
     'ms8': 0.1,
+    'ms9': 0.5,
     'ms10': 1.0,
     'ms11': 1.0,
     'ms12': 3.0,
+    'ms13': 5.0,
     'ms14': 5.0,
     'ms16': 0.5,
+}
+
+_MSU_CONC_MAP = {
+    'msu1': 1.0, 
+    'msu2': 1.0
 }
 
 # Lookup table mapping SampleU-series keys to concentrations: [UCl3 wt%, GdCl3 wt%]
@@ -216,11 +215,8 @@ _SSU_AND_DU_MAP: dict[str, float] = {
     'ssu1 rep' : 1.0,       
     'du1 rep' : 1.0         # Solid salt vs dissolved salt 1.0 wt% UCl3 baseline
 }
-# endregion
 
-# =============================================================================
-# region: Compiled Regex Patterns for File Parsing
-# =============================================================================
+# region: patterns
 _SCAN_PATTERN       = re.compile(r'(\d+(\.\d+)?)\s*mvs')
 _TECH_PATTERN       = re.compile(r'(cv|ocv|ca|lp|eis|libs)')
 _GTD_PATTERN        = re.compile(r'gtd(\d+\.?\d*)')
@@ -237,17 +233,25 @@ _BLANK_PATTERN      = re.compile(r'(blank|pure)')
 _STATIC_PATTERN     = re.compile(r'(static)')
 _CONC_PATTERN       = re.compile(r'(?:^|[^\w])(\d+\.?\d*)\s*(wt%|ppm|%)')
 _NEUP_PATTERN       = re.compile(r'neup')
+_SUMMARY_PATTERNS_REGEX = re.compile(
+    r'^(Data_Import_.*\.csv|Static_.*_Values_.*\.csv|Static_Import.*\.csv|'
+    r'Solid_Normalized_Spectra.*\.csv|Pressure_Import_.*\.csv|Energy_Import_.*\.csv|'
+    r'Flow_Import_.*\.csv|.*_SNR_Import_.*\.csv|.*_SNR_Values_.*\.csv|Test_SNR_.*\.csv)$',
+    re.IGNORECASE,
+)
+_EXCLUDED_DIR_PATTERNS_REGEX = re.compile(
+    r'(Backup 9-12-2016|Williams_Ammon_Ned|Matlab analysis)', re.IGNORECASE
+)
+# endregion
 
 # Standardized experimental defaults applied when metadata parameters are unlisted
+# region: standard vals
 _STANDARD_DELAY: int = 14     # Default gate delay (µs)
 _STANDARD_WIDTH: int = 8      # Default gate width (µs)
 _STANDARD_QDELAY: int = 110   # Default Q-switch delay (µs)
 _STANDARD_SHOTS: int = 50     # Default laser shot count per specimen
 # endregion
 
-# =============================================================================
-# region: Standard Target Columns & Chemical Species Mappings
-# =============================================================================
 _DEFAULT_CONC_COLS: List[str] = [
     'frac_LiCl',        'frac_KCl', 
     'conc_Ba_wt%',      'conc_Ca_wt%',      'conc_Ce_wt%',      'conc_Cl_wt%',
@@ -326,8 +330,41 @@ _COMPILED_SPECIES_PATTERNS: dict[re.Pattern, str] = {
                 ): nice_name
     for key, nice_name in _SPECIES_MAP.items()
 }
-# endregion
 
+# region Gloabl Inputs
+DROP_COLUMNS = None
+RENAME_COLUMNS = None
+COMPOSITION_COLUMNS = _DEFAULT_CONC_COLS
+_META_KEEP = set(_ALL_COLUMNS) | {'file_id'}
+
+# Spectral Wavelength Alignment
+MIN_WAVELENGTH = 250.0   # Aligned with TARGET_MIN_WL (250.0 nm)
+MAX_WAVELENGTH = 1000.0  # Aligned with TARGET_MAX_WL (1000.0 nm)
+
+ALLOWED_EXTENSIONS = ['.csv']
+REQUIRED_COLUMNS = None
+SALT_STATES = None       # Defaults to _DEFAULT_SALT_STATES inside data_prep
+EXPERIMENTAL_VARIATION_COLUMNS = None
+INCLUDE_EXPERIMENTAL_VARIATION_COLUMNS = True
+
+# Logging & Multiprocessing
+LOG_Q = None
+LOG_PATH = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/logs/data_rerun.txt')
+N_WORKERS = 30
+
+# HDF5 Compression
+COMPRESSION = 'gzip'
+COMPRESSION_LEVEL = 3
+TRANSPOSE_NEEDED = False
+
+# Dataset Cleaning & Filtering Parameters
+TARGET_ELEMENTS = ['Ce', 'Gd', 'Sm', 'U']
+CLIP_PERCENTILE = None   # Float (e.g., 99.5) or None
+TARGET_DELAY = 14.0      # Float (e.g., 14.0) or None
+TARGET_ENERGY = None    # Float (e.g., 100.0) or None
+TARGET_STATE_MOLTEN = None  # Int (1) or None
+# RAW_SATURATION_THRESH = 60000.0
+# endregion
 
 MW_ELEMENTS = {
     'Ba': 137.327, 'Ca': 40.078, 'Ce': 140.116, 'Cr': 51.996, 'Cs': 132.905,
@@ -359,6 +396,7 @@ def enrich_with_progress(
         include_experimental_variation_columns: bool = True,
         log_q: Any = None,
         log_path: Path | None = None,
+        n_workers: int | None = None,
 ) -> List[Path]:
     """ Parallel batch process multiple spectral files with a tqdm progress bar.
 
@@ -401,7 +439,8 @@ def enrich_with_progress(
         log_path=log_path
     )
 
-    n_workers = min(3, os.cpu_count() or 3)
+    if n_workers is None:
+        n_workers = min(3, os.cpu_count() or 3)
     print(f"Starting ProcessPoolExecutor with {n_workers} workers...")
     
     with ProcessPoolExecutor(
@@ -458,11 +497,18 @@ def enrich_file_with_metadata(
     Returns:
         Optional[Path]: Enriched file output location, or None if processing fails.
     """
+
+    og_path = Path(path)
+
+    all_text = (' '.join(og_path.parts) + ' ' + og_path.name).lower()
+
+    if _SUMMARY_PATTERNS_REGEX.search(og_path.name) or _EXCLUDED_DIR_PATTERNS_REGEX.search(all_text):
+        return None
+
     if log_path is None:
         log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
     logger = get_worker_logger(Path(log_path).stem)
 
-    og_path = Path(path)
     sanitized_path = sanitize_path(path=og_path, log_path=log_path)
     if sanitized_path is None:
         log(logger=logger, msg=f'          Skipping (could not sanitize path): {og_path.name}')
@@ -472,7 +518,10 @@ def enrich_file_with_metadata(
     enriched_root = Path(enriched_root)
     enriched_root.mkdir(parents=True, exist_ok=True)
 
-    file_w_parents = f'{path.name}'    
+    uid = hashlib.md5(str(path).encode()).hexdigest()[:8]
+
+    # file_w_parents = f'{path.name}'
+    file_w_parents = f'{uid}_{path.name}'    
     enriched_path = enriched_root / file_w_parents
 
     if enriched_path.exists():
@@ -770,7 +819,7 @@ def parent_concentration_data(
             data['energy'] = float(energy_match.group(1) or energy_match.group(2))
         else:
             data['energy_study'] = 0
-            data['energy'] = standard_energy
+            data['energy'] = np.nan
 
         # Step 7: Parse laser Q-switch delay
         qdelay_match = _QDELAY_PATTERN.search(all_text)
@@ -860,7 +909,9 @@ def parent_concentration_data(
 
         for key in sorted_keys:
             nice_name = _SPECIES_MAP[key]
-            pattern = re.compile(rf"([0-9.]+)(?:_str|_wt|_wt%|wt%|ppm)?_?{re.escape(key)}(?=[_\s.\-/\\(]|$)", re.IGNORECASE)
+            pattern = re.compile(
+                rf"(?<![\d.])(\d+\.?\d*)\s*(?:_str|_wt%?|wt%?|ppm)?\s*[-_ ]?\s*{re.escape(key)}(?=[_\s.\-/\\(]|$)",
+                re.IGNORECASE)
             
             match = pattern.search(filename_text)
             if match:
@@ -879,6 +930,27 @@ def parent_concentration_data(
                     except ValueError:
                         continue
 
+        # Step 16b: concentrations written in parent foldernames (ex. "5 wt_ CeCl3")
+        folder_text = ' '.join(path.parts[:-1]).upper()
+        salt_keys = [k for k in sorted_keys if k.endswith(('CL', 'CL2', 'CL3'))]
+        for key in salt_keys:
+            col = f"conc_{_SPECIES_MAP[key]}_wt%"
+            if col not in _DEFAULT_CONC_COLS or data.get(col, 0.0) != 0.0:
+                continue   # the filename already supplied a value
+            m = re.search(rf"(?<![\d.])(\d+\.?\d*)\s*(?:WT%?|%|WT_)\s*[-_ ]?{re.escape(key)}(?=[_\s.\-/\\(]|$)", folder_text)
+            if m:
+                data[col] = float(m.group(1))
+
+        # Step 16c: folder rule for ppm
+        if 'CECL3-LICL-KCL-H2O' in folder_text and data.get('conc_Ce_wt%', 0.0) == 0.0:
+            PPM = r'(\d+\.?\d*)\s*PPM(?![A-Z])'
+            name_ppm = re.search(PPM, path.name.upper())
+            dir_ppm = re.search(PPM, path.parent.name.upper())
+            if name_ppm and dir_ppm and float(name_ppm.group(1)) != float(dir_ppm.group(1)):
+                data['conc_Ce_wt%'] = np.nan      # filename and folder disagree: exclude
+            elif name_ppm or dir_ppm:
+                data['conc_Ce_wt%'] = float((name_ppm or dir_ppm).group(1)) / 10000.0 # type: ignore
+
         # Step 17: Apply Hardcoded Concentration Mapping Libraries
         if 'wavelength (nm),sum,' in all_text:
             for key, target_col in sorted(_SINGLES_CONC_MAP.items(), key=lambda x: -len(x[0])):
@@ -889,17 +961,26 @@ def parent_concentration_data(
                     break
 
         if re.search(r'(?<![a-z])ms\d', all_text) and not re.search(r'msu\d', all_text):
-            av_conc = sum(_MS_CONC_MAP.values()) / len(_MS_CONC_MAP)
-            for key, conc in sorted(_MS_CONC_MAP.items(), key=lambda x: -len(x[0])):
-                if key in all_text:
-                    data['conc_CeCl3_wt%'] = conc
-                    break
+            if data.get('blank') == 1:
+                data['conc_CeCl3_wt%'] = 0.0
             else:
-                data['conc_CeCl3_wt%'] = av_conc
+                # av_conc = sum(_MS_CONC_MAP.values()) / len(_MS_CONC_MAP)
+                for key, conc in sorted(_MS_CONC_MAP.items(), key=lambda x: -len(x[0])):
+                    if key in all_text:
+                        data['conc_CeCl3_wt%'] = conc
+                        break
+                else:
+                    data['conc_CeCl3_wt%'] = np.nan
 
         if re.search(r'msu\d', all_text):
-            if data.get('conc_UCl3_wt%', 0.0) == 0.0:
-                data['conc_UCl3_wt%'] = 1.0
+            if 'ms16_300' in all_text:
+                data['conc_UCl3_wt%'] = np.nan        # misfiled? excluded
+            elif data.get('blank') == 1:
+                data['conc_UCl3_wt%'] = 0.0
+            elif data.get('conc_UCl3_wt%', 0.0) == 0.0:
+                m = re.search(r'msu(\d)', all_text)
+                assert m is not None
+                data['conc_UCl3_wt%'] = _MSU_CONC_MAP.get(f'msu{m.group(1)}', np.nan)
 
         if re.search('sampleu', all_text):
             for key, conc in sorted(_SAMPLE_U_MAP.items(), key=lambda x: -len(x[0])):
@@ -935,7 +1016,7 @@ def parent_concentration_data(
                     data['conc_GdCl3_wt%'] = conc[1]
                     break
 
-        if re.search(r'trial 1|trail 2', all_text):
+        if re.search(r'trial 1|trial 2', all_text):
             for key, conc in sorted(_TRIAL_1_OR_2_MAP.items(), key=lambda x: -len(x[0])):
                 if key in all_text:
                     data['conc_SmCl3_wt%'] = conc
@@ -959,32 +1040,14 @@ def parent_concentration_data(
 def combine_and_save_as_HDF5(
         individuals_root: str | Path,
         combined_root: str | Path,
-        technique: Optional[str] = None,
         compression: str = 'gzip',
         compression_level: int = 3,
         log_path: Path | None = None,
         transpose_needed: bool = False,
         n_workers: int | None = None,
 ) -> Optional[Path]:
-    """ Parallel process individual spectral CSVs into a structured HDF5 file.
-
-    Generates a standardized binary dataset split into discrete groups:
-        /spectra   -> 2D float32 intensity matrix (n_rows, n_wavelengths)
-        /metadata  -> 1D datasets corresponding to sample experimental variables
-        /attrs     -> Global dataset attributes (wavelength ranges, execution tags)
-
-    Parameters:
-        individuals_root (str | Path): Source path containing individual enriched CSV files.
-        combined_root (str | Path): Destination folder for the finalized HDF5 file.
-        technique (Optional[str]): Operational label (e.g., 'libs', 'raman').
-        compression (str): Lossless compression algorithm ('gzip', 'lzf', or None).
-        compression_level (int): Gzip compression scaling level (1 to 9).
-        log_path (Path | None): Custom filepath for output log registration.
-        transpose_needed (bool): Indicates if spectral axes require transposition.
-        n_workers (int | None): CPU core allocation count for parallel execution.
-
-    Returns:
-        Optional[Path]: Filepath to the resulting HDF5 file, or None if step fails.
+    """ Parallel process individual spectral CSVs into a structured HDF5 file 
+    using direct dataset streaming to minimize RAM usage.
     """
     individuals_root = Path(individuals_root).resolve()
     combined_root = Path(combined_root).resolve()
@@ -994,74 +1057,92 @@ def combine_and_save_as_HDF5(
         log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
     logger = get_worker_logger(Path(log_path).stem)
 
-    technique = technique or 'libs'
     enriched_files = list(individuals_root.glob('*.csv'))
     if not enriched_files:
-        log(logger=logger, msg=f'  ❌ No {technique} files found.')
+        log(logger=logger, msg=f'  ❌ No enriched files found.')
         return None
     
-    # Auto-detect compute cores using Slurm environment variables or system core count
     if n_workers is None:
         n_workers = int(os.getenv("SLURM_CPUS_PER_TASK", os.cpu_count() or 4))
         
     log(logger=logger, msg=f'Found files: {len(enriched_files)}')
-    log(logger=logger, msg=f'Reading files across {n_workers} CPU workers...')
+    log(logger=logger, msg=f'Streaming data across {n_workers} CPU workers into HDF5...')
 
-    all_spectra = []
-    all_metadata = []
-    target_grid = None
-
-    tasks = [
-        (f, TARGET_MIN_WL, TARGET_MAX_WL, TARGET_N_PTS, log_path, transpose_needed)
-        for f in enriched_files
-    ]
-
-    completed_count = 0
-    with ProcessPoolExecutor(max_workers=n_workers) as executor:
-        futures = [executor.submit(_process_single_file, task) for task in tasks]
-        
-        for future in as_completed(futures):
-            res = future.result()
-            completed_count += 1
-            
-            if res is not None:
-                spectra, meta_df, target_grid = res
-                all_spectra.append(spectra)
-                all_metadata.append(meta_df)
-
-            if completed_count % 1000 == 0 or completed_count == len(enriched_files):
-                log(logger=logger, msg=f'  Processed {completed_count}/{len(enriched_files)} files...')
-
-    if not all_spectra:
-        log(logger=logger, msg='  ❌ No valid files loaded.')
-        return None
+    target_grid = np.linspace(TARGET_MIN_WL, TARGET_MAX_WL, TARGET_N_PTS)
+    h5_path = combined_root / 'combined_libs.h5'
     
-    log(logger=logger, msg='Stacking arrays...')
-    spectra_array = np.vstack(all_spectra)
-    metadata_df = pd.concat(all_metadata, ignore_index=True, sort=False)
-
-    log(logger=logger, msg=f'  Spectra shape : {spectra_array.shape}')
-    log(logger=logger, msg=f'  Metadata shape: {metadata_df.shape}')
-    log(logger=logger, msg=f'  Wavelength range: {target_grid[0]:.1f} – {target_grid[-1]:.1f} nm')
-
-    label = technique.upper()
-    h5_path = combined_root / f'combined_{label}.h5'
     comp_kwargs = {'compression': compression}
     if compression == 'gzip':
-        comp_kwargs['compression_opts'] = compression_level
+        comp_kwargs['compression_opts'] = compression_level # type: ignore
 
-    log(logger=logger, msg=f'Writing HDF5 → {h5_path.name}')
+    all_metadata = []
+    completed_count = 0
+    CHUNK_ROWS = 64
 
-    with h5py.File(h5_path, 'w') as hf:
-        hf.create_dataset(
+    # Open HDF5 file and initialize a resizable dataset
+    with h5py.File(h5_path, 'w', rdcc_nbytes=256 * 1024**2, rdcc_nslots=100_003) as hf:
+        spectra_ds = hf.create_dataset(
             'spectra',
-            data=spectra_array,
-            chunks=(min(1000, spectra_array.shape[0]), spectra_array.shape[1]),
-            **comp_kwargs
+            shape=(0, TARGET_N_PTS),
+            maxshape=(None, TARGET_N_PTS),
+            chunks=(CHUNK_ROWS, TARGET_N_PTS),
+            dtype=np.float32,
+            **comp_kwargs,
         )
-
         hf.create_dataset('wavelengths', data=target_grid)
 
+        tasks = [
+            (f, TARGET_MIN_WL, TARGET_MAX_WL, TARGET_N_PTS, log_path, transpose_needed)
+            for f in enriched_files
+        ]
+
+        task_iter = iter(tasks)
+        t0 = time.time()
+
+        executor = ProcessPoolExecutor(max_workers=n_workers)
+        try:
+            pending = set()
+
+            def submit_next() -> None:
+                task = next(task_iter, None)
+                if task is not None:
+                    pending.add(executor.submit(_process_single_file, task))
+
+            for _ in range(n_workers * 2):
+                submit_next()
+
+            while pending:
+                done, _ = wait(pending, return_when=FIRST_COMPLETED)
+                for fut in done:
+                    pending.discard(fut)
+                    submit_next()
+                    res = fut.result()
+                    completed_count += 1
+
+                    if res is not None:
+                        spectra, meta_df, _ = res
+                        n0 = spectra_ds.shape[0]
+                        spectra_ds.resize(n0 + spectra.shape[0], axis=0)
+                        spectra_ds[n0:n0 + spectra.shape[0], :] = spectra
+                        all_metadata.append(meta_df)
+
+                    if completed_count % 100 == 0 or completed_count == len(enriched_files):
+                        log(logger=logger,
+                            msg=f'  {completed_count}/{len(enriched_files)} files, {time.time() - t0:.0f}s')
+        finally:
+            executor.shutdown(wait=False)
+
+        if not all_metadata:
+            log(logger=logger, msg='  ❌ No valid files loaded.')
+            return None
+
+        # Write metadata table directly
+        # Write metadata table directly
+        log(logger=logger, msg='Writing metadata tables...')
+        metadata_df = pd.concat(all_metadata, ignore_index=True, sort=False)
+        if metadata_df.shape[1] > 200:
+            raise RuntimeError(f'Metadata has {metadata_df.shape[1]} columns; header parsing is leaking wavelengths')
+        
         meta_grp = hf.create_group('metadata')
         for col in metadata_df.columns:
             series = metadata_df[col]
@@ -1069,16 +1150,16 @@ def combine_and_save_as_HDF5(
                 arr = series.to_numpy(dtype=np.float32, na_value=np.nan)
                 meta_grp.create_dataset(col, data=arr, **comp_kwargs)
             else:
+                # Convert strings to fixed-length bytes for instant HDF5 writing
                 arr = series.fillna('').astype(str).to_numpy()
-                dt = h5py.string_dtype(encoding='utf-8')
-                meta_grp.create_dataset(col, data=arr, dtype=dt)
+                arr_bytes = arr.astype('S')
+                meta_grp.create_dataset(col, data=arr_bytes, **comp_kwargs)
 
-        hf.attrs['n_rows'] = spectra_array.shape[0]
-        hf.attrs['n_wavelengths'] = spectra_array.shape[1]
+        hf.attrs['n_rows'] = spectra_ds.shape[0]
+        hf.attrs['n_wavelengths'] = TARGET_N_PTS
         hf.attrs['min_wavelength'] = float(target_grid[0])
         hf.attrs['max_wavelength'] = float(target_grid[-1])
         hf.attrs['metadata_cols'] = list(metadata_df.columns)
-        hf.attrs['technique'] = label
 
     size_mb = h5_path.stat().st_size / 1_048_576
     log(logger=logger, msg=f'✅ Saved: {h5_path.name}  |  {size_mb:.1f} MB')
@@ -1102,6 +1183,8 @@ def _process_single_file(
         A tuple of (spectra_matrix, metadata_dataframe, target_wavelength_grid), or None on failure.
     """
     f, min_wl, max_wl, n_points, log_path, transpose_needed = args
+    log_path = Path(r"C:\Users\leejv2\Documents\git_repos\jvlee_LIBS_ML\default_log.txt").resolve()
+    logger = get_worker_logger(Path(log_path).stem)
     try:
         swlg = standardize_wavelength_grid(
             file_path=f,
@@ -1113,6 +1196,7 @@ def _process_single_file(
         )
         if swlg is None:
             return None
+
         
         std_df, target_grid = swlg
         
@@ -1123,9 +1207,11 @@ def _process_single_file(
 
         spectra = std_df.loc[:, numeric_mask].values.astype(np.float32)
         meta_df = std_df.loc[:, ~numeric_mask]
+        meta_df = meta_df.loc[:, [c for c in meta_df.columns if c in _META_KEEP]]
         
         return spectra, meta_df, target_grid
     except Exception as e:
+        log(logger=logger, msg=f'Process single file error: {Path(f).name}: {e}')
         return None
 
 # 2.a.i Conform file to the standard wavelength grid
@@ -1176,6 +1262,18 @@ def standardize_wavelength_grid(
     if not file_path.exists():
         log(logger=logger, msg=f'File not found: {file_path.name}')
         return None
+
+    try:
+        with open(file_path, newline='') as fh:
+            hdr = next(csv.reader(fh), [])
+    except Exception as e:
+        log(logger=logger, msg=f'  ❌ Could not read {file_path.name}: {e}')
+        return None
+    n_dup = sum(bool(re.fullmatch(r'\d+\.\d+\.\d+', c)) for c in hdr)
+    if n_dup > 100:
+        log(logger=logger, msg=f'  ⚠️ Skipping {file_path.name}: {n_dup} repeated wavelength headers')
+        return None
+        
         
     try:
         df = pd.read_csv(file_path)
@@ -1246,7 +1344,6 @@ def standardize_wavelength_grid(
         return None
 
 
-
 # =============================================================================
 # 3. Dataset processing
 # =============================================================================
@@ -1259,11 +1356,15 @@ def dataset_cleaning(
     target_elements: list[str] | None = None,
     clip_percentile: float | None = None,# Optional parameters to filter conditions dynamically
     target_delay: float | None = 14.0,
-    target_energy: float | None = 100.0,
+    target_energy: float | None = None,
     target_state_molten: int | None = 1,
 ) -> None:
     """Prepares raw spectral HDF5 dataset into clean X (Spectra) and y (Concentrations) for PLS."""
     input_h5, output_h5 = Path(input_h5), Path(output_h5)
+
+    EXCLUDE = ['Gd-Mg Study', 'Iron with rust', 'Fiber optic test', 'Repetability Test',
+            'Pure Mg Study', 'MS U Analysis', 'MS Ce Analysis',
+            'Values_lamba', 'Values_Li_lamba', 'Static_Import_lamba']
     
     with h5py.File(input_h5, 'r') as hf_in:
         raw_spectra = get_h5_ds(hf_in,'spectra')[:]
@@ -1280,11 +1381,58 @@ def dataset_cleaning(
             else:
                 meta_dict[k] = data
         df_meta = pd.DataFrame(meta_dict)
-
+        
     # Step 1a: Remove NaN and zero-intensity rows
     valid_mask = ~np.isnan(raw_spectra).any(axis=1) & (raw_spectra.sum(axis=1) > 0)
+    conc_cols = [c for c in df_meta.columns if c.startswith('conc_')]
+    valid_mask &= ~df_meta[conc_cols].isna().any(axis=1).to_numpy()
+
+    og = df_meta['og_path'].astype(str)
+    for pat in EXCLUDE:
+        hit = og.str.contains(re.escape(pat), case=False).to_numpy()
+        print(f'exclude "{pat}": {(hit & valid_mask).sum()} rows')
+        valid_mask &= ~hit
+
+    # energy is only trustworthy when parsed explicitly from the path
+    if {'energy', 'energy_study'} <= set(df_meta.columns):
+        df_meta.loc[df_meta['energy_study'] == 0, 'energy'] = np.nan
+
+    # Step 1a-ii: drop exact duplicate spectra (copies in several backup folders)
+    og_arr = df_meta['og_path'].astype(str).to_numpy()
+    conc_vals = df_meta[conc_cols].to_numpy(np.float64)
+    study_cols = [c for c in df_meta.columns if c.endswith('_study')]
+    explicit = (df_meta[study_cols].to_numpy(np.float64).sum(axis=1)
+                if study_cols else np.zeros(len(df_meta)))
+
+    groups_by_hash = {}
+    for i in np.flatnonzero(valid_mask):
+        h = hashlib.blake2b(raw_spectra[i].tobytes(), digest_size=16).digest()
+        groups_by_hash.setdefault(h, []).append(i)
+
+    keep = np.zeros(len(valid_mask), dtype=bool)
+    n_conflict = 0
+    for idx in groups_by_hash.values():
+        if len(idx) > 1 and not (conc_vals[idx] == conc_vals[idx[0]]).all():
+            n_conflict += 1                  # same spectrum, different concentration labels
+            continue
+        keep[min(idx, key=lambda i: (-explicit[i], og_arr[i]))] = True   # most explicit copy; ties by path
+
+    print(f'duplicate rows removed: {int(valid_mask.sum() - keep.sum()) - n_conflict}; '
+          f'groups dropped for conflicting concentrations: {n_conflict}')
+    valid_mask &= keep
+
     spectra = raw_spectra[valid_mask]
+    del raw_spectra
     df_meta = df_meta[valid_mask].reset_index(drop=True)
+
+    # diagnostic only (delete once you've settled on filters)
+    df_diag = compute_elemental_wt(df_meta)
+    diag_cols = [c for c in ['state_molten', 'delay', 'energy'] if c in df_meta.columns]
+    tmp = pd.concat([df_meta[diag_cols], df_diag[['Ce', 'Gd', 'Sm', 'U']].round(3)], axis=1)
+    for e in ['Ce', 'Gd', 'Sm', 'U']:
+        print(e)
+        print(tmp[tmp[e] > 0].groupby(diag_cols, dropna=False)[e].agg(['size', 'nunique']))
+
 
     # Step 1b: Apply experimental condition mask
     condition_mask = np.ones(len(df_meta), dtype=bool)
@@ -1303,40 +1451,101 @@ def dataset_cleaning(
     df_meta = df_meta[condition_mask].reset_index(drop=True)
 
     print(f"Filtered dataset down to {len(spectra)} shots matching condition parameters.")
-    
+
+    # --- Filter Cosmic Rays & Saturated Detector Shots on RAW Counts ---
+    # Compute max counts directly on the synchronized spectra array
+    raw_max_counts = spectra.max(axis=1)
+    unsaturated_mask = raw_max_counts #<= RAW_SATURATION_THRESH
+
+    # print(f"Dropping {(~unsaturated_mask).sum()} shots exceeding raw count threshold {RAW_SATURATION_THRESH}")
+
+    spectra = spectra[unsaturated_mask]
+    df_meta = df_meta[unsaturated_mask].reset_index(drop=True)
 
     # Step 2: Intensity Clipping & LIBS Spectral Cleaning (Baseline + Area Norm)
-    if clip_percentile:
-        clip_val = np.percentile(spectra, clip_percentile)
-        spectra_clipped = np.clip(spectra, 0, clip_val)
-        X_clean = clean_libs_spectrum(spectra_clipped)
-    else:
-        X_clean = clean_libs_spectrum(spectra)
+    X_clean = clean_libs_spectrum(spectra)
 
     # Step 3: Elemental Stoichiometric Conversion for Targets (y)
-    df_elemental = compute_elemental_wt(df_meta)
+    df_elemental_all = compute_elemental_wt(df_meta)
     if target_elements:
-        df_elemental = df_elemental[[e for e in target_elements if e in df_elemental.columns]]
+        df_elemental = df_elemental_all[[e for e in target_elements if e in df_elemental_all.columns]]
+    else:
+        df_elemental = df_elemental_all
+    aux_cols = [c for c in df_elemental_all.columns if c not in df_elemental.columns]
+    
+    for c in df_elemental.columns:
+        nz = df_elemental[c] > 0
+        print(f"{c}: {nz.sum()} shots, {np.unique(np.round(df_elemental.loc[nz, c], 3)).size} distinct levels")
 
     # Step 4: Drop Inactive Target Columns (Zero Variance)
     selector = VarianceThreshold(threshold=1e-6)
     y_filtered = selector.fit_transform(df_elemental)
     surviving_cols = df_elemental.columns[selector.get_support()].tolist()
 
-    # Step 5: Save Clean PLS-Ready Dataset to HDF5
-    comp_kwargs = {'compression': 'gzip', 'compression_opts': 3}
-    with h5py.File(output_h5, 'w') as hf_out:
-        hf_out.create_dataset('X', data=X_clean.astype(np.float32), **comp_kwargs)
-        hf_out.create_dataset('y', data=y_filtered.astype(np.float32), **comp_kwargs)
-        hf_out.create_dataset('wavelengths', data=wavelengths.astype(np.float32))
+# --- 4a. Compute Group IDs (with Zero-Group Splitting) ---
+    _, initial_groups = np.unique(np.round(y_filtered, 3), axis=0, return_inverse=True)
+    
+    # Split all-zero shots by file_id so blank samples don't land in one single group
+    is_zero_shot = (y_filtered < 1e-5).all(axis=1)
+    if is_zero_shot.any():
+        file_ids = df_meta['file_id'].to_numpy()
+        _, zero_file_inv = np.unique(file_ids[is_zero_shot], return_inverse=True)
+        max_nonzero_grp = initial_groups[~is_zero_shot].max() if (~is_zero_shot).any() else 0
         
-        str_dt = h5py.string_dtype(encoding='utf-8')
-        hf_out.create_dataset('target_elements', data=np.array(surviving_cols, dtype=object), dtype=str_dt)
-        
-        # Preserve sample IDs for GroupKFold validation splitting
-        if 'file_id' in df_meta.columns:
-            hf_out.create_dataset('groups', data=df_meta['file_id'].astype(str).to_numpy(), dtype=str_dt)
+        groups = initial_groups.copy()
+        groups[is_zero_shot] = max_nonzero_grp + 1 + zero_file_inv
+    else:
+        groups = initial_groups
 
+    # --- 4b. Generate Group-Stratified Lockbox Split (~15% of unique groups) ---
+    unique_groups = np.unique(groups)
+    n_lockbox_groups = max(1, int(0.15 * len(unique_groups)))
+
+    # Determine dopant presence per unique group for stratification
+    group_present = np.array([
+        (y_filtered[groups == g] > 1e-5).any(axis=0) for g in unique_groups
+    ])
+
+    sig = (group_present.astype(int) * (1 << np.arange(group_present.shape[1]))).sum(axis=1)
+    rng = np.random.default_rng(42)
+
+    lockbox_groups = []
+    for s in np.unique(sig):
+        members = rng.permutation(unique_groups[sig == s])
+        n_select = max(1, int(0.15 * len(members))) if len(members) > 1 else (1 if len(lockbox_groups) < n_lockbox_groups else 0)
+        lockbox_groups.extend(members[:n_select])
+
+    is_lockbox = np.isin(groups, lockbox_groups)
+
+    # Step 5: Save Clean PLS-Ready Dataset to HDF5
+    comp_kwargs = {'compression': 'gzip', 'compression_opts': 3} #[cite: 4]
+    with h5py.File(output_h5, 'w') as hf_out: #[cite: 4]
+        meta_out = hf_out.create_group('meta') #[cite: 4]
+        for c in ['delay', 'energy', 'repetition']: #[cite: 4]
+            if c in df_meta.columns: #[cite: 4]
+                meta_out.create_dataset(c, data=df_meta[c].to_numpy(np.float32)) #[cite: 4]
+        meta_out.create_dataset(
+            'file_id',
+            data=np.char.encode(df_meta['file_id'].astype(str).to_numpy(dtype='U'), 'utf-8'),
+            compression='gzip') #[cite: 4]
+        if aux_cols: #[cite: 4]
+            hf_out.create_dataset('y_aux', data=df_elemental_all[aux_cols].to_numpy(np.float32), **comp_kwargs) #[cite: 4]
+            hf_out.create_dataset('y_aux_names', data=np.char.encode(np.array(aux_cols, dtype='U'), 'utf-8')) #[cite: 4]
+        for c in ['frac_LiCl', 'frac_KCl', 'temperature_C']: #[cite: 4]
+            if c in df_meta.columns: #[cite: 4]
+                meta_out.create_dataset(c, data=df_meta[c].to_numpy(np.float32)) #[cite: 4]
+        
+        # Save group IDs and explicit lockbox mask
+        hf_out.create_dataset('groups', data=groups.ravel().astype(np.int32))
+        hf_out.create_dataset('is_lockbox', data=is_lockbox.astype(bool), **comp_kwargs)
+
+        hf_out.create_dataset('X', data=X_clean.astype(np.float32, copy=False), **comp_kwargs) #[cite: 4]
+        hf_out.create_dataset('y', data=y_filtered.astype(np.float32, copy=False), **comp_kwargs) #[cite: 4]
+        hf_out.create_dataset('wavelengths', data=wavelengths.astype(np.float32, copy=False)) #[cite: 4]
+        
+        str_dt = h5py.string_dtype(encoding='utf-8') #[cite: 4]
+        hf_out.create_dataset('target_elements', data=np.array(surviving_cols, dtype=object), dtype=str_dt) #[cite: 4]
+        
     print(f"✅ Cleaned dataset saved to {output_h5}")
     print(f"   Spectra Matrix (X): {X_clean.shape}")
     print(f"   Target Matrix (y) : {y_filtered.shape} -> Elements: {surviving_cols}")
@@ -1349,24 +1558,20 @@ def get_h5_ds(hf: h5py.File, key: str) -> h5py.Dataset:
 
 # 3.b. Clean the spectra
 def clean_libs_spectrum(
-        spectra_matrix: np.ndarray,
-        window_size: int = 50
-) -> np.ndarray:
-    """Subtracts rolling baseline and applies area normalization across all shots."""
-    cleaned_spectra = np.zeros_like(spectra_matrix, dtype=np.float32)
-    
-    for i in range(spectra_matrix.shape[0]):
-        row = spectra_matrix[i]
-        # 1. Rolling Minimum Baseline Estimation
-        series = pd.Series(row)
-        baseline = series.rolling(window=window_size, center=True, min_periods=1).min().to_numpy()
-        corrected = np.maximum(0.0, row - baseline)
-        
-        # 2. Area Normalization (Sum to 1)
-        area = np.sum(corrected)
-        cleaned_spectra[i] = (corrected / area) if area > 0 else corrected
-        
-    return cleaned_spectra
+    spectra_matrix, 
+    window_size=10, 
+    chunk=5000
+):
+      out = np.empty(spectra_matrix.shape, dtype=np.float32)
+      for a in range(0, len(spectra_matrix), chunk):
+          X = spectra_matrix[a:a+chunk].astype(np.float32)
+          base = uniform_filter1d(
+              minimum_filter1d(X, size=window_size, axis=1, mode='nearest'),
+              size=window_size, axis=1, mode='nearest')
+          X = np.maximum(X - base, 0.0)
+          area = X.sum(axis=1, keepdims=True)
+          out[a:a+chunk] = np.divide(X, area, out=X, where=area > 0)
+      return out
 
 # 3.c. Convert from chlorides to elemental wt%
 def compute_elemental_wt(df_meta: pd.DataFrame) -> pd.DataFrame:
@@ -1386,23 +1591,12 @@ def compute_elemental_wt(df_meta: pd.DataFrame) -> pd.DataFrame:
         col_salt = f'conc_{elem}Cl{n_cl}_wt%'
         col_elem = f'conc_{elem}_wt%'
         
-        if col_salt in df_meta.columns and df_meta[col_salt].abs().sum() > 0:
-            # Case 1: Input provided as chloride salt wt%
-            salt_wt = df_meta[col_salt].to_numpy(dtype=np.float32)
-            dopant_salt_wt_total += salt_wt
-            elemental_df[elem] = salt_wt * (mw_m / mw_salt)
-            total_cl_wt += salt_wt * ((n_cl * mw_cl) / mw_salt)
-            
-        elif col_elem in df_meta.columns and df_meta[col_elem].abs().sum() > 0:
-            # Case 2: Input provided directly as pure metal wt%
-            pure_elem_wt = df_meta[col_elem].to_numpy(dtype=np.float32)
-            equivalent_salt_wt = pure_elem_wt * (mw_salt / mw_m)
-            dopant_salt_wt_total += equivalent_salt_wt
-            elemental_df[elem] = pure_elem_wt
-            total_cl_wt += pure_elem_wt * ((n_cl * mw_cl) / mw_m)
-            
-        else:
-            elemental_df[elem] = np.zeros(len(df_meta), dtype=np.float32)
+        salt_wt = df_meta[col_salt].to_numpy(np.float32) if col_salt in df_meta else 0.0
+        elem_wt = df_meta[col_elem].to_numpy(np.float32) if col_elem in df_meta else 0.0
+        salt_wt = np.where(salt_wt > 0, salt_wt, elem_wt * (mw_salt / mw_m))  # prefer salt label
+        dopant_salt_wt_total += salt_wt
+        elemental_df[elem] = salt_wt * (mw_m / mw_salt)
+        total_cl_wt += salt_wt * ((n_cl * mw_cl) / mw_salt)
 
     # Calculate carrier matrix mass fraction (LiCl-KCl Eutectic: 45 wt% LiCl / 55 wt% KCl)
     base_scale = np.maximum(0.0, 100.0 - dopant_salt_wt_total) / 100.0
@@ -1417,25 +1611,125 @@ def compute_elemental_wt(df_meta: pd.DataFrame) -> pd.DataFrame:
     return elemental_df
 
 
-def FullRun(
-        input_csv_dir: Path | str = "",
+def full_run(
+        input_csv_dir: Path | str = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs",
+        enriched_csv_dir: Path | str = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/enriched',
+        combined_root: Path | str = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/enriched',
+        cleaned_h5: Path | str = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/updated_pls_data.h5',
+        drop_columns: Optional[List[str]] = None,
+        rename_columns: Optional[dict] = None,
+        composition_columns: Optional[List[str]] = None,
+        min_wavelength: Optional[float] = None,
+        max_wavelength: Optional[float] = None,
+        allowed_extensions: Optional[List[str]] = None,
+        required_columns: Optional[List[str]] = None,
+        salt_states: Optional[List[str]] = None,
+        experimental_variation_columns: Optional[List[str]] = None,
+        include_experimental_variation_columns: bool = True,
+        log_q: Any = None,
+        log_path: Path | None = None,
+        compression: str = 'gzip',
+        compression_level: int = 3,
+        transpose_needed: bool = False,
+        n_workers: int | None = None,
+        target_elements: list[str] | None = None,
+        clip_percentile: float | None = None,# Optional parameters to filter conditions dynamically
+        target_delay: float | None = 14.0,
+        target_energy: float | None = None,
+        target_state_molten: int | None = None,
 ):
+    input_csv_dir = Path(input_csv_dir).resolve()
+    enriched_csv_dir = Path(enriched_csv_dir).resolve()
+    combined_root = Path(combined_root).resolve()
+    cleaned_h5 = Path(cleaned_h5).resolve()
+
+    all_csvs = list(input_csv_dir.rglob('*.csv'))
+
+    input_files = [
+        f for f in all_csvs if 'data_import' not in f.name.lower() and 'lambda' not in f.name.lower()
+    ]
+
+    print(f"Total CSVs found: {len(all_csvs)} | Clean single-run files kept: {len(input_files)}")
+
     enrich_with_progress(
-        files='',
-        enriched_root='',
-        drop_columns=,
-        rename_columns=,
-        composition_columns=,
-        min_wavelength=,
-        max_wavelength=,
-        allowed_extensions=,
-        required_columns=,
-        salt_states=,
-        experimental_variation_columns=,
-        include_experimental_variation_columns=,
-        log_q=,
-        log_path=,
+        files=input_files,
+        enriched_root=enriched_csv_dir,
+        drop_columns=drop_columns,
+        rename_columns=rename_columns,
+        composition_columns=composition_columns,
+        min_wavelength=min_wavelength,
+        max_wavelength=max_wavelength,
+        allowed_extensions=allowed_extensions,
+        required_columns=required_columns,
+        salt_states=salt_states,
+        experimental_variation_columns=experimental_variation_columns,
+        include_experimental_variation_columns=include_experimental_variation_columns,
+        log_q=log_q,
+        log_path=log_path,
+        n_workers=n_workers
     )
+
+    combine_and_save_as_HDF5(
+        individuals_root=enriched_csv_dir,
+        combined_root=combined_root,
+        compression=compression,
+        compression_level=compression_level,
+        log_path=log_path,
+        transpose_needed=transpose_needed,
+        n_workers=n_workers,
+    )
+
+    input_h5 = combined_root / f"combined_libs.h5"
+
+    dataset_cleaning(
+        input_h5=input_h5,
+        output_h5=cleaned_h5,
+        target_elements=target_elements,
+        clip_percentile=clip_percentile,# Optional parameters to filter conditions dynamically
+        target_delay=target_delay,
+        target_energy=target_energy,
+        target_state_molten=target_state_molten,
+    )
+
+# =============================================================================
+# 4. Data inspection
+# =============================================================================
+def find_cosmic(
+        h5_file: Path | str = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
+):
+    h5_file = Path(h5_file).resolve()
+
+    with h5py.File(h5_file, 'r') as hf:
+        raw_spectra = hf['spectra'][:] # type: ignore
+
+    max_counts = raw_spectra.max(axis=1) # type: ignore
+
+    # 1. Print high percentile distribution
+    percentiles = [10, 20, 30, 40, 50, 60, 70, 80,90, 95, 98, 99, 99.5, 99.9, 100]
+    print("--- Raw Peak Counts Percentile Distribution ---")
+    for p, val in zip(percentiles, np.percentile(max_counts, percentiles)):
+        print(f"{p:>5.1f}% : {val:10.1f} counts")
+
+    # 2. Check for Hardware Saturation flatlining (e.g., hits near 65,535 or 16,383)
+    near_sat = (max_counts > 60000).sum()
+    print(f"\nShots near 16-bit saturation (> 60,000 counts): {near_sat} / {len(max_counts)}")
+
+    # 3. Inspect top 20 highest-intensity shots for cosmic ray spikes
+    top_indices = np.argsort(max_counts)[-20:][::-1]
+    print("\n--- Top 20 Peak Intensity Shots ---")
+    for rank, idx in enumerate(top_indices, 1):
+        spec = raw_spectra[idx] # type: ignore
+        peak_val = spec.max() # type: ignore
+        peak_wl_idx = spec.argmax() # type: ignore
+        
+        # Check spike width: cosmic rays usually affect only 1-2 adjacent channels
+        left_val = spec[max(0, peak_wl_idx - 1)] # type: ignore
+        right_val = spec[min(len(spec) - 1, peak_wl_idx + 1)] # type: ignore
+        ratio = peak_val / (max(left_val, right_val) + 1e-5) # type: ignore
+        
+        spike_type = "Cosmic Ray Spike" if ratio > 5.0 else "Broad Emission Line"
+        print(f"Rank {rank:2d} | Shot {idx:6d} | Max Counts: {peak_val:10.1f} | Adjacent Ratio: {ratio:6.2f} | {spike_type}")
+
 
 # =============================================================================
 # Appendix: utils
@@ -1477,7 +1771,7 @@ def long_path(
         return ""
     else:
         s = str(Path(path).resolve())
-        if len(s) > 240 and not s.startswith('\\\\?\\'):
+        if os.name == 'nt' and len(s) > 240 and not s.startswith('\\\\?\\'):
             return '\\\\?\\' + s
         return s
 
@@ -1501,3 +1795,533 @@ def worker_init(log_q: Any) -> None:
 
 if __name__ == "__main__":
     print('Hi')
+
+    # --------------------------------------------------------------------------------
+    # region Enriched Directory Check
+    # --------------------------------------------------------------------------------
+    # enriched = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs")
+
+    # print(f"Directory exists? {enriched.exists()}")
+
+    # if enriched.exists():
+    #     all_files = list(enriched.iterdir())
+    #     print(f"Total items directly in folder: {len(all_files)}")
+        
+    #     # Check recursively in subfolders just in case
+    #     recursive_csvs = list(enriched.rglob("*.[cC][sS][vV]"))
+    #     print(f"Total CSVs found recursively: {len(recursive_csvs)}")
+        
+    #     for p in recursive_csvs[:10]:  # print first 10
+    #         print(" Found CSV:", p)
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region MS Spectra Comparison & Inspection
+    # --------------------------------------------------------------------------------
+    # import re
+    # from pathlib import Path
+    # known = ['ms4','ms5','ms6','ms8','ms10','ms11','ms12','ms14','ms16']
+    # root = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs")
+    # # for p in root.rglob("*.csv"):
+    # #     t = (' '.join(p.parts) + ' ' + p.name).lower()
+    # #     if re.search(r'(?<![a-z])ms\d', t) and not re.search(r'msu\d', t) and not any(k in t for k in known):
+    # #         print(p)
+    # # for p in root.rglob("*.csv"):
+    # #     t = (' '.join(p.parts) + ' ' + p.name).lower()
+    # #     if re.search(r'msu\d', t):
+    # #         print(p)
+
+    # known = ['ms4','ms5','ms6','ms8','ms10','ms11','ms12','ms14','ms16']
+    # root = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs")
+    # enriched = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs")
+
+    # def find(*substrs):
+    #     for p in enriched.rglob("*.csv"):
+    #         og = pd.read_csv(p, usecols=['og_path'], nrows=1)['og_path'].iloc[0].lower()
+    #         if all(s.lower() in og for s in substrs):
+    #             return p  # first match is fine; backup trees are copies
+    #     raise FileNotFoundError(substrs)
+
+    # def mean_spec(p):
+    #     df = pd.read_csv(p)
+    #     cols = []
+    #     for c in df.columns:
+    #         try: 
+    #             float(c); cols.append(c)
+    #         except ValueError: 
+    #             pass
+    #     wl = np.array([float(c) for c in cols])
+    #     order = np.argsort(wl)
+    #     return wl[order], df[cols].to_numpy(float).mean(axis=0)[order]
+
+    # def strength(wl, y, w0):
+    #     peak = y[np.abs(wl - w0) < 0.3].max()
+    #     base = np.median(y[(np.abs(wl - w0) > 0.8) & (np.abs(wl - w0) < 1.5)])
+    #     return peak - base
+
+    # LINES = {'K I 766.49': 766.49, 'Li I 670.78': 670.78,
+    #          'U II 385.96': 385.96, 'U II 409.01': 409.01}  # verify against NIST ASD
+
+    # def compare(pure, ref, lines=LINES, out_path="plot.png"):
+    #     (wp, yp), (wr, yr) = mean_spec(pure), mean_spec(ref)
+    #     kp, kr = strength(wp, yp, 766.49), strength(wr, yr, 766.49)
+        
+    #     print(f"{'line':14s} {'pure/K':>8s} {'ref/K':>8s}")
+    #     for name, w0 in lines.items():
+    #         print(f"{name:14s} {strength(wp, yp, w0)/kp:8.3f} {strength(wr, yr, w0)/kr:8.3f}")
+            
+    #     fig, ax = plt.subplots(1, len(lines), figsize=(4 * len(lines), 3))
+    #     for a, (name, w0) in zip(ax, lines.items()):
+    #         for w, y, k, lab in [(wp, yp, kp, 'pure'), (wr, yr, kr, 'ref')]:
+    #             m = np.abs(w - w0) < 1.5
+    #             a.plot(w[m], y[m] / k, label=lab)
+    #         a.set_title(name)
+    #         a.legend()
+            
+    #     plt.tight_layout()
+    #     plt.savefig(out_path, dpi=300, bbox_inches='tight')
+    #     plt.close(fig)
+    #     print(f"Saved plot to: {out_path}\n")
+
+    # compare(find('6th EXP Pure', 'MSU1_Data_lamba_MSU1'),
+    #         find('MSU1 1 wt_ UCl3', 'MSU1 Rep 1'),
+    #         out_path='compare_msu1.png')
+
+    # compare(find('6th EXP Pure', 'MSU2_Data_lamba_MSU2'),
+    #         find('MSU2 1 wt_ UCl3', 'MSU2 Rep 1'),
+    #         out_path='compare_msu2.png')
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region Full Run
+    # --------------------------------------------------------------------------------
+    full_run(
+        input_csv_dir = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs",
+        enriched_csv_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/enriched_csvs',
+        combined_root = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned',
+        cleaned_h5 = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_no-leak_TD14_TEN.h5',
+        drop_columns=DROP_COLUMNS,
+        rename_columns=RENAME_COLUMNS,
+        composition_columns=COMPOSITION_COLUMNS,
+        min_wavelength=MIN_WAVELENGTH,
+        max_wavelength=MAX_WAVELENGTH,
+        allowed_extensions=ALLOWED_EXTENSIONS,
+        required_columns=REQUIRED_COLUMNS,
+        salt_states=SALT_STATES,
+        experimental_variation_columns=EXPERIMENTAL_VARIATION_COLUMNS,
+        include_experimental_variation_columns=INCLUDE_EXPERIMENTAL_VARIATION_COLUMNS,
+        log_q=LOG_Q,
+        log_path=LOG_PATH,
+        compression=COMPRESSION,
+        compression_level=COMPRESSION_LEVEL,
+        transpose_needed=TRANSPOSE_NEEDED,
+        n_workers=N_WORKERS,
+        target_elements=TARGET_ELEMENTS,
+        clip_percentile=CLIP_PERCENTILE, # Optional parameters to filter conditions dynamically
+        target_delay=TARGET_DELAY,
+        target_energy=TARGET_ENERGY,
+        target_state_molten=TARGET_STATE_MOLTEN,
+    )
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region HDF5 Duplicate Spectra Check
+    # --------------------------------------------------------------------------------
+    # print(df_meta.loc[df_meta['energy'].isin([2.0, 3.0]), 'og_path'].drop_duplicates().head(10).tolist())
+
+    # import h5py, hashlib, numpy as np, pandas as pd
+    # p = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5'
+    # with h5py.File(p) as f:
+    #     S, m = f['spectra'], f['metadata']
+    #     hashes = []
+    #     for i in range(0, S.shape[0], 20000): # type: ignore
+    #         hashes += [hashlib.blake2b(r.tobytes(), digest_size=16).hexdigest() for r in S[i:i+20000]] # type: ignore
+    #     cols = ['delay', 'energy'] + [c for c in m if c.startswith('conc_')] # type: ignore
+    #     df = pd.DataFrame({c: m[c][:] for c in cols}) # type: ignore
+    #     df['og_path'] = np.char.decode(m['og_path'][:], 'utf-8') # type: ignore
+    # df['h'] = hashes
+    # sizes = df.groupby('h').size()
+    # print(len(df), 'rows;', (sizes > 1).sum(), 'duplicated spectra;', int((sizes[sizes > 1] - 1).sum()), 'extra copies')
+    # print(sizes.value_counts().sort_index().head(8))
+    # dup = df[df.h.isin(sizes[sizes > 1].index)]
+    # nun = dup.groupby('h')[cols].nunique(dropna=False)
+    # print('duplicate groups that disagree, by column:'); print((nun > 1).sum()[lambda s: s > 0])
+    # ex = dup[dup.h.isin(nun.index[nun['energy'] > 1])].sort_values('h').head(12)
+    # for _, r in ex.iterrows(): print(r['energy'], '|', r['og_path'].split('/csvs/')[1][:100])
+
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region Run cleaning/filtering directly
+    # --------------------------------------------------------------------------------
+    # # Target your existing 16 GB HDF5 file
+    # combined_h5 = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5')
+    # cleaned_h5  = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_TDN_TEN.h5')
+
+    # dataset_cleaning(
+    #     input_h5=combined_h5,
+    #     output_h5=cleaned_h5,
+    #     target_elements=['Ce', 'Gd', 'Sm', 'U'],
+    #     clip_percentile=None,
+    #     target_delay=None,
+    #     target_energy=TARGET_ENERGY,
+    #     target_state_molten=TARGET_STATE_MOLTEN,
+    # )
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region Enriched CSV Headers Inspection
+    # --------------------------------------------------------------------------------
+    # import glob, csv
+    # def isnum(c):
+    #     try: float(c); return True
+    #     except ValueError: return False
+    # cols = set()
+    # for f in glob.glob('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/enriched_csvs/*.csv'):
+    #     with open(f) as fh:
+    #         cols.update(c for c in next(csv.reader(fh)) if not isnum(c))
+    # print(len(cols))
+    # print(sorted(cols)[:60])
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region Check Specific CSV Duplicate Columns
+    # --------------------------------------------------------------------------------
+    # import pandas as pd
+    # df = pd.read_csv('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/enriched_csvs/0a83e8dc_Static_500ppm_Values_Li_lamba.csv', nrows=5)
+    # dups = [c for c in df.columns if c.startswith('1000.039')]
+    # print(len(dups)); print(df[dups].iloc[0].values[:10])
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region Check Leaked Wavelength Headers
+    # --------------------------------------------------------------------------------
+    # import glob, csv, re
+    # from collections import Counter
+
+    # def isnum(c):
+    #     try: float(c); return True
+    #     except ValueError: return False
+
+    # bad = {}
+    # for f in glob.glob('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/enriched_csvs/*.csv'):
+    #     with open(f) as fh:
+    #         hdr = next(csv.reader(fh))
+    #     leaked = [c for c in hdr if not isnum(c) and re.fullmatch(r'\d+\.\d+\.\d+', c)]
+    #     if leaked:
+    #         bad[f] = len(leaked)
+
+    # print(len(bad), 'files affected')
+    # for f, n in Counter(bad).most_common(): pass
+    # for f, n in sorted(bad.items(), key=lambda x: -x[1])[:10]:
+    #     print(n, f)
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region Check Solid Normalized Spectra & Zero Target Shots
+    # --------------------------------------------------------------------------------
+    # import pandas as pd
+    # f = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/enriched_csvs/7c7b7577_Solid_Normalized_Spectra_lamba_S.csv'
+    # df = pd.read_csv(f, nrows=5)
+    # leaked = [c for c in df.columns if re.fullmatch(r'\d+\.\d+\.\d+', c)]
+    # print(len(leaked))
+    # print(df[leaked].iloc[:, :10])           # values
+    # print(df[leaked].nunique().describe())   # do they vary?
+
+    # import h5py, numpy as np, collections
+    # p = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_TD14_TEN.h5'
+    # with h5py.File(p) as f:
+    #     y = f['y'][:] # type: ignore
+    #     names = [s.decode() if isinstance(s, bytes) else s for s in f['target_elements'][:]] # type: ignore
+    #     fid = np.char.decode(f['meta/file_id'][:], 'utf-8') # type: ignore
+    # zero = (y == 0).all(axis=1)
+    # c = collections.Counter(fid[zero])
+    # print(names, y.shape, f'{zero.sum()} all-zero shots in {len(c)} files') # type: ignore
+    # for k, v in c.most_common(25): print(v, k)
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region Check Unlabeled Shots at Delay 14
+    # --------------------------------------------------------------------------------
+    # import sys, h5py, numpy as np, pandas as pd
+    # sys.path.insert(0, '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils')
+    # import new_data_prep as dp
+
+    # p = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5'
+    # with h5py.File(p) as f:
+    #     m = f['metadata']
+    #     df = pd.DataFrame({c: (np.char.decode(m[c][:], 'utf-8') if m[c].dtype.kind == 'S' else m[c][:]) for c in m}) # type: ignore
+
+    # el = dp.compute_elemental_wt(df)
+    # targets = ['Ce', 'Gd', 'Sm', 'U']
+    # others = [c for c in el.columns if c not in targets + ['Li', 'K', 'Cl']]
+    # df['tgt'] = (el[targets] > 0).any(axis=1)
+    # df['oth'] = (el[others] > 0).any(axis=1)
+
+    # d = df[df['delay'] == 14.0]
+    # print(pd.Series(np.select([d.tgt, d.oth], ['target dopant', 'other dopant'], 'no dopant label')).value_counts())
+
+    # z = d[~d.tgt & ~d.oth].copy()
+    # z['folder'] = z['og_path'].str.rsplit('/', n=1).str[0]
+    # print(z.groupby('folder').size().sort_values(ascending=False).head(25))
+    # print(z[['frac_LiCl', 'frac_KCl', 'technique']].describe(include='all'))
+
+    # print('file_ids spanning >1 og_path:', (df.groupby('file_id')['og_path'].nunique() > 1).sum())
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region Before
+    # --------------------------------------------------------------------------------
+    # import sys, h5py, numpy as np, pandas as pd
+    # sys.path.insert(0, '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils')
+    # import new_data_prep as dp
+
+    # p = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5'
+    # with h5py.File(p) as f:
+    #     og = np.char.decode(f['metadata']['og_path'][:], 'utf-8') # type: ignore
+    # paths = sorted(set(og))
+    # df = dp.parent_concentration_data(paths)
+    # df.index = paths
+    # df.to_pickle('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/tmp/labels_before.pkl')
+    # print(len(paths), 'unique paths')
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region After
+    # --------------------------------------------------------------------------------
+    # import sys, h5py, numpy as np, pandas as pd
+    # sys.path.insert(0, '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils')
+    # import new_data_prep as dp
+
+    # p = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5'
+    # with h5py.File(p) as f:
+    #     og = np.char.decode(f['metadata']['og_path'][:], 'utf-8') # type: ignore
+    # paths = sorted(set(og))
+    # df = dp.parent_concentration_data(paths)
+    # df.index = paths
+    # df.to_pickle('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/tmp/labels_after.pkl')
+    # print(len(paths), 'unique paths')
+    # endregion
+    
+    # --------------------------------------------------------------------------------
+    # region After2
+    # --------------------------------------------------------------------------------
+    # import sys, h5py, numpy as np, pandas as pd
+    # sys.path.insert(0, '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils')
+    # import new_data_prep as dp
+
+    # p = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5'
+    # with h5py.File(p) as f:
+    #     og = np.char.decode(f['metadata']['og_path'][:], 'utf-8') # type: ignore
+    # paths = sorted(set(og))
+    # df = dp.parent_concentration_data(paths)
+    # df.index = paths
+    # df.to_pickle('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/tmp/labels_after2.pkl')
+    # print(len(paths), 'unique paths')
+    # endregion
+    
+    # --------------------------------------------------------------------------------
+    # region After3
+    # --------------------------------------------------------------------------------
+    # import sys, h5py, numpy as np, pandas as pd
+    # sys.path.insert(0, '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils')
+    # import new_data_prep as dp
+
+    # p = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5'
+    # with h5py.File(p) as f:
+    #     og = np.char.decode(f['metadata']['og_path'][:], 'utf-8') # type: ignore
+    # paths = sorted(set(og))
+    # df = dp.parent_concentration_data(paths)
+    # df.index = paths
+    # df.to_pickle('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/tmp/labels_after3.pkl')
+    # print(len(paths), 'unique paths')
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region After4
+    # --------------------------------------------------------------------------------
+    # import sys, h5py, numpy as np, pandas as pd
+    # sys.path.insert(0, '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/utils')
+    # import new_data_prep as dp
+
+    # p = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5'
+    # with h5py.File(p) as f:
+    #     og = np.char.decode(f['metadata']['og_path'][:], 'utf-8') # type: ignore
+    # paths = sorted(set(og))
+    # df = dp.parent_concentration_data(paths)
+    # df.index = paths
+    # df.to_pickle('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/tmp/labels_after4.pkl')
+    # print(len(paths), 'unique paths')
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region Compare
+    # --------------------------------------------------------------------------------
+    # import h5py
+    # import numpy as np
+    # import pandas as pd
+
+    # T = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/tmp/'
+    # a = pd.read_pickle(T + 'labels_before.pkl')
+    # b = pd.read_pickle(T + 'labels_after4.pkl')
+    # conc = [c for c in a.columns if c.startswith('conc_')]
+
+    # # Align dataframes to common paths before performing element-wise comparisons
+    # common_paths = a.index.intersection(b.index)
+    # a_sub = a.loc[common_paths, conc]
+    # b_sub = b.loc[common_paths, conc]
+
+    # # 1) Harness check: does "before" reproduce what's stored in combined_libs.h5?
+    # p = (
+    #     '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs_old.h5'
+    # )
+    # with h5py.File(p) as f:
+    #     m = f['metadata']
+    #     stored = pd.DataFrame({c: m[c][:] for c in conc if c in m})  # type: ignore
+    #     stored['og_path'] = np.char.decode(m['og_path'][:], 'utf-8')  # type: ignore
+
+    # stored = (
+    #     stored.drop_duplicates('og_path').set_index('og_path').reindex(a.index)
+    # )
+    # cols = [c for c in conc if c in stored]
+    # same = np.isclose(
+    #     stored[cols].to_numpy(float), a[cols].to_numpy(float), equal_nan=True
+    # ).all(axis=1)
+    # print(f'before matches stored labels for {same.mean():.1%} of paths')
+
+    # # 2) What did the patch change across common raw paths?
+    # diff = ~(a_sub.fillna(-1) == b_sub.fillna(-1)).all(axis=1)
+    # was_unlabeled = a_sub.fillna(0).abs().sum(axis=1) == 0
+    # print(
+    #     diff.sum(),
+    #     'of',
+    #     len(common_paths),
+    #     'common paths changed;',
+    #     (diff & was_unlabeled).sum(),
+    #     'were unlabeled before',
+    # )
+    # print(
+    #     'changed but ALREADY labeled (want ~0):', (diff & ~was_unlabeled).sum()
+    # )
+
+    # for path in b_sub.index[diff][:40]:
+    #     nz = b_sub.loc[path][b_sub.loc[path] != 0]
+    #     print(dict(nz), '|', '/'.join(path.split('/')[-3:]))
+
+    # # 3) Grouped breakdown of changes
+    # short = lambda p: '/'.join(p.rsplit('/', 1)[0].split('/')[-3:])
+    # c = b_sub[diff]
+    # lab = c.apply(
+    #     lambda r: str({k[5:-4]: v for k, v in r.items() if v != 0}), axis=1
+    # )
+    # print(
+    #     pd.DataFrame({'folder': [short(p) for p in c.index], 'label': lab.values})
+    #     .value_counts()
+    #     .to_string()
+    # )
+
+    # # 4) Check remaining unlabeled paths in new run 'b'
+    # bad = b.index[
+    #     (b[conc].fillna(0).abs().sum(axis=1) == 0) & ~b[conc].isna().any(axis=1)
+    # ]
+    # with h5py.File(p) as f:
+    #     og = np.char.decode(f['metadata']['og_path'][:], 'utf-8')  # type: ignore
+    #     delay = f['metadata']['delay'][:]  # type: ignore
+
+    # n = pd.Series(og[delay == 14.0]).value_counts()
+    # s = n.reindex(bad).dropna()
+    # print('still unlabeled shots:', int(s.sum()))
+    # print(
+    #     s.groupby([short(x) for x in s.index])
+    #     .sum()
+    #     .sort_values(ascending=False)
+    #     .head(25)
+    #     .to_string()
+    # )
+
+    # print((c != 0).sum()[lambda s: s > 0])
+    # print('paths with >1 species:', ((c != 0).sum(axis=1) > 1).sum())
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region Print Files Paths
+    # --------------------------------------------------------------------------------
+    # import os
+    # from pathlib import Path
+
+    # TARGET_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs")
+    # # OUTPUT_FILE = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/Awilliams_files.txt")
+
+    # PATTERNS = [
+    #     "Awilliams"
+    # ]
+
+    # def search_filepaths(directory):
+    #     if not directory.exists():
+    #         print(f"Error: Directory '{directory}' does not exist.")
+    #         return
+
+    #     matching_count = 0
+    #     print(f"Searching in: {directory.resolve()}\n" + "-" * 50)
+
+    #     for path in directory.rglob("*"):
+    #         if path.is_file():
+    #             path_str = str(path)
+    #             if any(pattern in path_str for pattern in PATTERNS):
+    #                 print(path_str)
+    #                 matching_count += 1
+
+    #     print("-" * 50)
+    #     print(f"Found {matching_count} matching files.")
+
+    # search_filepaths(TARGET_DIR)
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region Unlabeled PPM Paths
+    # --------------------------------------------------------------------------------
+    # import pandas as pd
+    # T = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/tmp/'
+    # b = pd.read_pickle(T + 'labels_after2.pkl')
+    # conc = [c for c in b.columns if c.startswith('conc_')]
+    # un = b.index[(b[conc].fillna(0).abs().sum(axis=1) == 0) & ~b[conc].isna().any(axis=1)]
+    # for p in sorted(p for p in un if 'ppm' in p.lower() and 'Backup 9-12-2016' in p): print('/'.join(p.split('/')[-3:]))
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region Matlab Analysis 1000 ppm Row Comparison
+    # --------------------------------------------------------------------------------
+    # import h5py, numpy as np, pandas as pd
+    # p = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5'
+    # key = 'Backup 9-12-2016/Spectra/CeCl3-LiCl-KCl-H2O Test/Static/Calibration Curves/200 shots 5 repeats/Matlab analysis/1000 ppm'
+    # with h5py.File(p) as f:
+    #     og = np.char.decode(f['metadata']['og_path'][:], 'utf-8') # type: ignore
+    #     idx = np.flatnonzero(np.char.find(og, key) >= 0)
+    #     X = f['spectra'][idx.tolist()] # type: ignore
+    # names = np.array([s.rsplit('/', 1)[1] for s in og[idx]])
+    # print(pd.Series(names).value_counts())
+    # rows = {n: X[names == n] for n in np.unique(names)} # type: ignore
+    # others = np.vstack([r for n, r in rows.items() if 'Values' not in n]) # type: ignore
+    # for n in [n for n in rows if 'Values' in n]:
+    #     d = np.abs(rows[n][:, None, :] - others[None]).max(axis=2).min(axis=1) # type: ignore
+    #     print(n, rows[n].shape, 'max diff to nearest non-Values row:', d.max()) # type: ignore
+
+    # def norm(a): return a / a.sum(axis=1, keepdims=True)
+    # O = norm(others)
+    # scale = O.max()
+    # for n in [n for n in rows if 'Values' in n]:
+    #     V = norm(rows[n])
+    #     d = np.abs(V[:, None, :] - O[None]).max(axis=2)          # 10 Values rows x 10 other rows
+    #     print(n)
+    #     print('  nearest-row distance / peak height:', np.round(d.min(axis=1) / scale, 4))
+    #     print('  best-match row index:', d.argmin(axis=1))
+    # a = rows['Static_1000ppm_Values_lamba.csv']; b = rows['Static_1000ppm_Values_Li_lamba.csv']
+    # print('Values vs Values_Li identical:', np.array_equal(a, b), '| max abs diff:', np.abs(a - b).max()) # type: ignore
+    # print('row sums  t-files:', np.round(others.sum(axis=1)[:5]), ' Values:', np.round(rows['Static_1000ppm_Values_lamba.csv'].sum(axis=1)[:5])) # type: ignore
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region Find Cosmic Rays
+    # --------------------------------------------------------------------------------
+    # find_cosmic(h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5")
+    # endregion

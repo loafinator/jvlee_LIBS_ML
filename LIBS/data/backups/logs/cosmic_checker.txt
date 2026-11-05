@@ -1,0 +1,42 @@
+data_prep.py loading ...
+Hi
+--- Raw Peak Counts Percentile Distribution ---
+ 10.0% :     5696.8 counts
+ 20.0% :    13525.2 counts
+ 30.0% :    25608.0 counts
+ 40.0% :    26461.5 counts
+ 50.0% :    38540.5 counts
+ 60.0% :    63167.4 counts
+ 70.0% :    64677.9 counts
+ 80.0% :    64818.4 counts
+ 90.0% :   108184.2 counts
+ 95.0% :   143163.9 counts
+ 98.0% :   301744.5 counts
+ 99.0% :  1199345.9 counts
+ 99.5% :  8712845.7 counts
+ 99.9% : 14499078.0 counts
+100.0% : 28317124.0 counts
+
+Shots near 16-bit saturation (> 60,000 counts): 120981 / 294411
+
+--- Top 20 Peak Intensity Shots ---
+Rank  1 | Shot 128060 | Max Counts: 28317124.0 | Adjacent Ratio:   1.01 | Broad Emission Line
+Rank  2 | Shot 121828 | Max Counts: 28317124.0 | Adjacent Ratio:   1.01 | Broad Emission Line
+Rank  3 | Shot  64653 | Max Counts: 28317124.0 | Adjacent Ratio:   1.01 | Broad Emission Line
+Rank  4 | Shot  73168 | Max Counts: 28279066.0 | Adjacent Ratio:   1.00 | Broad Emission Line
+Rank  5 | Shot 210862 | Max Counts: 28279066.0 | Adjacent Ratio:   1.00 | Broad Emission Line
+Rank  6 | Shot 258599 | Max Counts: 28279066.0 | Adjacent Ratio:   1.00 | Broad Emission Line
+Rank  7 | Shot  14917 | Max Counts: 27762184.0 | Adjacent Ratio:   1.01 | Broad Emission Line
+Rank  8 | Shot 105790 | Max Counts: 27762184.0 | Adjacent Ratio:   1.01 | Broad Emission Line
+Rank  9 | Shot  32395 | Max Counts: 27762184.0 | Adjacent Ratio:   1.01 | Broad Emission Line
+Rank 10 | Shot  74478 | Max Counts: 27693350.0 | Adjacent Ratio:   1.01 | Broad Emission Line
+Rank 11 | Shot  29298 | Max Counts: 27693350.0 | Adjacent Ratio:   1.01 | Broad Emission Line
+Rank 12 | Shot  65722 | Max Counts: 27693350.0 | Adjacent Ratio:   1.01 | Broad Emission Line
+Rank 13 | Shot  42172 | Max Counts: 27678830.0 | Adjacent Ratio:   1.01 | Broad Emission Line
+Rank 14 | Shot  58511 | Max Counts: 27678830.0 | Adjacent Ratio:   1.01 | Broad Emission Line
+Rank 15 | Shot  28837 | Max Counts: 27678830.0 | Adjacent Ratio:   1.01 | Broad Emission Line
+Rank 16 | Shot 194232 | Max Counts: 26284132.0 | Adjacent Ratio:   1.03 | Broad Emission Line
+Rank 17 | Shot 106922 | Max Counts: 26284132.0 | Adjacent Ratio:   1.03 | Broad Emission Line
+Rank 18 | Shot 125008 | Max Counts: 26284132.0 | Adjacent Ratio:   1.03 | Broad Emission Line
+Rank 19 | Shot  85805 | Max Counts: 26284132.0 | Adjacent Ratio:   1.03 | Broad Emission Line
+Rank 20 | Shot 180220 | Max Counts: 26284132.0 | Adjacent Ratio:   1.03 | Broad Emission Line

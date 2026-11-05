@@ -59,6 +59,7 @@ from urllib3.util import Retry
 from datetime import datetime
 from typing import Any, Optional, Dict
 from scipy.signal import find_peaks
+from scipy.ndimage import minimum_filter1d, uniform_filter1d
 # endregion
 
 # ==============================================================================
@@ -1369,76 +1370,113 @@ def synthetic_data_generator(
 # ==============================================================================
 # region: EXPERIMENTAL & SYNTHETIC DATASET CONCATENATION
 # ==============================================================================
-def final_combo(
-    exp_h5_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/elemental_experimental.h5"),
-    syn_h5_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_spectra_200k.h5"),
-    syn_csv_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_compositions_wt_pct.csv") ,
-    formatted_syn_h5 = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/formatted_synthetic_200k.h5"),
-    merged_h5_out = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/combined_exp_syn_dataset.h5"),
+def clean_libs_spectrum(spectra_matrix, window_size=10, chunk=5000):
+    """Applies rolling baseline removal and area normalization."""
+    out = np.empty(spectra_matrix.shape, dtype=np.float32)
+    for a in range(0, len(spectra_matrix), chunk):
+        X = spectra_matrix[a:a+chunk].astype(np.float32)
+        base = uniform_filter1d(
+            minimum_filter1d(X, size=window_size, axis=1, mode='nearest'),
+            size=window_size, axis=1, mode='nearest')
+        X = np.maximum(X - base, 0.0)
+        area = X.sum(axis=1, keepdims=True)
+        out[a:a+chunk] = np.divide(X, area, out=X, where=area > 0)
+    return out
+
+def updated_final_combo(
+    exp_h5_path: Path | str,
+    syn_h5_path: Path | str,
+    syn_csv_path: Path | str,
+    merged_h5_out: Path | str,
 ):
     """
-    Loads experimental LIBS datasets and generated synthetic datasets, aligns 
-    elemental column orderings, appends domain labels (`is_synthetic`: 0=Exp, 1=Syn), 
-    and saves a unified consolidated HDF5 file for machine learning training.
+    Combines recleaned experimental HDF5 with synthetic HDF5,
+    ensuring matching target elements, resampled wavelengths, 
+    and identical area-normalized spectral preprocessing.
     """
+    exp_h5_path = Path(exp_h5_path)
+    syn_h5_path = Path(syn_h5_path)
+    syn_csv_path = Path(syn_csv_path)
+    merged_h5_out = Path(merged_h5_out)
 
-    # 1. Inspect Experimental Element Order
+    # 1. Load Experimental Dataset and Metadata
     with h5py.File(exp_h5_path, 'r') as hf_exp:
-        exp_elem_names = [
-            name.decode('utf-8') if isinstance(name, bytes) else name 
-            for name in hf_exp['metadata/elem_names'][:]        # type: ignore
+        X_exp = hf_exp['X'][:] # type: ignore
+        y_exp = hf_exp['y'][:] # type: ignore
+        exp_wl = hf_exp['wavelengths'][:] # type: ignore
+        target_elements = [
+            e.decode('utf-8') if isinstance(e, bytes) else e 
+            for e in hf_exp['target_elements'][:] # type: ignore
         ]
+        groups_exp = hf_exp['groups'][:] if 'groups' in hf_exp else np.zeros(len(X_exp), dtype=np.int32) # type: ignore
 
-    print(f"Target Experimental Element Order ({len(exp_elem_names)}): {exp_elem_names}")
+        # Read lockbox mask from experimental dataset
+        if 'is_lockbox' in hf_exp:
+            is_lockbox_exp = hf_exp['is_lockbox'][:].astype(bool) # type: ignore
+        else:
+            raise KeyError(f"Missing 'is_lockbox' in {exp_h5_path}. Run dataset_cleaning first.")
 
-    # 2. Align Synthetic Manifest Column Order to Match Experimental Exactly
+    print(f"Loaded Experimental: X={X_exp.shape}, y={y_exp.shape}, targets={target_elements}") # type: ignore
+
+    # 2. Load Synthetic Dataset
+    with h5py.File(syn_h5_path, 'r') as hf_syn:
+        X_syn_raw = hf_syn['spectra'][:] # type: ignore
+        syn_wl = hf_syn['wavelengths'][:] # type: ignore
+
+    # 3. Read Synthetic Composition Manifest from explicit path
     df_syn = pd.read_csv(syn_csv_path)
-    missing_elems = set(exp_elem_names) - set(df_syn.columns)
-    if missing_elems:
-        raise ValueError(f"Synthetic CSV is missing elements present in experimental data: {missing_elems}")
 
-    df_syn_reordered = df_syn[exp_elem_names]
-    syn_comp_matrix = df_syn_reordered.values.astype(np.float32)
+    # Extract target elemental wt% matching experimental target_elements order
+    y_syn = df_syn[target_elements].to_numpy(dtype=np.float32)
 
-    # 3. Save Structured Metadata into Formatted Synthetic Dataset
-    with h5py.File(syn_h5_path, 'r') as hf_in, h5py.File(formatted_syn_h5, 'w') as hf_out:
-        hf_in.copy('spectra', hf_out)
-        wl_data = hf_in['wavelengths'][:].astype(np.float32)        # type: ignore
-        hf_out.create_dataset('wavelengths', data=wl_data)
+    # 4. Interpolate Synthetic Wavelength Grid to Match Experimental Grid (250-1000 nm, 10k pts)
+    if not np.array_equal(syn_wl, exp_wl): # type: ignore
+        print(f"Resampling synthetic grid ({len(syn_wl)} pts) -> experimental grid ({len(exp_wl)} pts)...") # type: ignore
+        X_syn_resampled = np.apply_along_axis( # type: ignore
+            lambda row: np.interp(exp_wl, syn_wl, row, left=0.0, right=0.0), # type: ignore
+            axis=1,
+            arr=X_syn_raw # type: ignore
+        )
+    else:
+        X_syn_resampled = X_syn_raw
 
-        meta_grp = hf_out.create_group('metadata')
-        meta_grp.create_dataset('elem_comp_wt%', data=syn_comp_matrix, compression='gzip')
-        meta_grp.create_dataset('elem_names', data=np.array(exp_elem_names, dtype='S'))
+    # 5. Apply Baseline Removal & Area Normalization to Synthetic Spectra
+    print("Applying rolling baseline removal & area normalization to synthetic spectra...")
+    X_syn_clean = clean_libs_spectrum(X_syn_resampled)
 
-    # 4. Merge Experimental and Synthetic Datasets into Unified HDF5
-    with h5py.File(exp_h5_path, 'r') as hf_exp, \
-         h5py.File(formatted_syn_h5, 'r') as hf_syn, \
-         h5py.File(merged_h5_out, 'w') as hf_out:
+    # 6. Concatenate Matrices & Lockbox Flags
+    X_merged = np.vstack([X_exp, X_syn_clean]).astype(np.float32) # type: ignore
+    y_merged = np.vstack([y_exp, y_syn]).astype(np.float32) # type: ignore
 
-        exp_spectra = hf_exp['spectra'][:]        # type: ignore
-        syn_spectra = hf_syn['spectra'][:]        # type: ignore
+    is_synthetic = np.concatenate([
+        np.zeros(len(X_exp), dtype=np.int32), # type: ignore
+        np.ones(len(X_syn_clean), dtype=np.int32)
+    ])
 
-        exp_comp = hf_exp['metadata/elem_comp_wt%'][:]        # type: ignore
-        syn_comp = hf_syn['metadata/elem_comp_wt%'][:]        # type: ignore
+    # --- RE-ADD GROUP MERGING HERE ---
+    max_exp_group = int(np.max(groups_exp)) if len(groups_exp) > 0 else 0 # type: ignore
+    groups_syn = np.arange(max_exp_group + 1, max_exp_group + 1 + len(X_syn_clean), dtype=np.int32)
+    groups_merged = np.concatenate([groups_exp, groups_syn]) # type: ignore
 
-        # Stack along sample axis (0)
-        merged_spectra = np.vstack([exp_spectra, syn_spectra]).astype(np.float32)        # type: ignore
-        merged_comp = np.vstack([exp_comp, syn_comp]).astype(np.float32)        # type: ignore
+    # Synthetic spectra never sit in the lockbox (they belong in training/CV)
+    is_lockbox_syn = np.zeros(len(X_syn_clean), dtype=bool)
+    is_lockbox_merged = np.concatenate([is_lockbox_exp, is_lockbox_syn])
 
-        # Domain Labels: 0 = Experimental, 1 = Synthetic
-        domain_labels = np.zeros(len(merged_spectra), dtype=np.int32)
-        domain_labels[len(exp_spectra):] = 1        # type: ignore
+    # 7. Export Combined HDF5
+    comp_kwargs = {'compression': 'gzip', 'compression_opts': 3}
+    with h5py.File(merged_h5_out, 'w') as hf_out:
+        hf_out.create_dataset('X', data=X_merged, **comp_kwargs)
+        hf_out.create_dataset('y', data=y_merged, **comp_kwargs)
+        hf_out.create_dataset('wavelengths', data=exp_wl.astype(np.float32)) # type: ignore
+        hf_out.create_dataset('target_elements', data=np.array(target_elements, dtype=object), dtype=h5py.string_dtype(encoding='utf-8'))
+        hf_out.create_dataset('groups', data=groups_merged)
+        hf_out.create_dataset('is_lockbox', data=is_lockbox_merged, **comp_kwargs)  # <-- WRITE MERGED LOCKBOX
 
-        hf_out.create_dataset('spectra', data=merged_spectra, compression='gzip')
-        hf_out.create_dataset('wavelengths', data=hf_exp['wavelengths'][:].astype(np.float32))        # type: ignore
+        meta = hf_out.create_group('meta')
+        meta.create_dataset('is_synthetic', data=is_synthetic)
 
-        meta_grp = hf_out.create_group('metadata')
-        meta_grp.create_dataset('elem_comp_wt%', data=merged_comp, compression='gzip')
-        meta_grp.create_dataset('elem_names', data=np.array(exp_elem_names, dtype='S'))
-        meta_grp.create_dataset('is_synthetic', data=domain_labels)
-
-    print(f"Successfully created unified HDF5 dataset at: {merged_h5_out}")
-    print(f"Total merged samples: {len(merged_spectra)} ({len(exp_spectra)} experimental + {len(syn_spectra)} synthetic)")        # type: ignore
+    print(f"✅ Successfully exported merged dataset to {merged_h5_out}")
+    print(f"   Final Shapes: X={X_merged.shape}, y={y_merged.shape}")
 # endregion 
 
 # ==============================================================================
@@ -1450,21 +1488,35 @@ if __name__ == "__main__":
     # master_line_table()
 
     # Generate synthetic data with representative ranges of dopant wt%'s
-    input_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_singles/Enriched'
-    output_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined'
-    synthetic_data_generator(
-        input_dir=input_dir,
-        output_dir=output_dir,
-        num_samples=200000,
-        host_sigma=0.015,
-        max_dopant_wt=12.0,
-        category_probs=None
+    # input_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_singles/Enriched'
+    # output_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined'
+    # synthetic_data_generator(
+    #     input_dir=input_dir,
+    #     output_dir=output_dir,
+    #     num_samples=200000,
+    #     host_sigma=0.015,
+    #     max_dopant_wt=12.0,
+    #     category_probs=None
+    # )
+
+    updated_final_combo(
+        exp_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_TD14_TEN.h5"),
+        syn_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_synthetic_spectra_200k.h5"),
+        syn_csv_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_compositions_wt_pct.csv"),
+        merged_h5_out=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TD14_TEN.h5")
     )
 
-    final_combo(
-        exp_h5_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/elemental_experimental.h5"),
-        syn_h5_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_synthetic_spectra_200k.h5"),
-        syn_csv_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_compositions_wt_pct.csv") ,
-        formatted_syn_h5 = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_formatted_synthetic_200k.h5"),
-        merged_h5_out = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/combined_exp_syn_max12_12345s_dataset.h5"),
+    updated_final_combo(
+        exp_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_TDN_TEN.h5"),
+        syn_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_synthetic_spectra_200k.h5"),
+        syn_csv_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_compositions_wt_pct.csv"),
+        merged_h5_out=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TDN_TEN.h5")
     )
+
+    # final_combo(
+    #     exp_h5_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/elemental_experimental.h5"),
+    #     syn_h5_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_synthetic_spectra_200k.h5"),
+    #     syn_csv_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_compositions_wt_pct.csv") ,
+    #     formatted_syn_h5 = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_formatted_synthetic_200k.h5"),
+    #     merged_h5_out = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/combined_exp_syn_max12_12345s_dataset.h5"),
+    # )

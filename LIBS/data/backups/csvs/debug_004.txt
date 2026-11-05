@@ -1,0 +1,40 @@
+data_prep.py loading ...
+Hi
+exclude "Gd-Mg Study": 7201 rows
+exclude "Iron with rust": 177 rows
+exclude "Fiber optic test": 18 rows
+exclude "Repetability Test": 24 rows
+exclude "Pure Mg Study": 54 rows
+exclude "MS U Analysis": 0 rows
+exclude "MS Ce Analysis": 1 rows
+exclude "Values_lamba": 0 rows
+exclude "Values_Li_lamba": 0 rows
+exclude "Static_Import_lamba": 0 rows
+duplicate rows removed: 144256; groups dropped for conflicting concentrations: 102
+Ce
+                            size  nunique
+state_molten delay energy                
+0.0          3.0   NaN     30564        3
+             14.0  2.0      3730        1
+                   3.0      7987        2
+                   NaN     37072       45
+Gd
+                            size  nunique
+state_molten delay energy                
+0.0          14.0  NaN     47412       63
+Sm
+                           size  nunique
+state_molten delay energy               
+0.0          14.0  NaN     1353       26
+U
+                            size  nunique
+state_molten delay energy                
+0.0          14.0  NaN     45186       20
+Filtered dataset down to 133363 shots matching condition parameters.
+Ce: 79353 shots, 46 distinct levels
+Gd: 47412 shots, 63 distinct levels
+Sm: 1353 shots, 26 distinct levels
+U: 45186 shots, 20 distinct levels
+✅ Cleaned dataset saved to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_TDN_TEN.h5
+   Spectra Matrix (X): (133363, 10000)
+   Target Matrix (y) : (133363, 4) -> Elements: ['Ce', 'Gd', 'Sm', 'U']

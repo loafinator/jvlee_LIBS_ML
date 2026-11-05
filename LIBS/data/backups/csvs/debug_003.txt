@@ -1,0 +1,200 @@
+data_prep.py loading ...
+Hi
+data_prep.py loading ...
+3972 unique paths
+before matches stored labels for 100.0% of paths
+1054 of 3972 common paths changed; 1054 were unlabeled before
+changed but ALREADY labeled (want ~0): 0
+{'conc_SmCl3_wt%': np.float64(0.5)} | Sm-Gd Study/LIBS/0.5-SmCl3_t2_run1.csv
+{'conc_SmCl3_wt%': np.float64(0.5)} | Sm-Gd Study/LIBS/0.5-SmCl3_t2_run10.csv
+{'conc_SmCl3_wt%': np.float64(0.5)} | Sm-Gd Study/LIBS/0.5-SmCl3_t2_run2.csv
+{'conc_SmCl3_wt%': np.float64(0.5)} | Sm-Gd Study/LIBS/0.5-SmCl3_t2_run3.csv
+{'conc_SmCl3_wt%': np.float64(0.5)} | Sm-Gd Study/LIBS/0.5-SmCl3_t2_run4.csv
+{'conc_SmCl3_wt%': np.float64(0.5)} | Sm-Gd Study/LIBS/0.5-SmCl3_t2_run5.csv
+{'conc_SmCl3_wt%': np.float64(0.5)} | Sm-Gd Study/LIBS/0.5-SmCl3_t2_run6.csv
+{'conc_SmCl3_wt%': np.float64(0.5)} | Sm-Gd Study/LIBS/0.5-SmCl3_t2_run7.csv
+{'conc_SmCl3_wt%': np.float64(0.5)} | Sm-Gd Study/LIBS/0.5-SmCl3_t2_run8.csv
+{'conc_SmCl3_wt%': np.float64(0.5)} | Sm-Gd Study/LIBS/0.5-SmCl3_t2_run9.csv
+{'conc_SmCl3_wt%': np.float64(0.75)} | Sm-Gd Study/LIBS/0.75-SmCl3_t2_run1.csv
+{'conc_SmCl3_wt%': np.float64(0.75)} | Sm-Gd Study/LIBS/0.75-SmCl3_t2_run10.csv
+{'conc_SmCl3_wt%': np.float64(0.75)} | Sm-Gd Study/LIBS/0.75-SmCl3_t2_run2.csv
+{'conc_SmCl3_wt%': np.float64(0.75)} | Sm-Gd Study/LIBS/0.75-SmCl3_t2_run3.csv
+{'conc_SmCl3_wt%': np.float64(0.75)} | Sm-Gd Study/LIBS/0.75-SmCl3_t2_run4.csv
+{'conc_SmCl3_wt%': np.float64(0.75)} | Sm-Gd Study/LIBS/0.75-SmCl3_t2_run5.csv
+{'conc_SmCl3_wt%': np.float64(0.75)} | Sm-Gd Study/LIBS/0.75-SmCl3_t2_run6.csv
+{'conc_SmCl3_wt%': np.float64(0.75)} | Sm-Gd Study/LIBS/0.75-SmCl3_t2_run7.csv
+{'conc_SmCl3_wt%': np.float64(0.75)} | Sm-Gd Study/LIBS/0.75-SmCl3_t2_run8.csv
+{'conc_SmCl3_wt%': np.float64(0.75)} | Sm-Gd Study/LIBS/0.75-SmCl3_t2_run9.csv
+{'conc_SmCl3_wt%': np.float64(1.0)} | Sm-Gd Study/LIBS/1.0-SmCl3_t2_run1.csv
+{'conc_SmCl3_wt%': np.float64(1.0)} | Sm-Gd Study/LIBS/1.0-SmCl3_t2_run10.csv
+{'conc_SmCl3_wt%': np.float64(1.0)} | Sm-Gd Study/LIBS/1.0-SmCl3_t2_run2.csv
+{'conc_SmCl3_wt%': np.float64(1.0)} | Sm-Gd Study/LIBS/1.0-SmCl3_t2_run3.csv
+{'conc_SmCl3_wt%': np.float64(1.0)} | Sm-Gd Study/LIBS/1.0-SmCl3_t2_run4.csv
+{'conc_SmCl3_wt%': np.float64(1.0)} | Sm-Gd Study/LIBS/1.0-SmCl3_t2_run5.csv
+{'conc_SmCl3_wt%': np.float64(1.0)} | Sm-Gd Study/LIBS/1.0-SmCl3_t2_run6.csv
+{'conc_SmCl3_wt%': np.float64(1.0)} | Sm-Gd Study/LIBS/1.0-SmCl3_t2_run7.csv
+{'conc_SmCl3_wt%': np.float64(1.0)} | Sm-Gd Study/LIBS/1.0-SmCl3_t2_run8.csv
+{'conc_SmCl3_wt%': np.float64(1.0)} | Sm-Gd Study/LIBS/1.0-SmCl3_t2_run9.csv
+{'conc_SmCl3_wt%': np.float64(10.0)} | Sm-Gd Study/LIBS/10.0-SmCl3_t2_run1.csv
+{'conc_SmCl3_wt%': np.float64(10.0)} | Sm-Gd Study/LIBS/10.0-SmCl3_t2_run10.csv
+{'conc_SmCl3_wt%': np.float64(10.0)} | Sm-Gd Study/LIBS/10.0-SmCl3_t2_run2.csv
+{'conc_SmCl3_wt%': np.float64(10.0)} | Sm-Gd Study/LIBS/10.0-SmCl3_t2_run3.csv
+{'conc_SmCl3_wt%': np.float64(10.0)} | Sm-Gd Study/LIBS/10.0-SmCl3_t2_run4.csv
+{'conc_SmCl3_wt%': np.float64(10.0)} | Sm-Gd Study/LIBS/10.0-SmCl3_t2_run5.csv
+{'conc_SmCl3_wt%': np.float64(10.0)} | Sm-Gd Study/LIBS/10.0-SmCl3_t2_run6.csv
+{'conc_SmCl3_wt%': np.float64(10.0)} | Sm-Gd Study/LIBS/10.0-SmCl3_t2_run7.csv
+{'conc_SmCl3_wt%': np.float64(10.0)} | Sm-Gd Study/LIBS/10.0-SmCl3_t2_run8.csv
+{'conc_SmCl3_wt%': np.float64(10.0)} | Sm-Gd Study/LIBS/10.0-SmCl3_t2_run9.csv
+folder                                                                label          
+Molten Salt Aerosol/4th Exp 3wt_ CeCl3/Gate Delay                     {'CeCl3': 3.0}     126
+Molten Salt Aerosol/5th Exp 3wt_ CeCl3/Gate delay Optimization        {'CeCl3': 3.0}     123
+Molten Salt Aerosol/2nd Exp 5 wt_ CeCl3/Gas flow Optimization         {'CeCl3': 5.0}      54
+1st Exp 1 wt_ CeCl3/Gate delay study/15 mm flow                       {'CeCl3': 1.0}      51
+Molten Salt Aerosol/2nd Exp 5 wt_ CeCl3/Energy Optimization           {'CeCl3': 5.0}      36
+Molten Salt Aerosol/3rd Exp 5 wt_ CeCl3/Pressure                      {'CeCl3': 5.0}      36
+Molten Salt Aerosol/1st Exp 1 wt_ CeCl3/Gas flow Study                {'CeCl3': 1.0}      36
+1st Exp 1 wt_ CeCl3/Gate delay study/Study 2                          {'CeCl3': 1.0}      36
+Molten Salt Aerosol/1st Exp 1 wt_ CeCl3/Laser energy study            {'CeCl3': 1.0}      30
+Molten Salt Aerosol/2nd Exp 5 wt_ CeCl3/2nd Run, Energy               {'CeCl3': 5.0}      30
+Static/Calibration Curves/500 shots 4000 ppm x ten                    {'Ce': 0.4}         30
+Static/Calibration Curves/200 shots 4000 ppm x10 1 Hz                 {'Ce': 0.4}         30
+Molten Salt Aerosol/2nd Exp 5 wt_ CeCl3/Gate Delay                    {'CeCl3': 5.0}      30
+Experiments & Calculations - Copy/Sm-Gd Study/LIBS                    {'SmCl3': 0.5}      10
+                                                                      {'SmCl3': 8.0}      10
+                                                                      {'SmCl3': 10.0}     10
+                                                                      {'SmCl3': 0.75}     10
+                                                                      {'SmCl3': 1.0}      10
+                                                                      {'SmCl3': 5.0}      10
+                                                                      {'SmCl3': 4.0}      10
+                                                                      {'SmCl3': 2.0}      10
+                                                                      {'SmCl3': 7.0}      10
+                                                                      {'SmCl3': 3.0}      10
+Molten Salt Aerosol/1st Exp 1 wt_ CeCl3/Optics and flow optimization  {'CeCl3': 1.0}       6
+Molten Salt Aerosol/3rd Exp 5 wt_ CeCl3/Energy                        {'CeCl3': 5.0}       6
+Calibration Curves/200 shots 5 repeats/d2t1                           {'Ce': 0.02}         3
+                                                                      {'Ce': 0.01}         3
+Calibration Curves/200 shots 5 repeats/d3t1                           {'Ce': 0.8}          3
+                                                                      {'Ce': 1.0}          3
+Calibration Curves/200 shots 5 repeats/d3t2                           {'Ce': 0.01}         3
+                                                                      {'Ce': 0.02}         3
+                                                                      {'Ce': 0.05}         3
+                                                                      {'Ce': 0.1}          3
+                                                                      {'Ce': 0.3}          3
+                                                                      {'Ce': 0.4}          3
+                                                                      {'Ce': 0.6}          3
+Calibration Curves/200 shots 5 repeats/d2t1                           {'Ce': 0.05}         3
+                                                                      {'Ce': 0.1}          3
+                                                                      {'Ce': 0.3}          3
+                                                                      {'Ce': 0.4}          3
+                                                                      {'Ce': 0.6}          3
+                                                                      {'Ce': 0.8}          3
+                                                                      {'Ce': 1.0}          3
+Calibration Curves/200 shots 5 repeats/d2t2                           {'Ce': 0.01}         3
+                                                                      {'Ce': 0.02}         3
+                                                                      {'Ce': 0.05}         3
+                                                                      {'Ce': 0.1}          3
+                                                                      {'Ce': 0.3}          3
+                                                                      {'Ce': 0.4}          3
+                                                                      {'Ce': 0.6}          3
+                                                                      {'Ce': 0.8}          3
+                                                                      {'Ce': 1.0}          3
+Calibration Curves/200 shots 5 repeats/d3t1                           {'Ce': 0.01}         3
+                                                                      {'Ce': 0.02}         3
+                                                                      {'Ce': 0.05}         3
+                                                                      {'Ce': 0.1}          3
+                                                                      {'Ce': 0.3}          3
+                                                                      {'Ce': 0.4}          3
+                                                                      {'Ce': 0.6}          3
+Calibration Curves/200 shots 5 repeats/t2                             {'Ce': 0.05}         3
+                                                                      {'Ce': 0.02}         3
+                                                                      {'Ce': 0.01}         3
+Calibration Curves/200 shots 5 repeats/t1                             {'Ce': 1.0}          3
+                                                                      {'Ce': 0.8}          3
+                                                                      {'Ce': 0.6}          3
+                                                                      {'Ce': 0.4}          3
+                                                                      {'Ce': 0.3}          3
+                                                                      {'Ce': 0.1}          3
+                                                                      {'Ce': 0.05}         3
+                                                                      {'Ce': 0.02}         3
+                                                                      {'Ce': 0.01}         3
+Calibration Curves/200 shots 5 repeats/d3t3                           {'Ce': 1.0}          3
+                                                                      {'Ce': 0.8}          3
+                                                                      {'Ce': 0.6}          3
+                                                                      {'Ce': 0.4}          3
+                                                                      {'Ce': 0.3}          3
+                                                                      {'Ce': 0.1}          3
+                                                                      {'Ce': 0.05}         3
+                                                                      {'Ce': 0.02}         3
+                                                                      {'Ce': 0.01}         3
+Calibration Curves/200 shots 5 repeats/d3t2                           {'Ce': 1.0}          3
+                                                                      {'Ce': 0.8}          3
+Calibration Curves/200 shots 5 repeats/t2                             {'Ce': 0.1}          3
+Calibration Curves/200 shots 5 repeats/t3                             {'Ce': 0.05}         3
+Calibration Curves/200 shots 5 repeats/t2                             {'Ce': 0.3}          3
+                                                                      {'Ce': 0.4}          3
+                                                                      {'Ce': 0.6}          3
+                                                                      {'Ce': 0.8}          3
+                                                                      {'Ce': 1.0}          3
+Calibration Curves/200 shots 5 repeats/t3                             {'Ce': 0.01}         3
+                                                                      {'Ce': 0.02}         3
+Calibration Curves/200 shots 5 repeats/t5                             {'Ce': 0.8}          3
+                                                                      {'Ce': 0.6}          3
+                                                                      {'Ce': 0.4}          3
+                                                                      {'Ce': 0.3}          3
+                                                                      {'Ce': 0.1}          3
+                                                                      {'Ce': 0.05}         3
+                                                                      {'Ce': 0.02}         3
+                                                                      {'Ce': 0.01}         3
+Calibration Curves/200 shots 5 repeats/t4                             {'Ce': 1.0}          3
+                                                                      {'Ce': 0.8}          3
+                                                                      {'Ce': 0.6}          3
+                                                                      {'Ce': 0.4}          3
+                                                                      {'Ce': 0.3}          3
+                                                                      {'Ce': 0.1}          3
+                                                                      {'Ce': 0.05}         3
+                                                                      {'Ce': 0.02}         3
+                                                                      {'Ce': 0.01}         3
+Calibration Curves/200 shots 5 repeats/t3                             {'Ce': 1.0}          3
+                                                                      {'Ce': 0.8}          3
+                                                                      {'Ce': 0.6}          3
+                                                                      {'Ce': 0.4}          3
+                                                                      {'Ce': 0.3}          3
+                                                                      {'Ce': 0.1}          3
+Calibration Curves/200 shots 5 repeats/t5                             {'Ce': 1.0}          3
+Static/Calibration Curves/500 shots no repeats                        {'Ce': 0.01}         3
+                                                                      {'Ce': 0.02}         3
+                                                                      {'Ce': 0.05}         3
+                                                                      {'Ce': 0.3}          3
+                                                                      {'Ce': 0.4}          3
+                                                                      {'Ce': 0.6}          3
+                                                                      {'Ce': 0.8}          3
+                                                                      {'Ce': 1.0}          3
+still unlabeled shots: 14738
+Withdrawal Studies/Gd-Mg Study/LIBS                          7201.0
+Spectra/Molten Salt Aerosol/6th EXP Pure LiCl-KCl            7009.0
+Preliminary Data and Information/Spectra/Iron with rust       180.0
+Withdrawal Studies/Pure Mg Study/LIBS                          40.0
+SmCl3 LIBS Glovebox/Sm LIBS raw data/blank sample              30.0
+Optimization/Gate width/15us                                   18.0
+Optimization/Gate width/10us                                   18.0
+Optimization/Shot count/40 shots                               18.0
+Optimization/Gate width/9us                                    18.0
+Optimization/Gate width/7us                                    18.0
+Optimization/Gate width/8us                                    18.0
+Optimization/Gate width/5us                                    18.0
+Optimization/Shot count/10 shots                               18.0
+Optimization/Shot count/30 shots                               18.0
+Optimization/Shot count/20 shots                               18.0
+Optimization/Shot count/50 shots                               18.0
+Preliminary Data and Information/Spectra/Fiber optic test      18.0
+Optimization/Shot count/100 shots                              15.0
+Static/Repetability Test/Internal Trigger                      12.0
+Static/Repetability Test/External Trigger                      12.0
+Experiments & Calculations - Copy/Sm-Gd Study/LIBS             10.0
+VTR/Quasi-Reference Electrode Study/LIBS                       10.0
+Static/Calibration Curves/500 shots no repeats                  3.0
+conc_Ce_wt%       354
+conc_CeCl3_wt%    600
+conc_SmCl3_wt%    100
+dtype: int64
+paths with >1 species: 0
