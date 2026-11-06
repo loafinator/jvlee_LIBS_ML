@@ -1,0 +1,33 @@
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting GPU-Accelerated PLS Benchmark Pipeline [cpu] ===
+Dataset: recleaned_data_no-leak_TD14_TEN | Repeated K-Fold: 7 Folds x 1 Seeds (7 models per grid point)
+
+--- Tuning PLS Components via Multi-Seed GPU Cross-Validation ---
+n_components =  1 | Ensembled OOF Mean RMSE:  0.7719 wt% (R^2:  0.0708) | Elapsed: 38.90s
+n_components =  2 | Ensembled OOF Mean RMSE:  0.7609 wt% (R^2:  0.0920) | Elapsed: 33.80s
+n_components =  5 | Ensembled OOF Mean RMSE:  0.7404 wt% (R^2:  0.1446) | Elapsed: 40.73s
+n_components = 10 | Ensembled OOF Mean RMSE:  0.7379 wt% (R^2:  0.1519) | Elapsed: 50.84s
+n_components = 20 | Ensembled OOF Mean RMSE:  0.7258 wt% (R^2:  0.1889) | Elapsed: 66.04s
+n_components = 30 | Ensembled OOF Mean RMSE:  0.7211 wt% (R^2:  0.2034) | Elapsed: 88.92s
+n_components = 40 | Ensembled OOF Mean RMSE:  0.7214 wt% (R^2:  0.2033) | Elapsed: 109.38s
+n_components = 50 | Ensembled OOF Mean RMSE:  0.7238 wt% (R^2:  0.1978) | Elapsed: 134.28s
+n_components = 60 | Ensembled OOF Mean RMSE:  0.7246 wt% (R^2:  0.1961) | Elapsed: 155.70s
+n_components = 70 | Ensembled OOF Mean RMSE:  0.7263 wt% (R^2:  0.1928) | Elapsed: 174.77s
+n_components = 80 | Ensembled OOF Mean RMSE:  0.7350 wt% (R^2:  0.1754) | Elapsed: 191.68s
+n_components = 90 | Ensembled OOF Mean RMSE:  0.7505 wt% (R^2:  0.1451) | Elapsed: 214.40s
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/pls_benchmark.py", line 599, in <module>
+    OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/recleaned_data_no-leak_TD14_TEN/exp.h5")
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/pls_benchmark.py", line 457, in main
+    pls = PyTorchPLS(n_components=n_comp)
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/pls_benchmark.py", line 92, in fit
+    # Compute loadings
+KeyboardInterrupt

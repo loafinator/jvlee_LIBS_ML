@@ -1,0 +1,94 @@
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting GPU-Accelerated PLS Benchmark Pipeline [cpu] ===
+Dataset: recleaned_data_no-leak_TD14_TEN | Repeated K-Fold: 7 Folds x 1 Seeds (7 models per grid point)
+
+--- Tuning PLS Components via Multi-Seed GPU Cross-Validation ---
+n_components = 20 | Ensembled OOF Mean RMSE:  0.7258 wt% (R^2:  0.1889) | Elapsed: 73.79s
+n_components = 25 | Ensembled OOF Mean RMSE:  0.7223 wt% (R^2:  0.1996) | Elapsed: 84.80s
+n_components = 28 | Ensembled OOF Mean RMSE:  0.7217 wt% (R^2:  0.2016) | Elapsed: 84.23s
+n_components = 29 | Ensembled OOF Mean RMSE:  0.7216 wt% (R^2:  0.2022) | Elapsed: 85.63s
+n_components = 30 | Ensembled OOF Mean RMSE:  0.7211 wt% (R^2:  0.2034) | Elapsed: 86.56s
+n_components = 31 | Ensembled OOF Mean RMSE:  0.7214 wt% (R^2:  0.2028) | Elapsed: 87.64s
+n_components = 32 | Ensembled OOF Mean RMSE:  0.7211 wt% (R^2:  0.2032) | Elapsed: 92.20s
+n_components = 35 | Ensembled OOF Mean RMSE:  0.7213 wt% (R^2:  0.2033) | Elapsed: 96.79s
+n_components = 40 | Ensembled OOF Mean RMSE:  0.7214 wt% (R^2:  0.2033) | Elapsed: 113.51s
+
+Optimal PLS Components: 30 (Ensembled OOF Mean RMSE: 0.7211 wt% | R^2: 0.2034)
+
+--- Running Final Lockbox Ensemble Evaluation on GPU (7 total models) ---
+
+===============================================================================================
+ GPU PLS Ensembled OOF Benchmarks (n_components=30, 1 Seeds) [Exp Only]
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.354 |     0.2587 |     0.5061 |      1.646
+Ce       | Predict Mean       |    0.000 |     0.3424 |     0.4350 |      1.646
+Ce       | PLS Model          |    0.602 |     0.1790 |     0.2743 |      1.646
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.829 |     0.9258 |     1.3750 |      2.937
+Gd       | Predict Mean       |   -0.000 |     0.9244 |     1.0166 |      2.937
+Gd       | PLS Model          |    0.017 |     0.7247 |     1.0080 |      2.937
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.016 |     0.0888 |     0.7045 |      5.857
+Sm       | Predict Mean       |    0.000 |     0.1746 |     0.6989 |      5.857
+Sm       | PLS Model          |   -0.048 |     0.1924 |     0.7154 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.705 |     0.8553 |     1.3302 |      6.040
+U        | Predict Mean       |    0.000 |     0.7963 |     1.0188 |      6.040
+U        | PLS Model          |    0.242 |     0.5732 |     0.8868 |      6.040
+-----------------------------------------------------------------------------------------------
+
+===============================================================================================
+ GPU PLS Lockbox Benchmarks (Ensemble of 7 Models)
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -9.824 |     2.4980 |     2.6221 |      2.842
+Ce       | Predict Mean       |   -7.895 |     2.2582 |     2.3769 |      2.842
+Ce       | PLS Model          |   -6.551 |     2.0296 |     2.1901 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.128 |     0.1142 |     0.3390 |      2.666
+Gd       | Predict Mean       |   -6.466 |     0.8403 |     0.8722 |      2.666
+Gd       | PLS Model          |    0.741 |     0.0879 |     0.1626 |      2.666
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.001 |     0.0031 |     0.1140 |      5.268
+Sm       | Predict Mean       |   -0.567 |     0.0917 |     0.1426 |      5.268
+Sm       | PLS Model          |    0.333 |     0.0587 |     0.0930 |      5.268
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.001 |     0.0005 |     0.0161 |      0.563
+U        | Predict Mean       | -2818.681 |     0.8548 |     0.8549 |      0.563
+U        | PLS Model          | -235.803 |     0.1654 |     0.2478 |      0.563
+-----------------------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/pls_benchmark.py", line 600, in <module>
+    main(
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/pls_benchmark.py", line 560, in main
+    plot_parity_grid(true_cv_wt, pred_cv_wt, target_names, title_tag=f"PLS ENSEMBLED OOF ({len(seeds)} Seeds)", save_path=oof_parity_path)
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/pls_benchmark.py", line 310, in plot_parity_grid
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/.venv/lib64/python3.9/site-packages/matplotlib/pyplot.py", line 1228, in savefig
+    res = fig.savefig(*args, **kwargs)  # type: ignore[func-returns-value]
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/.venv/lib64/python3.9/site-packages/matplotlib/figure.py", line 3395, in savefig
+    self.canvas.print_figure(fname, **kwargs)
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/.venv/lib64/python3.9/site-packages/matplotlib/backend_bases.py", line 2204, in print_figure
+    result = print_method(
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/.venv/lib64/python3.9/site-packages/matplotlib/backend_bases.py", line 2054, in <lambda>
+    print_method = functools.wraps(meth)(lambda *args, **kwargs: meth(
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/.venv/lib64/python3.9/site-packages/matplotlib/backends/backend_agg.py", line 496, in print_png
+    self._print_pil(filename_or_obj, "png", pil_kwargs, metadata)
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/.venv/lib64/python3.9/site-packages/matplotlib/backends/backend_agg.py", line 445, in _print_pil
+    mpl.image.imsave(
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/.venv/lib64/python3.9/site-packages/matplotlib/image.py", line 1676, in imsave
+    image.save(fname, **pil_kwargs)
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/.venv/lib64/python3.9/site-packages/PIL/Image.py", line 2583, in save
+    fp = builtins.open(filename, "w+b")
+FileNotFoundError: [Errno 2] No such file or directory: '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/recleaned_data_no-leak_TD14_TEN/exp.h5/gpu_pls_oof_parity_recleaned_data_no-leak_TD14_TEN_20261105_151114.png'

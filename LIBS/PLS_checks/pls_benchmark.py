@@ -38,7 +38,8 @@ HOST_ELEMENTS = {'Li', 'K', 'Cl'}
 EXP_DOPANTS = {'Ce', 'Gd', 'Sm', 'U'}
 
 # Candidate range for PLS components
-N_COMPONENTS_GRID = [13,14,15,16,17,23,24,25,26,27]
+# N_COMPONENTS_GRID = [1,2,5,10,20,30,40,50,60,70,80,90,100]
+N_COMPONENTS_GRID = [20,25,28,29,30,31,32,35,40]
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -122,55 +123,6 @@ class PyTorchPLS:
 # =============================================================================
 # Helper & Data Functions
 # =============================================================================
-def load_crossval_data(h5_path: str, spike_thresh: float = THRESH) -> dict:
-    """Loads dataset as float32 tensors stored in System CPU RAM."""
-    with h5py.File(h5_path, 'r') as hf:
-        spectra_raw = get_h5_ds(hf, 'X')[:].astype(np.float32)
-        targets_raw = get_h5_ds(hf, 'y')[:].astype(np.float32)
-        name_key = 'target_elements' if 'target_elements' in hf else 'feature_cols'
-
-        if 'meta/is_synthetic' in hf:
-            is_synth = hf['meta/is_synthetic'][:] # type: ignore
-        elif 'is_synthetic' in hf:
-            is_synth = get_h5_ds(hf, 'is_synthetic')[:]
-        else:
-            is_synth = np.zeros(len(spectra_raw), dtype=np.int32)
-
-        group_key = 'groups' if 'groups' in hf else 'group_id'
-        group_id = get_h5_ds(hf, group_key)[:] if group_key in hf else np.arange(len(spectra_raw))
-        wavelengths = get_h5_ds(hf, 'wavelengths')[:]
-        names = [
-            n.decode('utf-8') if isinstance(n, bytes) else str(n) 
-            for n in get_h5_ds(hf, name_key)[:]
-        ]
-
-        if 'is_lockbox' not in hf:
-            raise KeyError(
-                "HDF5 file missing 'is_lockbox'. Re-run data preprocessing to write "
-                "a group-stratified lockbox split."
-            )
-        is_lockbox = get_h5_ds(hf, 'is_lockbox')[:].astype(bool)
-
-    # Filter saturation shots
-    # clean_mask = spectra_raw.max(axis=1) <= spike_thresh
-    # X_tensor = torch.from_numpy(spectra_raw[clean_mask])
-    clean_mask = spectra_raw.max(axis=1)
-    X_tensor = torch.from_numpy(spectra_raw[clean_mask])
-
-    # L2 Normalization on Spectra ONLY
-    l2_norms = torch.norm(X_tensor, p=2, dim=1, keepdim=True).clamp(min=1e-08)
-    X_tensor = X_tensor / l2_norms
-
-    return dict(
-        X=X_tensor,
-        y=torch.from_numpy(targets_raw[clean_mask]),
-        is_synth=is_synth[clean_mask], # type: ignore
-        is_lockbox=is_lockbox[clean_mask],
-        group_id=group_id[clean_mask],
-        wavelengths=wavelengths,
-        names=names,
-    )
-
 
 def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
                        n_splits=5, n_trials=2000, min_groups_per_dopant=1, seed=42):
@@ -214,19 +166,6 @@ def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
     fold_id = np.full(len(X), -1, dtype=np.int32)
     fold_id[exp] = best_fog[inv]
     return fold_id
-
-
-def compute_dataset_fingerprint(data: dict) -> str:
-    """Computes a fast cryptographic hash of targets, groups, and lockbox flags."""
-    h = hashlib.blake2b(digest_size=16)
-    
-    # Hash y array, group IDs, and lockbox mask
-    h.update(data['y'].numpy().tobytes())
-    h.update(np.ascontiguousarray(data['group_id']).tobytes())
-    h.update(np.ascontiguousarray(data['is_lockbox']).tobytes())
-    
-    return h.hexdigest()
-
 
 def build_splits_for_seed(data, split_dir, num_folds, seed):
     """Loads existing pre-computed CV splits for a given seed or creates them if absent or stale."""
@@ -276,18 +215,62 @@ def build_splits_for_seed(data, split_dir, num_folds, seed):
     )
     return test_idx, cv_idx, cv_fold_id
 
+def compute_dataset_fingerprint(data: dict) -> str:
+    """Computes a fast cryptographic hash of targets, groups, and lockbox flags."""
+    h = hashlib.blake2b(digest_size=16)
+    
+    # Hash y array, group IDs, and lockbox mask
+    h.update(data['y'].numpy().tobytes())
+    h.update(np.ascontiguousarray(data['group_id']).tobytes())
+    h.update(np.ascontiguousarray(data['is_lockbox']).tobytes())
+    
+    return h.hexdigest()
 
-def r2_calcs(y_true, y_pred):
-    """Calculates mean R^2 score across active target elements."""
-    active_cols = y_true.max(axis=0) > 1e-5
-    if not np.any(active_cols):
-        return 0.0
-    r2_scores = []
-    for col in np.where(active_cols)[0]:
-        r2 = r2_score(y_true[:, col], y_pred[:, col])
-        r2_scores.append(r2)
-    return float(np.nanmean(r2_scores))
+def load_crossval_data(h5_path: str) -> dict:
+    """Loads pre-cleaned dataset as float32 tensors stored in System CPU RAM."""
+    with h5py.File(h5_path, 'r') as hf:
+        spectra_raw = get_h5_ds(hf, 'X')[:].astype(np.float32)
+        targets_raw = get_h5_ds(hf, 'y')[:].astype(np.float32)
+        name_key = 'target_elements' if 'target_elements' in hf else 'feature_cols'
 
+        if 'meta/is_synthetic' in hf:
+            is_synth = hf['meta/is_synthetic'][:] # type: ignore
+        elif 'is_synthetic' in hf:
+            is_synth = get_h5_ds(hf, 'is_synthetic')[:]
+        else:
+            is_synth = np.zeros(len(spectra_raw), dtype=np.int32)
+
+        group_key = 'groups' if 'groups' in hf else 'group_id'
+        group_id = get_h5_ds(hf, group_key)[:] if group_key in hf else np.arange(len(spectra_raw))
+        wavelengths = get_h5_ds(hf, 'wavelengths')[:]
+        names = [
+            n.decode('utf-8') if isinstance(n, bytes) else str(n) 
+            for n in get_h5_ds(hf, name_key)[:]
+        ]
+
+        if 'is_lockbox' not in hf:
+            raise KeyError(
+                "HDF5 file missing 'is_lockbox'. Re-run data preprocessing to write "
+                "a group-stratified lockbox split."
+            )
+        is_lockbox = get_h5_ds(hf, 'is_lockbox')[:].astype(bool)
+
+    # Convert directly to PyTorch tensor (already filtered in data prep)
+    X_tensor = torch.from_numpy(spectra_raw)
+
+    # L2 Normalization on Spectra ONLY
+    l2_norms = torch.norm(X_tensor, p=2, dim=1, keepdim=True).clamp(min=1e-08)
+    X_tensor = X_tensor / l2_norms
+
+    return dict(
+        X=X_tensor,
+        y=torch.from_numpy(targets_raw),
+        is_synth=is_synth,
+        is_lockbox=is_lockbox,
+        group_id=group_id,
+        wavelengths=wavelengths,
+        names=names,
+    )
 
 def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="GPU PLS Benchmark", save_path=None):
     """Generates an NxM parity grid plot matching P3VAE visualization."""
@@ -328,7 +311,6 @@ def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="GPU PLS Benc
         print(f"Saved Parity Plot to: {save_path}")
     plt.close()
 
-
 def print_benchmark_table(y_true, y_pred_model, y_train_mean, title_tag, elem_names):
     """
     Prints element-wise metrics comparing PLS against Dummy Baselines.
@@ -363,6 +345,28 @@ def print_benchmark_table(y_true, y_pred_model, y_train_mean, title_tag, elem_na
             print(f"{name:<8} | {strat_name:<18} | {r2:8.3f} | {mae:10.4f} | {rmse:10.4f} | {yt.max():10.3f}")
         print("-" * 95)
 
+def rmse_calcs(y_true, y_pred):
+    """Calculates mean RMSE across active target elements."""
+    active_cols = y_true.max(axis=0) > 1e-5
+    if not np.any(active_cols):
+        return float('inf')
+    rmse_scores = []
+    for col in np.where(active_cols)[0]:
+        rmse = np.sqrt(mean_squared_error(y_true[:, col], y_pred[:, col]))
+        rmse_scores.append(rmse)
+    return float(np.nanmean(rmse_scores))
+
+def r2_calcs(y_true, y_pred):
+    """Calculates mean R^2 score across active target elements."""
+    active_cols = y_true.max(axis=0) > 1e-5
+    if not np.any(active_cols):
+        return 0.0
+    r2_scores = []
+    for col in np.where(active_cols)[0]:
+        r2 = r2_score(y_true[:, col], y_pred[:, col])
+        r2_scores.append(r2)
+    return float(np.nanmean(r2_scores))
+
 
 # =============================================================================
 # Main Execution Pipeline
@@ -383,6 +387,7 @@ def main(
     h5_file = str(h5_file)
     split_dir = Path(split_dir).resolve()
     output_dir = Path(output_dir).resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. Load Data & Prepare Multi-Seed Splits
     data = load_crossval_data(h5_file)
@@ -424,8 +429,8 @@ def main(
     # 2. Hyperparameter Grid Search (Ensembled OOF across N Seeds)
     print("\n--- Tuning PLS Components via Multi-Seed GPU Cross-Validation ---")
     best_n_comp = N_COMPONENTS_GRID[0]
+    best_overall_rmse = float('inf')
     best_overall_r2 = -float('inf')
-    # oof_ens_by_ncomp = {}
     best_oof_preds_np = None
 
     for n_comp in N_COMPONENTS_GRID:
@@ -450,8 +455,6 @@ def main(
                 Y_tr_gpu = Y_cv_gpu[train_mask]
                 X_va_gpu = X_cv_gpu[val_mask]
 
-                # NOTE: SIMPLS modifies X_tr_gpu in-place during fit(), 
-                # so pass a clone if you want to reuse X_cv_gpu
                 pls = PyTorchPLS(n_components=n_comp)
                 pls.fit(X_tr_gpu.clone(), Y_tr_gpu)
 
@@ -465,20 +468,33 @@ def main(
         # Multi-seed ensembled OOF prediction (Leak-free average across N seeds)
         oof_ens_gpu = oof_sum_gpu / len(seeds)
         oof_ens_np = torch.clamp(oof_ens_gpu, min=0.0).cpu().numpy()
-        # oof_ens_by_ncomp[n_comp] = oof_ens_np
 
-        # Evaluate ensembled OOF R^2 on experimental validation samples
+        # Evaluate ensembled OOF RMSE and R^2 on experimental validation samples
         exp_mask = seed_splits[seeds[0]][2] >= 0
-        mean_r2 = r2_calcs(Y_cv_gpu.cpu().numpy()[exp_mask], oof_ens_np[exp_mask])
-        dt = time.perf_counter() - t_grid_start
-        print(f"n_components = {n_comp:2d} | Ensembled OOF Mean R^2 ({len(seeds)} seeds): {mean_r2:7.4f} | Elapsed: {dt:.2f}s")
+        y_true_exp = Y_cv_gpu.cpu().numpy()[exp_mask]
+        y_pred_exp = oof_ens_np[exp_mask]
 
-        if best_oof_preds_np is None or (not np.isnan(mean_r2) and mean_r2 > best_overall_r2):
+        mean_rmse = rmse_calcs(y_true_exp, y_pred_exp)
+        mean_r2 = r2_calcs(y_true_exp, y_pred_exp)
+        dt = time.perf_counter() - t_grid_start
+
+        print(
+            f"n_components = {n_comp:2d} | "
+            f"Ensembled OOF Mean RMSE: {mean_rmse:7.4f} wt% (R^2: {mean_r2:7.4f}) | "
+            f"Elapsed: {dt:.2f}s"
+        )
+
+        # Minimize RMSE as primary selection criterion
+        if best_oof_preds_np is None or mean_rmse < best_overall_rmse:
+            best_overall_rmse = mean_rmse
             best_overall_r2 = mean_r2
             best_n_comp = n_comp
             best_oof_preds_np = oof_ens_np
 
-    print(f"\nOptimal PLS Components: {best_n_comp} (Ensembled OOF Mean R^2: {best_overall_r2:.4f})")
+    print(
+        f"\nOptimal PLS Components: {best_n_comp} "
+        f"(Ensembled OOF Mean RMSE: {best_overall_rmse:.4f} wt% | R^2: {best_overall_r2:.4f})"
+    )
 
     if best_oof_preds_np is None:
         raise RuntimeError("No valid out-of-fold predictions were captured during hyperparamater tuning.")
@@ -565,17 +581,35 @@ if __name__ == "__main__":
     #     seeds=SEEDS,
     # )
     
+    # main(
+    #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TD14_TEN.h5",
+    #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/exp-syn_TD14_TEN",
+    #     output_dir=OUTPUT_DIR,
+    #     include_synthetic=True,
+    #     seeds=SEEDS,
+    # )
+    
+    # main(
+    #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TDN_TEN.h5",
+    #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/exp-syn_TDN_TEN",
+    #     output_dir=OUTPUT_DIR,
+    #     include_synthetic=True,
+    #     seeds=SEEDS,
+    # )
+    
+    OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/recleaned_data_no-leak_TD14_TEN/exp")
     main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TD14_TEN.h5",
-        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/exp-syn_TD14_TEN",
+        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_no-leak_TD14_TEN.h5",
+        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/recleaned_data_no-leak_TD14_TEN",
         output_dir=OUTPUT_DIR,
-        include_synthetic=True,
+        include_synthetic=False,
         seeds=SEEDS,
     )
     
+    OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/recleaned_data_no-leak_TD14_TEN/exp-syn")
     main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TDN_TEN.h5",
-        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/exp-syn_TDN_TEN",
+        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_no-leak_TD14_TEN.h5",
+        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/recleaned_data_no-leak_TD14_TEN",
         output_dir=OUTPUT_DIR,
         include_synthetic=True,
         seeds=SEEDS,

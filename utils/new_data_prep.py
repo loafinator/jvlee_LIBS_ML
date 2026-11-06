@@ -83,11 +83,11 @@ _SINGLES_CONC_MAP: dict[str, str] = {
 # Lookup table mapping MS-series sample identifiers to CeCl3 concentrations (wt%)
 _MS_CONC_MAP: dict[str, float] = {
     'ms4': 3.0,
-    'ms5': 3.0,
+    'ms5': 2.95, # A_dissertation: 1.676 wt%Ce =~ 2.95wt%CeCl3   nom: 3.0,
     'ms6': 0.0,
     'ms7': 0.1,
-    'ms8': 0.1,
-    'ms9': 0.5,
+    'ms8': 0.055, # A_dissertation: 0.0315 wt%Ce =~ 0.055wt%CeCl3   nom: 0.1,
+    'ms9': 0.395, # A_dissertation: 0.2245 wt%Ce =~ 0.395wt%CeCl3   nom: 0.5,
     'ms10': 1.0,
     'ms11': 1.0,
     'ms12': 3.0,
@@ -97,7 +97,7 @@ _MS_CONC_MAP: dict[str, float] = {
 }
 
 _MSU_CONC_MAP = {
-    'msu1': 1.0, 
+    'msu1': 1.0,  # A_dissertation: 0.741wt%UCl3   nom: 1.0,
     'msu2': 1.0
 }
 
@@ -220,7 +220,10 @@ _SSU_AND_DU_MAP: dict[str, float] = {
 _SCAN_PATTERN       = re.compile(r'(\d+(\.\d+)?)\s*mvs')
 _TECH_PATTERN       = re.compile(r'(cv|ocv|ca|lp|eis|libs)')
 _GTD_PATTERN        = re.compile(r'gtd(\d+\.?\d*)')
-_DELAY_PATTERN      = re.compile(r'(?:(?<!Q)delay\D*(\d+\.?\d*)\s?(us|ms|s)?|(\d+\.?\d*)\s?(ns|us|ms|s)?\D*(?<!Q)delay)')
+_DELAY_PATTERN = re.compile(
+    r'(?:(?<!q)delay[^\d/\\]*?(\d+\.?\d*)\s*(us|ms|ns|s)?|(\d+\.?\d*)\s*(us|ms|ns|s)?[^\d/\\]*?(?<!q)delay)',
+    flags=re.IGNORECASE
+)
 _REP_PATTERN        = re.compile(r'(?<![a-z])(?:rep(?:licate)?|r(?=\d)|run)\s?(\d+)(?:[^a-z]|$)')
 _WIDTH_PATTERN      = re.compile(r'(?:width\D*(\d+\.?\d*)\s?(us|ms|s)?|(\d+\.?\d*)\s?(us|ms|s)?\D*width)')
 _ENERGY_PATTERN     = re.compile(r'(?:energy|enrgy)\D*(\d+\.?\d*)|(\d+\.?\d*)\s*(?:mj|milli)?\D*(?:energy|enrgy)')
@@ -234,14 +237,18 @@ _STATIC_PATTERN     = re.compile(r'(static)')
 _CONC_PATTERN       = re.compile(r'(?:^|[^\w])(\d+\.?\d*)\s*(wt%|ppm|%)')
 _NEUP_PATTERN       = re.compile(r'neup')
 _SUMMARY_PATTERNS_REGEX = re.compile(
-    r'^(Data_Import_.*\.csv|Static_.*_Values_.*\.csv|Static_Import.*\.csv|'
+    r'^(Data_Import_.*\.csv|.*_Data_lamba_.*\.csv|Static_.*_Values_.*\.csv|Static_Import.*\.csv|'
     r'Solid_Normalized_Spectra.*\.csv|Pressure_Import_.*\.csv|Energy_Import_.*\.csv|'
     r'Flow_Import_.*\.csv|.*_SNR_Import_.*\.csv|.*_SNR_Values_.*\.csv|Test_SNR_.*\.csv)$',
     re.IGNORECASE,
 )
-_EXCLUDED_DIR_PATTERNS_REGEX = re.compile(
-    r'(Backup 9-12-2016|Williams_Ammon_Ned|Matlab analysis)', re.IGNORECASE
+_EXCLUDED_SAMPLES_PATTERN_REGEX = re.compile(
+    r'h2o|aqueous|iron|rust|fiber|cable|optic|pure mg|gd-mg', 
+    flags=re.IGNORECASE
 )
+# _EXCLUDED_DIR_PATTERNS_REGEX = re.compile(
+    # r'(Backup 9-12-2016|Williams_Ammon_Ned|Matlab analysis)', re.IGNORECASE
+# )
 # endregion
 
 # Standardized experimental defaults applied when metadata parameters are unlisted
@@ -310,7 +317,8 @@ _DEFAULT_EXP_VARS_COLS: List[str] = [
     'static_', 
     'blank',
     'kinetic',
-    'repetition'
+    'repetition',
+    'meta_source'
 ]
 
 _ALL_COLUMNS: list[str] = list(
@@ -501,8 +509,9 @@ def enrich_file_with_metadata(
     og_path = Path(path)
 
     all_text = (' '.join(og_path.parts) + ' ' + og_path.name).lower()
-
-    if _SUMMARY_PATTERNS_REGEX.search(og_path.name) or _EXCLUDED_DIR_PATTERNS_REGEX.search(all_text):
+    # if _SUMMARY_PATTERNS_REGEX.search(og_path.name) or _EXCLUDED_DIR_PATTERNS_REGEX.search(all_text):
+    #     return None
+    if _SUMMARY_PATTERNS_REGEX.search(og_path.name) or _EXCLUDED_SAMPLES_PATTERN_REGEX.search(all_text):
         return None
 
     if log_path is None:
@@ -757,6 +766,7 @@ def parent_concentration_data(
         data['temperature_C'] = None
         data['scan_rate_mVs'] = None
         data['technique'] = None
+        data['meta_source'] = None  # 1=default, 2=parsed, 3=A_dissertation
         data['file_path'] = path_str
 
         # Step 1: Parse electrochemistry scan rate
@@ -775,22 +785,41 @@ def parent_concentration_data(
             elif 'lp' in all_text: data['technique'] = 'LP'
 
         # Step 3: Parse spectrometer gate delay
-        gtd_match = _GTD_PATTERN.search(all_text)
-        delay_match = _DELAY_PATTERN.search(all_text)
+        # replace 0p25 sort of thing with 0.25
+        clean_text = re.sub(r'(\d+)p(\d+)', r'\1.\2', all_text)
+        # replace 05 with 0.5 to match file name pattern in parent folder
+        clean_text = re.sub(r'\b05\s*us\b', r'0.5 us', clean_text)
+
+        gtd_match = _GTD_PATTERN.search(clean_text)
+        delay_match = _DELAY_PATTERN.search(clean_text)
+        unit_match = re.search(r'(\d+\.?\d*)\s*(us|ms|ns|s)', Path(clean_text).name, re.IGNORECASE)
+
         if gtd_match:
             data['delay_study'] = 1
             data['delay'] = float(gtd_match.group(1))
+            data['meta_source'] = 2
         elif delay_match:
             data['delay_study'] = 1
             val = float(delay_match.group(1) or delay_match.group(3))
-            unit = delay_match.group(2) or delay_match.group(4) or 'us'
+            unit = (delay_match.group(2) or delay_match.group(4) or 'us').lower()
             if unit == 's': val *= 1e6
             elif unit == 'ms': val *= 1e3
             elif unit == 'ns': val /= 1e3
             data['delay'] = val
+            data['meta_source'] = 2
+        elif unit_match and 'delay' in all_text:
+            data['delay_study'] = 1
+            val = float(unit_match.group(1))
+            unit = unit_match.group(2).lower()
+            if unit == 's': val *= 1e6
+            elif unit == 'ms': val *= 1e3
+            elif unit == 'ns': val /= 1e3
+            data['delay'] = val
+            data['meta_source'] = 2
         else:
             data['delay_study'] = 0
             data['delay'] = _STANDARD_DELAY
+            data['meta_source'] = 1
 
         # Step 4: Parse experiment replicate index
         rep_match = _REP_PATTERN.search(all_text)
@@ -864,7 +893,9 @@ def parent_concentration_data(
         data['kinetic'] = 1 if 'kinetic' in all_text else 0
 
         # Step 13: Identify blank baseline measurements
-        if _BLANK_PATTERN.search(all_text):
+        has_sample_code = bool(re.search(r'(?<![a-z])msu?\d+', path.name.lower()))
+
+        if _BLANK_PATTERN.search(path.name) or (_BLANK_PATTERN.search(all_text) and not has_sample_code):
             data['blank'] = 1
             for comp in composition_columns:
                 if comp not in ('frac_LiCl', 'frac_KCl'):
@@ -1027,6 +1058,13 @@ def parent_concentration_data(
                 if key in all_text:
                     data['conc_UCl3_wt%'] = conc
                     break
+
+        if 'keith' in all_text and data['meta_source'] == 1:
+            data['delay'] = 6.0
+            data['width'] = 20.0
+            data['shots'] = 200
+            data['energy'] = 55.0
+            data['meta_source'] = 3
 
         rows.append(data)
     
@@ -1452,17 +1490,24 @@ def dataset_cleaning(
 
     print(f"Filtered dataset down to {len(spectra)} shots matching condition parameters.")
 
-    # --- Filter Cosmic Rays & Saturated Detector Shots on RAW Counts ---
-    # Compute max counts directly on the synchronized spectra array
-    raw_max_counts = spectra.max(axis=1)
-    unsaturated_mask = raw_max_counts #<= RAW_SATURATION_THRESH
+    # Step 1c: Scale integrated summed spectra to per-shot average counts
+    spectra, df_meta = summation_average(
+        input_data=spectra,
+        df_meta=df_meta,
+        threshold=65535.0,  # 16-bit ADC hardware ceiling
+        default_shots=50.0
+    )
 
-    # print(f"Dropping {(~unsaturated_mask).sum()} shots exceeding raw count threshold {RAW_SATURATION_THRESH}")
+    # Step 1d: Filter true single-shot hardware saturation & cosmic rays
+    RAW_SATURATION_THRESH = 60000.0
+    per_shot_max = spectra.max(axis=1)
+    unsaturated_mask = per_shot_max <= RAW_SATURATION_THRESH
 
+    print(f"Dropping {(~unsaturated_mask).sum()} true saturated shots (> {RAW_SATURATION_THRESH} counts/shot)")
     spectra = spectra[unsaturated_mask]
     df_meta = df_meta[unsaturated_mask].reset_index(drop=True)
 
-    # Step 2: Intensity Clipping & LIBS Spectral Cleaning (Baseline + Area Norm)
+    # Step 2: Baseline subtraction & area normalization
     X_clean = clean_libs_spectrum(spectra)
 
     # Step 3: Elemental Stoichiometric Conversion for Targets (y)
@@ -1482,7 +1527,7 @@ def dataset_cleaning(
     y_filtered = selector.fit_transform(df_elemental)
     surviving_cols = df_elemental.columns[selector.get_support()].tolist()
 
-# --- 4a. Compute Group IDs (with Zero-Group Splitting) ---
+    # --- 4a. Compute Group IDs (with Zero-Group Splitting) ---
     _, initial_groups = np.unique(np.round(y_filtered, 3), axis=0, return_inverse=True)
     
     # Split all-zero shots by file_id so blank samples don't land in one single group
@@ -1518,33 +1563,33 @@ def dataset_cleaning(
     is_lockbox = np.isin(groups, lockbox_groups)
 
     # Step 5: Save Clean PLS-Ready Dataset to HDF5
-    comp_kwargs = {'compression': 'gzip', 'compression_opts': 3} #[cite: 4]
-    with h5py.File(output_h5, 'w') as hf_out: #[cite: 4]
-        meta_out = hf_out.create_group('meta') #[cite: 4]
-        for c in ['delay', 'energy', 'repetition']: #[cite: 4]
-            if c in df_meta.columns: #[cite: 4]
-                meta_out.create_dataset(c, data=df_meta[c].to_numpy(np.float32)) #[cite: 4]
+    comp_kwargs = {'compression': 'gzip', 'compression_opts': 3} 
+    with h5py.File(output_h5, 'w') as hf_out: 
+        meta_out = hf_out.create_group('meta') 
+        for c in ['delay', 'energy', 'repetition', 'meta_source']: 
+            if c in df_meta.columns: 
+                meta_out.create_dataset(c, data=df_meta[c].to_numpy(np.float32))
         meta_out.create_dataset(
             'file_id',
             data=np.char.encode(df_meta['file_id'].astype(str).to_numpy(dtype='U'), 'utf-8'),
-            compression='gzip') #[cite: 4]
-        if aux_cols: #[cite: 4]
-            hf_out.create_dataset('y_aux', data=df_elemental_all[aux_cols].to_numpy(np.float32), **comp_kwargs) #[cite: 4]
-            hf_out.create_dataset('y_aux_names', data=np.char.encode(np.array(aux_cols, dtype='U'), 'utf-8')) #[cite: 4]
-        for c in ['frac_LiCl', 'frac_KCl', 'temperature_C']: #[cite: 4]
-            if c in df_meta.columns: #[cite: 4]
-                meta_out.create_dataset(c, data=df_meta[c].to_numpy(np.float32)) #[cite: 4]
+            compression='gzip')
+        if aux_cols: 
+            hf_out.create_dataset('y_aux', data=df_elemental_all[aux_cols].to_numpy(np.float32), **comp_kwargs)
+            hf_out.create_dataset('y_aux_names', data=np.char.encode(np.array(aux_cols, dtype='U'), 'utf-8')) 
+        for c in ['frac_LiCl', 'frac_KCl', 'temperature_C']:
+            if c in df_meta.columns: 
+                meta_out.create_dataset(c, data=df_meta[c].to_numpy(np.float32))
         
         # Save group IDs and explicit lockbox mask
         hf_out.create_dataset('groups', data=groups.ravel().astype(np.int32))
         hf_out.create_dataset('is_lockbox', data=is_lockbox.astype(bool), **comp_kwargs)
 
-        hf_out.create_dataset('X', data=X_clean.astype(np.float32, copy=False), **comp_kwargs) #[cite: 4]
-        hf_out.create_dataset('y', data=y_filtered.astype(np.float32, copy=False), **comp_kwargs) #[cite: 4]
-        hf_out.create_dataset('wavelengths', data=wavelengths.astype(np.float32, copy=False)) #[cite: 4]
+        hf_out.create_dataset('X', data=X_clean.astype(np.float32, copy=False), **comp_kwargs) 
+        hf_out.create_dataset('y', data=y_filtered.astype(np.float32, copy=False), **comp_kwargs) 
+        hf_out.create_dataset('wavelengths', data=wavelengths.astype(np.float32, copy=False)) 
         
-        str_dt = h5py.string_dtype(encoding='utf-8') #[cite: 4]
-        hf_out.create_dataset('target_elements', data=np.array(surviving_cols, dtype=object), dtype=str_dt) #[cite: 4]
+        str_dt = h5py.string_dtype(encoding='utf-8') 
+        hf_out.create_dataset('target_elements', data=np.array(surviving_cols, dtype=object), dtype=str_dt)
         
     print(f"✅ Cleaned dataset saved to {output_h5}")
     print(f"   Spectra Matrix (X): {X_clean.shape}")
@@ -1609,6 +1654,86 @@ def compute_elemental_wt(df_meta: pd.DataFrame) -> pd.DataFrame:
 
     elemental_df['Cl'] = total_cl_wt
     return elemental_df
+
+# 3.d. Average the summation datasets
+def summation_average(
+    input_data: Path | str | np.ndarray,
+    df_meta: pd.DataFrame | None = None,
+    threshold: float = 65535.0,
+    default_shots: float = 50.0
+) -> tuple[np.ndarray, pd.DataFrame]:
+    """Identifies accumulated summed spectra exceeding the intensity threshold and scales 
+    them to a per-shot average using parsed or fallback shot counts.
+
+    Parameters
+    ----------
+    input_data : Path | str | np.ndarray
+        HDF5 file path or pre-loaded 2D spectra matrix (N_shots x N_wavelengths).
+    df_meta : pd.DataFrame | None
+        Metadata DataFrame matching input_data (required if input_data is an array).
+    threshold : float, default=65535.0
+        Peak count threshold to flag integrated summed spectra (16-bit ADC limit).
+    default_shots : float, default=50.0
+        Fallback shot count used when 'shots' metadata is missing or unparsed.
+
+    Returns
+    -------
+    tuple[np.ndarray, pd.DataFrame]
+        Scaled 2D spectra matrix and updated metadata DataFrame.
+    """
+    # 1. Load data if HDF5 path is passed
+    if isinstance(input_data, (str, Path)):
+        h5_path = Path(input_data).resolve()
+        with h5py.File(h5_path, 'r') as hf:
+            print(f"Reading spectra and metadata from: {h5_path.name}")
+            spectra = hf['spectra'][:].astype(np.float32) # type: ignore
+            meta_grp = hf['metadata']
+            meta_dict = {}
+            for k in meta_grp.keys(): # type: ignore
+                ds = meta_grp[k][:] # type: ignore
+                if ds.dtype.kind in ('O', 'S', 'V'): # type: ignore
+                    meta_dict[k] = [x.decode('utf-8') if isinstance(x, bytes) else str(x) for x in ds] # type: ignore
+                else:
+                    meta_dict[k] = ds
+            df_meta = pd.DataFrame(meta_dict)
+    else:
+        spectra = input_data.astype(np.float32, copy=False)
+        if df_meta is None:
+            raise ValueError("df_meta must be provided when input_data is a NumPy array.")
+        df_meta = df_meta.copy()
+
+    # 2. Identify candidate summed spectra by peak intensity
+    max_counts = spectra.max(axis=1) # type: ignore
+    summed_mask = max_counts > threshold
+    n_summed = summed_mask.sum()
+    total_shots = len(max_counts)
+
+    print(f"\nTotal spectra evaluated: {total_shots:,}")
+    print(f"Summed spectra identified (> {threshold:,.0f} counts): {n_summed:,} ({n_summed / total_shots:.2%})")
+
+    if n_summed == 0:
+        print("No spectra found exceeding threshold. Returning unscaled arrays.")
+        return spectra, df_meta # type: ignore
+
+    # 3. Extract and sanitize shot counts from metadata
+    if 'shots' in df_meta.columns:
+        shots_arr = pd.to_numeric(df_meta['shots'], errors='coerce').to_numpy(dtype=np.float32)
+        shots_arr = np.where((shots_arr > 0) & ~np.isnan(shots_arr), shots_arr, default_shots)
+    else:
+        shots_arr = np.full(len(spectra), default_shots, dtype=np.float32)
+
+    # 4. Construct scale factors (shots for summed spectra, 1.0 for single-shot/averaged)
+    scale_factors = np.where(summed_mask, shots_arr, 1.0)
+
+    # 5. Broadcast 1D scale factors across the 2D spectra matrix (N x 1 layout)
+    scaled_spectra = spectra / scale_factors[:, None]
+
+    # 6. Audit metadata tracking
+    df_meta['is_summed'] = summed_mask.astype(int)
+    df_meta['scale_factor'] = scale_factors
+
+    print(f"✅ Successfully scaled {n_summed:,} summed spectra to per-shot average counts.")
+    return scaled_spectra, df_meta
 
 
 def full_run(
@@ -1694,6 +1819,157 @@ def full_run(
 # =============================================================================
 # 4. Data inspection
 # =============================================================================
+def check_summed_files_shots(
+    h5_file: str | Path = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
+    threshold: float = 70000.0
+) -> pd.DataFrame:
+    """Inspects spectra exceeding the summation intensity threshold (>70,000 counts) 
+    and checks if their shot counts were explicitly parsed or assigned standard defaults.
+    """
+    h5_file = Path(h5_file).resolve()
+    if not h5_file.exists():
+        raise FileNotFoundError(f"HDF5 file not found at: {h5_file}")
+
+    with h5py.File(h5_file, 'r') as hf:
+        print("Reading spectra and metadata from HDF5...")
+        raw_spectra = hf['spectra'][:] # type: ignore
+        meta_grp = hf['metadata']
+        
+        # Load metadata into a DataFrame
+        meta_dict = {}
+        for k in meta_grp.keys(): # type: ignore
+            ds = meta_grp[k][:] # type: ignore
+            if ds.dtype.kind in ('O', 'S', 'V'): # type: ignore
+                meta_dict[k] = [x.decode('utf-8') if isinstance(x, bytes) else str(x) for x in ds] # type: ignore
+            else:
+                meta_dict[k] = ds
+        df_meta = pd.DataFrame(meta_dict)
+
+    # Calculate max peak intensity for every row
+    max_counts = raw_spectra.max(axis=1) # type: ignore
+    
+    # Filter for candidate summed spectra
+    summed_mask = max_counts > threshold
+    n_summed = summed_mask.sum()
+    total_shots = len(max_counts)
+    
+    print(f"\nTotal spectra in HDF5: {total_shots:,}")
+    print(f"Spectra with peak > {threshold:,.0f} counts: {n_summed:,} ({n_summed / total_shots:.2%})")
+    
+    if n_summed == 0:
+        print("No spectra found exceeding the threshold.")
+        return pd.DataFrame()
+
+    df_summed = df_meta[summed_mask].copy()
+    df_summed['max_counts'] = max_counts[summed_mask]
+
+    # --- 1. Breakdown by Metadata Source ---
+    if 'shot_study' in df_summed.columns:
+        n_parsed = (df_summed['shot_study'] == 1).sum()
+        n_default = (df_summed['shot_study'] == 0).sum()
+        print(f"\n--- Metadata Source Breakdown (Peak > {threshold:,.0f}) ---")
+        print(f"  - Explicitly Parsed (shot_study = 1) : {n_parsed:,} rows ({n_parsed / n_summed:.1%})")
+        print(f"  - Default Fallback   (shot_study = 0) : {n_default:,} rows ({n_default / n_summed:.1%})")
+
+    # --- 2. Distribution of Shot Values ---
+    if 'shots' in df_summed.columns and 'shot_study' in df_summed.columns:
+        print("\n--- Shot Count Distribution in High-Count Spectra ---")
+        breakdown = df_summed.groupby(['shots', 'shot_study']).size().reset_index(name='count')
+        breakdown['source'] = breakdown['shot_study'].map({1: 'Parsed', 0: 'Default (50)'})
+        print(breakdown[['shots', 'source', 'count']].to_string(index=False))
+
+    # --- 3. Sample File Paths ---
+    if 'og_path' in df_summed.columns:
+        if 'shot_study' in df_summed.columns:
+            default_paths = df_summed[df_summed['shot_study'] == 0]['og_path'].drop_duplicates().tolist()
+            parsed_paths = df_summed[df_summed['shot_study'] == 1]['og_path'].drop_duplicates().tolist()
+
+            print(f"\n--- Sample Paths with DEFAULT Shot Counts ({len(default_paths)} unique files) ---")
+            for p in default_paths[:5]:
+                print(f"  • {p}")
+
+            print(f"\n--- Sample Paths with PARSED Shot Counts ({len(parsed_paths)} unique files) ---")
+            for p in parsed_paths[:5]:
+                print(f"  • {p}")
+
+    return df_summed
+
+def detect_scaled_duplicates(
+    h5_file: str | Path = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
+    max_check_pairs: int = 5000
+) -> pd.DataFrame:
+    """Checks if single-row spectra in HDF5 are exact integer-scaled versions 
+    (sum vs mean) of other spectra in the dataset.
+    """
+    with h5py.File(h5_file, 'r') as hf:
+        spectra = hf['spectra'][:] # type: ignore
+        og_paths = [x.decode('utf-8') if isinstance(x, bytes) else str(x) for x in hf['metadata/og_path'][:]] # type: ignore
+
+    # Focus on single-row summary files or file-level means
+    df_meta = pd.DataFrame({'og_path': og_paths, 'idx': np.arange(len(spectra))}) # type: ignore
+    
+    # Calculate vector norms / row sums as quick sorting keys
+    row_sums = spectra.sum(axis=1) # type: ignore
+    
+    # Filter out empty/zero spectra
+    valid = row_sums > 0
+    spectra = spectra[valid] # type: ignore
+    og_paths = np.array(og_paths)[valid]
+    row_sums = row_sums[valid]
+
+    print(f"Testing {len(spectra):,} spectra for integer-scaling matches...") # type: ignore
+
+    # Normalize spectra by area to find identical spectral shapes
+    areas = spectra.sum(axis=1, keepdims=True) # type: ignore
+    norm_spectra = np.where(areas > 0, spectra / np.maximum(areas, 1e-12), 0.0)
+
+    # Group by similarity of normalized spectra via quantized hashing
+    # If two spectra are identical up to a scalar multiplier, their normalized shape is identical
+    shape_hashes = {}
+    for i, spec in enumerate(norm_spectra):
+        # Quantize normalized spectrum to 4 decimal places for robust matching
+        h = hash(np.round(spec, 4).tobytes())
+        shape_hashes.setdefault(h, []).append(i)
+
+    matches = []
+    for h, group_indices in shape_hashes.items():
+        if len(group_indices) > 1:
+            # We found spectra with identical normalized line shapes!
+            base_idx = group_indices[0]
+            base_sum = row_sums[base_idx]
+            base_path = og_paths[base_idx]
+
+            for other_idx in group_indices[1:]:
+                other_sum = row_sums[other_idx]
+                other_path = og_paths[other_idx]
+
+                ratio = max(base_sum, other_sum) / min(base_sum, other_sum)
+                nearest_int = int(round(ratio))
+
+                # Check if ratio is close to a standard integer shot count (e.g., within 0.5%)
+                if abs(ratio - nearest_int) < 0.005 and nearest_int > 1:
+                    matches.append({
+                        'ratio_multiplier': nearest_int,
+                        'exact_float_ratio': round(ratio, 4),
+                        'path_A': base_path if base_sum > other_sum else other_path,  # Summed
+                        'path_B': other_path if base_sum > other_sum else base_path,  # Averaged
+                    })
+
+    df_matches = pd.DataFrame(matches)
+    print(f"\nFound {len(df_matches)} integer-scaled matching pairs!")
+    
+    if not df_matches.empty:
+        print("\n--- Breakdown by Discovered Multipliers ---")
+        print(df_matches['ratio_multiplier'].value_counts().to_string())
+
+        print("\n--- Sample Matched Pairs (Summed vs. Averaged) ---")
+        for _, row in df_matches.head(10).iterrows():
+            print(f"Multiplier: {row['ratio_multiplier']}x ({row['exact_float_ratio']})")
+            print(f"  Summed : .../{Path(row['path_A']).name}")
+            print(f"  Averaged: .../{Path(row['path_B']).name}\n")
+
+    return df_matches
+
 def find_cosmic(
         h5_file: Path | str = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
 ):
@@ -1895,33 +2171,33 @@ if __name__ == "__main__":
     # --------------------------------------------------------------------------------
     # region Full Run
     # --------------------------------------------------------------------------------
-    full_run(
-        input_csv_dir = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs",
-        enriched_csv_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/enriched_csvs',
-        combined_root = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned',
-        cleaned_h5 = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_no-leak_TD14_TEN.h5',
-        drop_columns=DROP_COLUMNS,
-        rename_columns=RENAME_COLUMNS,
-        composition_columns=COMPOSITION_COLUMNS,
-        min_wavelength=MIN_WAVELENGTH,
-        max_wavelength=MAX_WAVELENGTH,
-        allowed_extensions=ALLOWED_EXTENSIONS,
-        required_columns=REQUIRED_COLUMNS,
-        salt_states=SALT_STATES,
-        experimental_variation_columns=EXPERIMENTAL_VARIATION_COLUMNS,
-        include_experimental_variation_columns=INCLUDE_EXPERIMENTAL_VARIATION_COLUMNS,
-        log_q=LOG_Q,
-        log_path=LOG_PATH,
-        compression=COMPRESSION,
-        compression_level=COMPRESSION_LEVEL,
-        transpose_needed=TRANSPOSE_NEEDED,
-        n_workers=N_WORKERS,
-        target_elements=TARGET_ELEMENTS,
-        clip_percentile=CLIP_PERCENTILE, # Optional parameters to filter conditions dynamically
-        target_delay=TARGET_DELAY,
-        target_energy=TARGET_ENERGY,
-        target_state_molten=TARGET_STATE_MOLTEN,
-    )
+    # full_run(
+    #     input_csv_dir = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs",
+    #     enriched_csv_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/enriched_csvs',
+    #     combined_root = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned',
+    #     cleaned_h5 = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_no-leak_TD14_TEN.h5',
+    #     drop_columns=DROP_COLUMNS,
+    #     rename_columns=RENAME_COLUMNS,
+    #     composition_columns=COMPOSITION_COLUMNS,
+    #     min_wavelength=MIN_WAVELENGTH,
+    #     max_wavelength=MAX_WAVELENGTH,
+    #     allowed_extensions=ALLOWED_EXTENSIONS,
+    #     required_columns=REQUIRED_COLUMNS,
+    #     salt_states=SALT_STATES,
+    #     experimental_variation_columns=EXPERIMENTAL_VARIATION_COLUMNS,
+    #     include_experimental_variation_columns=INCLUDE_EXPERIMENTAL_VARIATION_COLUMNS,
+    #     log_q=LOG_Q,
+    #     log_path=LOG_PATH,
+    #     compression=COMPRESSION,
+    #     compression_level=COMPRESSION_LEVEL,
+    #     transpose_needed=TRANSPOSE_NEEDED,
+    #     n_workers=N_WORKERS,
+    #     target_elements=TARGET_ELEMENTS,
+    #     clip_percentile=CLIP_PERCENTILE, # Optional parameters to filter conditions dynamically
+    #     target_delay=TARGET_DELAY,
+    #     target_energy=TARGET_ENERGY,
+    #     target_state_molten=TARGET_STATE_MOLTEN,
+    # )
     # endregion
 
     # --------------------------------------------------------------------------------
@@ -2325,3 +2601,28 @@ if __name__ == "__main__":
     # --------------------------------------------------------------------------------
     # find_cosmic(h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5")
     # endregion
+    
+    # --------------------------------------------------------------------------------
+    # region Summation sets shot data?
+    # --------------------------------------------------------------------------------
+    # check_summed_files_shots(
+    #     h5_file='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
+    #     threshold=70000
+    # )
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region Average sets average of summation sets?
+    # --------------------------------------------------------------------------------
+    """
+    Thank freaking goodness! I just ran this and there aren't any instances of the averages
+    just being averaged summation sets. This indicates that I don't need to figure out a way
+    to work around them because if that was the case that would introduce a decent chunk of
+    data leakage which would be very no bueno.
+    """
+    # detect_scaled_duplicates(
+    #     h5_file='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
+    #     max_check_pairs=10000
+    # )
+    # endregion
+    

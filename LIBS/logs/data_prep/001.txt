@@ -1,0 +1,36 @@
+data_prep.py loading ...
+Hi
+Reading spectra and metadata from HDF5...
+
+Total spectra in HDF5: 294,411
+Spectra with peak > 70,000 counts: 54,290 (18.44%)
+
+--- Metadata Source Breakdown (Peak > 70,000) ---
+  - Explicitly Parsed (shot_study = 1) : 462 rows (0.9%)
+  - Default Fallback   (shot_study = 0) : 53,828 rows (99.1%)
+
+--- Shot Count Distribution in High-Count Spectra ---
+ shots       source  count
+  10.0       Parsed     18
+  20.0       Parsed     18
+  30.0       Parsed     18
+  40.0       Parsed     18
+  50.0 Default (50)  53828
+  50.0       Parsed     18
+ 100.0       Parsed     15
+ 200.0       Parsed    300
+ 500.0       Parsed     57
+
+--- Sample Paths with DEFAULT Shot Counts (2362 unique files) ---
+  • /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH/Backup/Experiments & Calculations - Copy/Pure Sm Studies/SmCl3 LIBS Glovebox/Sm LIBS raw data/ANS Samples Trial 2/SLB_run8.csv
+  • /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH/Backup/Experiments & Calculations/SmCl3 Studies/SmCl3 LIBS Glovebox/Optimization/Energy/Qdelay =150/150Qdelay_run4.csv
+  • /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH/backup 5_10_2019/Experiments & Calculations/Pure Sm Studies/SmCl3 LIBS Glovebox/Sm LIBS raw data/ANS samples/SLD_run7.csv
+  • /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH/backup 5_10_2019/Experiments & Calculations/Pure Sm Studies/SmCl3 LIBS Glovebox/Optimization/Energy/Qdelay =70/70Qdelay_run2.csv
+  • /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH/Backup/Experiments & Calculations/SmCl3 Studies/SmCl3 LIBS Glovebox/Optimization/Gate width/8us/8us_width_run6.csv
+
+--- Sample Paths with PARSED Shot Counts (462 unique files) ---
+  • /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/Awilliams/DATA BACKUP/NEUP LIBS Project/Preliminary Data and Information/Spectra/CeCl3-LiCl-KCl-H2O Test/Static/Calibration Curves/500 shots 4000 ppm x ten/t6.csv
+  • /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/Awilliams/DATA BACKUP/Backup 9-17-2016/NEUP LIBS Project/Preliminary Data and Information/Spectra/CeCl3-LiCl-KCl-H2O Test/Static/Calibration Curves/200 shots 5 repeats/d2t1/100 ppm d2t1.csv
+  • /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/Awilliams/DATA BACKUP/Backup 9-17-2016/NEUP LIBS Project/Preliminary Data and Information/Spectra/CeCl3-LiCl-KCl-H2O Test/Static/Calibration Curves/200 shots 5 repeats/t5/1000 ppm t5.csv
+  • /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/Awilliams/DATA BACKUP/Backup 9-17-2016/NEUP LIBS Project/Preliminary Data and Information/Spectra/CeCl3-LiCl-KCl-H2O Test/Static/Calibration Curves/200 shots 5 repeats/d2t2/8000 ppm d2t2.csv
+  • /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/Awilliams/DATA BACKUP/Backup 5_11_2016/NEUP LIBS Project/Preliminary Data and Information/Spectra/CeCl3-LiCl-KCl-H2O Test/Static/Calibration Curves/200 shots 4000 ppm x10 1 Hz/t6.csv

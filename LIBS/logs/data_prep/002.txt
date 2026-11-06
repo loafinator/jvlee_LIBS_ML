@@ -1,0 +1,51 @@
+data_prep.py loading ...
+Hi
+Testing 294,184 spectra for integer-scaling matches...
+
+Found 45 integer-scaled matching pairs!
+
+--- Breakdown by Discovered Multipliers ---
+ratio_multiplier
+2    45
+
+--- Sample Matched Pairs (Summed vs. Averaged) ---
+Multiplier: 2x (1.9950000047683716)
+  Summed : .../10_smcl3_run2.csv
+  Averaged: .../SampleUG9_t1_run3.csv
+
+Multiplier: 2x (1.9962999820709229)
+  Summed : .../10_smcl3_run2.csv
+  Averaged: .../SampleUG9_t1_run3.csv
+
+Multiplier: 2x (1.9972000122070312)
+  Summed : .../10_smcl3_run2.csv
+  Averaged: .../SampleUG9_t1_run3.csv
+
+Multiplier: 2x (1.9986000061035156)
+  Summed : .../10_smcl3_run2.csv
+  Averaged: .../SampleUG9_t1_run3.csv
+
+Multiplier: 2x (2.0011000633239746)
+  Summed : .../10_smcl3_run2.csv
+  Averaged: .../SampleUG9_t1_run3.csv
+
+Multiplier: 2x (2.0027999877929688)
+  Summed : .../10_smcl3_run2.csv
+  Averaged: .../SampleUG9_t1_run3.csv
+
+Multiplier: 2x (2.0037999153137207)
+  Summed : .../10_smcl3_run2.csv
+  Averaged: .../SampleUG9_t1_run3.csv
+
+Multiplier: 2x (2.004699945449829)
+  Summed : .../10_smcl3_run2.csv
+  Averaged: .../SampleUG9_t1_run3.csv
+
+Multiplier: 2x (2.001199960708618)
+  Summed : .../10_smcl3_run2.csv
+  Averaged: .../SampleUG9_t1_run3.csv
+
+Multiplier: 2x (1.997499942779541)
+  Summed : .../10_smcl3_run2.csv
+  Averaged: .../SampleUG9_t1_run3.csv
+
