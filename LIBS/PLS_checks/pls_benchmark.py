@@ -39,7 +39,9 @@ EXP_DOPANTS = {'Ce', 'Gd', 'Sm', 'U'}
 
 # Candidate range for PLS components
 # N_COMPONENTS_GRID = [1,2,5,10,20,30,40,50,60,70,80,90,100]
-N_COMPONENTS_GRID = [20,25,28,29,30,31,32,35,40]
+# N_COMPONENTS_GRID = [20,25,28,29,30,31,32,35,40]
+# N_COMPONENTS_GRID = [50,55,58,59,60,61,62,65,70]
+N_COMPONENTS_GRID = [70,75,78,79,80,81,82,85,90]
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -391,6 +393,11 @@ def main(
 
     # 1. Load Data & Prepare Multi-Seed Splits
     data = load_crossval_data(h5_file)
+    n_synth = (data['is_synth'] == 1).sum()
+    print(f"Loaded {len(data['X'])} total shots | Real: {len(data['X']) - n_synth} | Synthetic: {n_synth}")
+
+    if include_synthetic and n_synth == 0:
+        print("⚠️ WARNING: 'include_synthetic=True' was requested, but 0 synthetic shots were found in HDF5!")
     
     # Load fold IDs for all seeds
     seed_splits = {}
@@ -597,20 +604,18 @@ if __name__ == "__main__":
     #     seeds=SEEDS,
     # )
     
-    OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/recleaned_data_no-leak_TD14_TEN/exp")
     main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_no-leak_TD14_TEN.h5",
-        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/recleaned_data_no-leak_TD14_TEN",
-        output_dir=OUTPUT_DIR,
+        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261106.h5",
+        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261106",
+        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261106/exp"),
         include_synthetic=False,
         seeds=SEEDS,
     )
     
-    OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/recleaned_data_no-leak_TD14_TEN/exp-syn")
     main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_no-leak_TD14_TEN.h5",
-        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/recleaned_data_no-leak_TD14_TEN",
-        output_dir=OUTPUT_DIR,
+        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_processed-data_20261106.h5",
+        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261106",
+        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261106/exp-syn"),
         include_synthetic=True,
         seeds=SEEDS,
     )

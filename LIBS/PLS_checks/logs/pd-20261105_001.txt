@@ -1,0 +1,137 @@
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting GPU-Accelerated PLS Benchmark Pipeline [cuda] ===
+Dataset: processed-data_20261105 | Repeated K-Fold: 7 Folds x 1 Seeds (7 models per grid point)
+
+--- Tuning PLS Components via Multi-Seed GPU Cross-Validation ---
+n_components = 20 | Ensembled OOF Mean RMSE:  0.5930 wt% (R^2:  0.2551) | Elapsed: 16.52s
+n_components = 25 | Ensembled OOF Mean RMSE:  0.5793 wt% (R^2:  0.2763) | Elapsed: 1.52s
+n_components = 28 | Ensembled OOF Mean RMSE:  0.5684 wt% (R^2:  0.2920) | Elapsed: 1.65s
+n_components = 29 | Ensembled OOF Mean RMSE:  0.5667 wt% (R^2:  0.2943) | Elapsed: 1.69s
+n_components = 30 | Ensembled OOF Mean RMSE:  0.5632 wt% (R^2:  0.2991) | Elapsed: 1.73s
+n_components = 31 | Ensembled OOF Mean RMSE:  0.5598 wt% (R^2:  0.3036) | Elapsed: 1.99s
+n_components = 32 | Ensembled OOF Mean RMSE:  0.5575 wt% (R^2:  0.3066) | Elapsed: 1.83s
+n_components = 35 | Ensembled OOF Mean RMSE:  0.5507 wt% (R^2:  0.3158) | Elapsed: 1.96s
+n_components = 40 | Ensembled OOF Mean RMSE:  0.5395 wt% (R^2:  0.3300) | Elapsed: 2.19s
+
+Optimal PLS Components: 40 (Ensembled OOF Mean RMSE: 0.5395 wt% | R^2: 0.3300)
+
+--- Running Final Lockbox Ensemble Evaluation on GPU (7 total models) ---
+
+===============================================================================================
+ GPU PLS Ensembled OOF Benchmarks (n_components=40, 1 Seeds) [Exp Only]
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.991 |     1.1496 |     1.6294 |      2.842
+Ce       | Predict Mean       |   -0.000 |     1.0662 |     1.1548 |      2.842
+Ce       | PLS Model          |    0.468 |     0.6003 |     0.8426 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.232 |     0.4276 |     0.9845 |      2.730
+Gd       | Predict Mean       |   -0.000 |     0.6831 |     0.8868 |      2.730
+Gd       | PLS Model          |    0.506 |     0.2904 |     0.6231 |      2.730
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.000 |     0.0000 |     0.0017 |      0.609
+Sm       | Predict Mean       |    0.000 |     0.0000 |     0.0017 |      0.609
+Sm       | PLS Model          |   -0.001 |     0.0000 |     0.0017 |      0.609
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.222 |     0.4024 |     0.9444 |      6.040
+U        | Predict Mean       |   -0.000 |     0.5796 |     0.8543 |      6.040
+U        | PLS Model          |    0.347 |     0.3684 |     0.6905 |      6.040
+-----------------------------------------------------------------------------------------------
+
+===============================================================================================
+ GPU PLS Lockbox Benchmarks (Ensemble of 7 Models)
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.025 |     0.0288 |     0.1836 |      1.605
+Ce       | Predict Mean       |  -38.210 |     1.1310 |     1.1356 |      1.605
+Ce       | PLS Model          |   -0.928 |     0.1503 |     0.2518 |      1.605
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.088 |     0.0499 |     0.1750 |      1.377
+Gd       | Predict Mean       |   -5.067 |     0.4056 |     0.4133 |      1.377
+Gd       | PLS Model          |  -78.041 |     1.3203 |     1.4916 |      1.377
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.073 |     0.3962 |     1.5231 |      5.857
+Sm       | Predict Mean       |   -0.073 |     0.3962 |     1.5231 |      5.857
+Sm       | PLS Model          |   -0.073 |     0.3962 |     1.5231 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -2.505 |     0.9383 |     1.1100 |      1.344
+U        | Predict Mean       |   -0.817 |     0.7484 |     0.7993 |      1.344
+U        | PLS Model          |   -0.194 |     0.4720 |     0.6479 |      1.344
+-----------------------------------------------------------------------------------------------
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261105/exp/gpu_pls_oof_parity_processed-data_20261105_20261106_102121.png
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261105/exp/gpu_pls_lockbox_parity_processed-data_20261105_20261106_102121.png
+GPU Pipeline completed in 95.15 seconds.
+=== Starting GPU-Accelerated PLS Benchmark Pipeline [cuda] ===
+Dataset: processed-data_20261105 | Repeated K-Fold: 7 Folds x 1 Seeds (7 models per grid point)
+
+--- Tuning PLS Components via Multi-Seed GPU Cross-Validation ---
+n_components = 20 | Ensembled OOF Mean RMSE:  0.5930 wt% (R^2:  0.2551) | Elapsed: 1.26s
+n_components = 25 | Ensembled OOF Mean RMSE:  0.5793 wt% (R^2:  0.2763) | Elapsed: 1.50s
+n_components = 28 | Ensembled OOF Mean RMSE:  0.5684 wt% (R^2:  0.2920) | Elapsed: 1.69s
+n_components = 29 | Ensembled OOF Mean RMSE:  0.5667 wt% (R^2:  0.2943) | Elapsed: 2.21s
+n_components = 30 | Ensembled OOF Mean RMSE:  0.5632 wt% (R^2:  0.2991) | Elapsed: 1.95s
+n_components = 31 | Ensembled OOF Mean RMSE:  0.5598 wt% (R^2:  0.3036) | Elapsed: 2.11s
+n_components = 32 | Ensembled OOF Mean RMSE:  0.5575 wt% (R^2:  0.3066) | Elapsed: 2.16s
+n_components = 35 | Ensembled OOF Mean RMSE:  0.5507 wt% (R^2:  0.3158) | Elapsed: 2.29s
+n_components = 40 | Ensembled OOF Mean RMSE:  0.5395 wt% (R^2:  0.3300) | Elapsed: 2.38s
+
+Optimal PLS Components: 40 (Ensembled OOF Mean RMSE: 0.5395 wt% | R^2: 0.3300)
+
+--- Running Final Lockbox Ensemble Evaluation on GPU (7 total models) ---
+
+===============================================================================================
+ GPU PLS Ensembled OOF Benchmarks (n_components=40, 1 Seeds) [Syn+Exp]
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.991 |     1.1496 |     1.6294 |      2.842
+Ce       | Predict Mean       |   -0.000 |     1.0662 |     1.1548 |      2.842
+Ce       | PLS Model          |    0.468 |     0.6003 |     0.8426 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.232 |     0.4276 |     0.9845 |      2.730
+Gd       | Predict Mean       |   -0.000 |     0.6831 |     0.8868 |      2.730
+Gd       | PLS Model          |    0.506 |     0.2904 |     0.6231 |      2.730
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.000 |     0.0000 |     0.0017 |      0.609
+Sm       | Predict Mean       |    0.000 |     0.0000 |     0.0017 |      0.609
+Sm       | PLS Model          |   -0.001 |     0.0000 |     0.0017 |      0.609
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.222 |     0.4024 |     0.9444 |      6.040
+U        | Predict Mean       |   -0.000 |     0.5796 |     0.8543 |      6.040
+U        | PLS Model          |    0.347 |     0.3684 |     0.6905 |      6.040
+-----------------------------------------------------------------------------------------------
+
+===============================================================================================
+ GPU PLS Lockbox Benchmarks (Ensemble of 7 Models)
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.025 |     0.0288 |     0.1836 |      1.605
+Ce       | Predict Mean       |  -38.210 |     1.1310 |     1.1356 |      1.605
+Ce       | PLS Model          |   -0.928 |     0.1503 |     0.2518 |      1.605
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.088 |     0.0499 |     0.1750 |      1.377
+Gd       | Predict Mean       |   -5.067 |     0.4056 |     0.4133 |      1.377
+Gd       | PLS Model          |  -78.041 |     1.3203 |     1.4916 |      1.377
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.073 |     0.3962 |     1.5231 |      5.857
+Sm       | Predict Mean       |   -0.073 |     0.3962 |     1.5231 |      5.857
+Sm       | PLS Model          |   -0.073 |     0.3962 |     1.5231 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -2.505 |     0.9383 |     1.1100 |      1.344
+U        | Predict Mean       |   -0.817 |     0.7484 |     0.7993 |      1.344
+U        | PLS Model          |   -0.194 |     0.4720 |     0.6479 |      1.344
+-----------------------------------------------------------------------------------------------
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261105/exp-syn/gpu_pls_oof_parity_processed-data_20261105_20261106_102256.png
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261105/exp-syn/gpu_pls_lockbox_parity_processed-data_20261105_20261106_102256.png
+GPU Pipeline completed in 54.55 seconds.
