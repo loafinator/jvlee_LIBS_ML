@@ -97,7 +97,7 @@ _MS_CONC_MAP: dict[str, float] = {
 }
 
 _MSU_CONC_MAP = {
-    'msu1': 1.0,  # A_dissertation: 0.741wt%UCl3   nom: 1.0,
+    'msu1': 0.741,  # A_dissertation: 0.741wt%UCl3   nom: 1.0,
     'msu2': 1.0
 }
 
@@ -243,7 +243,7 @@ _SUMMARY_PATTERNS_REGEX = re.compile(
     re.IGNORECASE,
 )
 _EXCLUDED_SAMPLES_PATTERN_REGEX = re.compile(
-    r'h2o|aqueous|iron|rust|fiber|cable|optic|pure mg|gd-mg', 
+    r'h2o|aqueous|\biron|\brust|fiber|cable|optic|pure mg|gd-mg|repeatability', 
     flags=re.IGNORECASE
 )
 # _EXCLUDED_DIR_PATTERNS_REGEX = re.compile(
@@ -371,7 +371,7 @@ CLIP_PERCENTILE = None   # Float (e.g., 99.5) or None
 TARGET_DELAY = 14.0      # Float (e.g., 14.0) or None
 TARGET_ENERGY = None    # Float (e.g., 100.0) or None
 TARGET_STATE_MOLTEN = None  # Int (1) or None
-# RAW_SATURATION_THRESH = 60000.0
+# RAW_SATURATION_THRESH = 64500.0
 # endregion
 
 MW_ELEMENTS = {
@@ -786,15 +786,26 @@ def parent_concentration_data(
 
         # Step 3: Parse spectrometer gate delay
         # replace 0p25 sort of thing with 0.25
+        fname = re.sub(r'(\d)p(\d)', r'\1.\2', path.name.lower())
+        m = re.search(r'(\d+(?:\.\d+)?)\s*(ns|us|ms)(?![a-z])', fname)
+        fname_hit = bool(m and 'delay' in all_text)
+        if fname_hit:
+            val, unit = float(m.group(1)), m.group(2) # type: ignore
+            data['delay'] = val * {'ns': 1e-3, 'us': 1.0, 'ms': 1e3}[unit]
+            data['delay_study'] = 1
+            data['meta_source'] = 2
+        
         clean_text = re.sub(r'(\d+)p(\d+)', r'\1.\2', all_text)
         # replace 05 with 0.5 to match file name pattern in parent folder
         clean_text = re.sub(r'\b05\s*us\b', r'0.5 us', clean_text)
 
         gtd_match = _GTD_PATTERN.search(clean_text)
         delay_match = _DELAY_PATTERN.search(clean_text)
-        unit_match = re.search(r'(\d+\.?\d*)\s*(us|ms|ns|s)', Path(clean_text).name, re.IGNORECASE)
+        unit_match = re.search(r'(\d+\.?\d*)\s*(us|ms|ns|s)(?![a-z])', Path(clean_text).name, re.IGNORECASE)
 
-        if gtd_match:
+        if fname_hit:
+            pass
+        elif gtd_match:
             data['delay_study'] = 1
             data['delay'] = float(gtd_match.group(1))
             data['meta_source'] = 2
@@ -818,7 +829,7 @@ def parent_concentration_data(
             data['meta_source'] = 2
         else:
             data['delay_study'] = 0
-            data['delay'] = _STANDARD_DELAY
+            data['delay'] = np.nan
             data['meta_source'] = 1
 
         # Step 4: Parse experiment replicate index
@@ -836,19 +847,28 @@ def parent_concentration_data(
             data['width'] = val
         else:
             data['width_study'] = 1 if 'width' in all_text else 0
-            data['width'] = _STANDARD_WIDTH
+            data['width'] = np.nan
 
         # Step 6: Parse laser energy
         energy_match = _ENERGY_PATTERN.search(all_text)
         neup_match = _NEUP_PATTERN.search(all_text)
-        standard_energy = 200 if neup_match else 100
+        m_en = re.search(r'(\d+(?:\.\d+)?)\s*mj(?![a-z])', fname)
 
-        if energy_match:
+        if m_en:
             data['energy_study'] = 1
-            data['energy'] = float(energy_match.group(1) or energy_match.group(2))
+            data['energy'] = float(m_en.group(1))
         else:
-            data['energy_study'] = 0
-            data['energy'] = np.nan
+            if energy_match:
+                data['energy_study'] = 1
+                data['energy'] = float(energy_match.group(1) or energy_match.group(2))
+            else:
+                keith_check = re.search(r'keith', all_text)
+                if keith_check:
+                    data['energy_study'] = 0
+                    data['energy'] = 55
+                else:
+                    data['energy_study'] = 0
+                    data['energy'] = np.nan
 
         # Step 7: Parse laser Q-switch delay
         qdelay_match = _QDELAY_PATTERN.search(all_text)
@@ -857,7 +877,7 @@ def parent_concentration_data(
             data['qdelay'] = float(qdelay_match.group(1) or qdelay_match.group(2))
         else:
             data['qdelay_study'] = 0
-            data['qdelay'] = _STANDARD_QDELAY
+            data['qdelay'] = np.nan
 
         # Step 8: Parse laser shot count
         shot_match = _SHOT_PATTERN.search(all_text)
@@ -875,7 +895,7 @@ def parent_concentration_data(
             data['flow'] = float(flow_match.group(1).replace('p', '.'))
         else:
             data['flow_study'] = 0
-            data['flow'] = 0.0
+            data['flow'] = np.nan
 
         # Step 10: Parse cell pressure
         pressure_match = _PRESSURE_PATTERN.search(all_text)
@@ -884,7 +904,7 @@ def parent_concentration_data(
             data['pressure'] = float(pressure_match.group(1))
         else:
             data['pressure_study'] = 0
-            data['pressure'] = 0.0
+            data['pressure'] = np.nan
 
         # Step 11: Identify fixed-spot vs rastered measurements
         data['static_'] = 1 if _STATIC_PATTERN.search(all_text) else 0
@@ -923,7 +943,7 @@ def parent_concentration_data(
                         data['temperature_C'] = float(part)
                         break
                 else:
-                    data['temperature_C'] = 500.0
+                    data['temperature_C'] = 470.0
         else:
             if temp_match:
                 temp = float(temp_match.group(1))
@@ -932,7 +952,7 @@ def parent_concentration_data(
                     data['state_molten'] = 1
                     data['state_solid'] = 0
             else:
-                data['temperature_C'] = 20.0
+                data['temperature_C'] = np.nan
 
         # Step 16: Extract Chemical Concentrations via Casing-Insensitive Parsing
         filename_text = path.name.upper()
@@ -1393,16 +1413,12 @@ def dataset_cleaning(
     output_h5: Path | str,
     target_elements: list[str] | None = None,
     clip_percentile: float | None = None,# Optional parameters to filter conditions dynamically
-    target_delay: float | None = 14.0,
+    target_delay: float | None = None,
     target_energy: float | None = None,
-    target_state_molten: int | None = 1,
+    target_state_molten: int | None = None,
 ) -> None:
     """Prepares raw spectral HDF5 dataset into clean X (Spectra) and y (Concentrations) for PLS."""
     input_h5, output_h5 = Path(input_h5), Path(output_h5)
-
-    EXCLUDE = ['Gd-Mg Study', 'Iron with rust', 'Fiber optic test', 'Repetability Test',
-            'Pure Mg Study', 'MS U Analysis', 'MS Ce Analysis',
-            'Values_lamba', 'Values_Li_lamba', 'Static_Import_lamba']
     
     with h5py.File(input_h5, 'r') as hf_in:
         raw_spectra = get_h5_ds(hf_in,'spectra')[:]
@@ -1411,25 +1427,28 @@ def dataset_cleaning(
         
         # Load metadata columns into DataFrame
         meta_dict = {}
-        for k in metadata.keys():
-            data = cast(h5py.Dataset, metadata[k])[:]
+        if 'metadata' in hf_in:
+            metadata = cast(h5py.Group, get_h5_ds(hf_in, 'metadata'))
+            for k in metadata.keys():
+                data = cast(h5py.Dataset, metadata[k])[:]
 
-            if data.dtype.kind in ('O', 'S', 'V'):
-                meta_dict[k] = [x.decode('utf-8') if isinstance(x, bytes) else x for x in data]
-            else:
-                meta_dict[k] = data
+                if data.dtype.kind in ('O', 'S', 'V'):
+                    meta_dict[k] = [x.decode('utf-8') if isinstance(x, bytes) else x for x in data]
+                else:
+                    meta_dict[k] = data
+        if 'is_synthetic' in hf_in:
+            meta_dict['is_synthetic'] = hf_in['is_synthetic'][:] # type: ignore
+        elif 'meta/is_synthetic' in hf_in:
+            meta_dict['is_synthetic'] = hf_in['meta/is_synthetic'][:] # type: ignore
         df_meta = pd.DataFrame(meta_dict)
+
+        if 'is_synthetic' not in df_meta.columns:
+            df_meta['is_synthetic'] = False
         
     # Step 1a: Remove NaN and zero-intensity rows
     valid_mask = ~np.isnan(raw_spectra).any(axis=1) & (raw_spectra.sum(axis=1) > 0)
     conc_cols = [c for c in df_meta.columns if c.startswith('conc_')]
     valid_mask &= ~df_meta[conc_cols].isna().any(axis=1).to_numpy()
-
-    og = df_meta['og_path'].astype(str)
-    for pat in EXCLUDE:
-        hit = og.str.contains(re.escape(pat), case=False).to_numpy()
-        print(f'exclude "{pat}": {(hit & valid_mask).sum()} rows')
-        valid_mask &= ~hit
 
     # energy is only trustworthy when parsed explicitly from the path
     if {'energy', 'energy_study'} <= set(df_meta.columns):
@@ -1499,7 +1518,7 @@ def dataset_cleaning(
     )
 
     # Step 1d: Filter true single-shot hardware saturation & cosmic rays
-    RAW_SATURATION_THRESH = 60000.0
+    RAW_SATURATION_THRESH = 64500.0
     per_shot_max = spectra.max(axis=1)
     unsaturated_mask = per_shot_max <= RAW_SATURATION_THRESH
 
@@ -1566,9 +1585,10 @@ def dataset_cleaning(
     comp_kwargs = {'compression': 'gzip', 'compression_opts': 3} 
     with h5py.File(output_h5, 'w') as hf_out: 
         meta_out = hf_out.create_group('meta') 
-        for c in ['delay', 'energy', 'repetition', 'meta_source']: 
+        for c in ['delay', 'energy', 'repetition', 'meta_source', 'is_synthetic']: 
             if c in df_meta.columns: 
-                meta_out.create_dataset(c, data=df_meta[c].to_numpy(np.float32))
+                dtype = bool if c == 'is_synthetic' else np.float32
+                meta_out.create_dataset(c, data=df_meta[c].to_numpy(dtype))
         meta_out.create_dataset(
             'file_id',
             data=np.char.encode(df_meta['file_id'].astype(str).to_numpy(dtype='U'), 'utf-8'),
@@ -1970,6 +1990,60 @@ def detect_scaled_duplicates(
 
     return df_matches
 
+def diagnose_element_levels(df_meta: pd.DataFrame, elements: list[str] = ['U', 'Sm']):
+    """Print detailed shot counts per concentration level before and after filtering."""
+    df_wt = compute_elemental_wt(df_meta)
+    for elem in elements:
+        if elem in df_wt.columns:
+            print(f"\n--- {elem} Concentration Levels ---")
+            counts = df_wt[df_wt[elem] > 0][elem].round(4).value_counts().sort_index()
+            print(counts.to_string())
+            print(f"Total: {counts.sum()} shots across {len(counts)} levels")
+
+def diagnose_element_levels_from_h5(
+    h5_file: str | Path = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
+    elements: list[str] = ['U', 'Sm']
+):
+    """Load metadata from HDF5 and print shot counts per concentration level."""
+    h5_file = Path(h5_file).resolve()
+    with h5py.File(h5_file, 'r') as hf:
+        meta_grp = hf['metadata']
+        meta_dict = {}
+        for k in meta_grp.keys(): # type: ignore
+            ds = meta_grp[k][:] # type: ignore
+            if ds.dtype.kind in ('O', 'S', 'V'): # type: ignore
+                meta_dict[k] = [x.decode('utf-8') if isinstance(x, bytes) else str(x) for x in ds] # type: ignore
+            else:
+                meta_dict[k] = ds
+        df_meta = pd.DataFrame(meta_dict)
+    
+    diagnose_element_levels(df_meta, elements=elements)
+
+def diagnose_saturation_drops(input_h5: str | Path, threshold: float = 64500.0) -> pd.DataFrame:
+    """Break down saturated spectra drops by is_summed, delay, and concentration."""
+    with h5py.File(input_h5, 'r') as hf:
+        spectra = hf['spectra'][:] # type: ignore
+        m = hf['metadata']
+        df = pd.DataFrame({
+            'delay': m['delay'][:], # type: ignore
+            'shots': m['shots'][:], # type: ignore
+            'is_summed': m['is_summed'][:] if 'is_summed' in m else 0, # type: ignore
+            'max_val': spectra.max(axis=1) # type: ignore
+        })
+        for k in m.keys(): # type: ignore
+            if k.startswith('conc_'):
+                df[k] = m[k][:] # type: ignore
+
+    df['is_saturated'] = df['max_val'] > threshold
+    
+    print("=== Saturation Summary ===")
+    print(df.groupby(['is_summed', 'is_saturated']).size().unstack(fill_value=0))
+    
+    print("\n=== Saturation by Delay ===")
+    print(df.groupby('delay')['is_saturated'].agg(['count', 'sum', lambda x: f"{x.mean():.1%}"]))
+    
+    return df
+
 def find_cosmic(
         h5_file: Path | str = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
 ):
@@ -1987,7 +2061,7 @@ def find_cosmic(
         print(f"{p:>5.1f}% : {val:10.1f} counts")
 
     # 2. Check for Hardware Saturation flatlining (e.g., hits near 65,535 or 16,383)
-    near_sat = (max_counts > 60000).sum()
+    near_sat = (max_counts > 64500).sum()
     print(f"\nShots near 16-bit saturation (> 60,000 counts): {near_sat} / {len(max_counts)}")
 
     # 3. Inspect top 20 highest-intensity shots for cosmic ray spikes
@@ -2171,33 +2245,36 @@ if __name__ == "__main__":
     # --------------------------------------------------------------------------------
     # region Full Run
     # --------------------------------------------------------------------------------
-    # full_run(
-    #     input_csv_dir = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs",
-    #     enriched_csv_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/enriched_csvs',
-    #     combined_root = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned',
-    #     cleaned_h5 = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_no-leak_TD14_TEN.h5',
-    #     drop_columns=DROP_COLUMNS,
-    #     rename_columns=RENAME_COLUMNS,
-    #     composition_columns=COMPOSITION_COLUMNS,
-    #     min_wavelength=MIN_WAVELENGTH,
-    #     max_wavelength=MAX_WAVELENGTH,
-    #     allowed_extensions=ALLOWED_EXTENSIONS,
-    #     required_columns=REQUIRED_COLUMNS,
-    #     salt_states=SALT_STATES,
-    #     experimental_variation_columns=EXPERIMENTAL_VARIATION_COLUMNS,
-    #     include_experimental_variation_columns=INCLUDE_EXPERIMENTAL_VARIATION_COLUMNS,
-    #     log_q=LOG_Q,
-    #     log_path=LOG_PATH,
-    #     compression=COMPRESSION,
-    #     compression_level=COMPRESSION_LEVEL,
-    #     transpose_needed=TRANSPOSE_NEEDED,
-    #     n_workers=N_WORKERS,
-    #     target_elements=TARGET_ELEMENTS,
-    #     clip_percentile=CLIP_PERCENTILE, # Optional parameters to filter conditions dynamically
-    #     target_delay=TARGET_DELAY,
-    #     target_energy=TARGET_ENERGY,
-    #     target_state_molten=TARGET_STATE_MOLTEN,
-    # )
+    full_run(
+        input_csv_dir = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs",
+        enriched_csv_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/enriched_csvs',
+        combined_root = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned',
+        cleaned_h5 = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261106.h5',
+        drop_columns=DROP_COLUMNS,
+        rename_columns=RENAME_COLUMNS,
+        composition_columns=COMPOSITION_COLUMNS,
+        min_wavelength=MIN_WAVELENGTH,
+        max_wavelength=MAX_WAVELENGTH,
+        allowed_extensions=ALLOWED_EXTENSIONS,
+        required_columns=REQUIRED_COLUMNS,
+        salt_states=SALT_STATES,
+        experimental_variation_columns=EXPERIMENTAL_VARIATION_COLUMNS,
+        include_experimental_variation_columns=INCLUDE_EXPERIMENTAL_VARIATION_COLUMNS,
+        log_q=LOG_Q,
+        log_path=LOG_PATH,
+        compression=COMPRESSION,
+        compression_level=COMPRESSION_LEVEL,
+        transpose_needed=TRANSPOSE_NEEDED,
+        n_workers=N_WORKERS,
+        target_elements=TARGET_ELEMENTS,
+        clip_percentile=CLIP_PERCENTILE, # Optional parameters to filter conditions dynamically
+        # target_delay=TARGET_DELAY,
+        # target_energy=TARGET_ENERGY,
+        # target_state_molten=TARGET_STATE_MOLTEN,
+        target_energy=None,
+        target_delay=None,
+        target_state_molten=None,
+    )
     # endregion
 
     # --------------------------------------------------------------------------------
@@ -2626,3 +2703,20 @@ if __name__ == "__main__":
     # )
     # endregion
     
+    # --------------------------------------------------------------------------------
+    # region Saturation drop diagnostic
+    # --------------------------------------------------------------------------------
+    # diagnose_saturation_drops(
+    #     input_h5='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
+    #     threshold=64500
+    # )
+    # endregion
+
+    # --------------------------------------------------------------------------------
+    # region Element diagnostic
+    # --------------------------------------------------------------------------------
+    # diagnose_element_levels_from_h5(
+    #     h5_file='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
+    #     elements=['Ce', 'Gd', 'Sm', 'U']
+    # )
+    # endregion

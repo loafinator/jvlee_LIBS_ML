@@ -1499,18 +1499,25 @@ if __name__ == "__main__":
     #     category_probs=None
     # )
 
-    updated_final_combo(
-        exp_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_TD14_TEN.h5"),
-        syn_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_synthetic_spectra_200k.h5"),
-        syn_csv_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_compositions_wt_pct.csv"),
-        merged_h5_out=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TD14_TEN.h5")
-    )
+    # updated_final_combo(
+    #     exp_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_TD14_TEN.h5"),
+    #     syn_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_synthetic_spectra_200k.h5"),
+    #     syn_csv_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_compositions_wt_pct.csv"),
+    #     merged_h5_out=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TD14_TEN.h5")
+    # )
+
+    # updated_final_combo(
+    #     exp_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_TDN_TEN.h5"),
+    #     syn_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_synthetic_spectra_200k.h5"),
+    #     syn_csv_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_compositions_wt_pct.csv"),
+    #     merged_h5_out=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TDN_TEN.h5")
+    # )
 
     updated_final_combo(
-        exp_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_TDN_TEN.h5"),
+        exp_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261106.h5"),
         syn_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_synthetic_spectra_200k.h5"),
         syn_csv_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_compositions_wt_pct.csv"),
-        merged_h5_out=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TDN_TEN.h5")
+        merged_h5_out=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_processed-data_20261106.h5")
     )
 
     # final_combo(
