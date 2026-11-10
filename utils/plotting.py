@@ -16,6 +16,7 @@ import torch
 # region as
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 # endregion
 
 # region from
@@ -25,7 +26,7 @@ from pathlib import Path
 from torch.utils.data import DataLoader
 from sklearn.metrics import r2_score, mean_squared_error
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from setup import add_project_root_to_path
 add_project_root_to_path(parent_generation=1)
 
@@ -38,6 +39,74 @@ from utils import (
 )
 # endregion
 # endregion
+
+def analyze_and_plot_peaks(file_path_or_data, threshold=65535, output_path='ms9_peak_histogram.png', delimiter=None):
+    """
+    Computes per-row max peaks and saves linear and log-scale histograms to a file.
+    """
+    # Load data
+    if isinstance(file_path_or_data, str):
+        if file_path_or_data.endswith('.npy'):
+            data = np.load(file_path_or_data)
+        else:
+            df = pd.read_csv(file_path_or_data, delimiter=delimiter, engine='python')
+            data = df.select_dtypes(include=[np.number]).values
+    elif isinstance(file_path_or_data, pd.DataFrame):
+        data = file_path_or_data.select_dtypes(include=[np.number]).values
+    else:
+        data = np.asarray(file_path_or_data)
+
+    # 1. Compute per-row peak
+    row_peaks = np.max(data, axis=1)
+
+    # 2. Print Summary Statistics
+    total_rows = len(row_peaks)
+    above_thresh = np.sum(row_peaks > threshold)
+    pct_above = (above_thresh / total_rows) * 100
+
+    print("=" * 40)
+    print("      PER-ROW PEAK DIAGNOSTIC")
+    print("=" * 40)
+    print(f"Total Rows:               {total_rows}")
+    print(f"Rows > {threshold:,}:        {above_thresh} ({pct_above:.2f}%)")
+    print(f"Min Peak Value:           {np.min(row_peaks):,.2f}")
+    print(f"Median Peak Value:        {np.median(row_peaks):,.2f}")
+    print(f"Max Peak Value:           {np.max(row_peaks):,.2f}")
+    print("=" * 40)
+
+    # 3. Generate Visualizations
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+    # Plot 1: Linear Scale Histogram
+    axes[0].hist(row_peaks, bins=50, color='#2b5c8f', edgecolor='black', alpha=0.75)
+    axes[0].axvline(threshold, color='red', linestyle='--', linewidth=2, label=f'Threshold ({threshold:,})')
+    axes[0].set_title('Per-Row Peak Histogram (Linear Scale)')
+    axes[0].set_xlabel('Max Peak Intensity per Row')
+    axes[0].set_ylabel('Row Count')
+    axes[0].legend()
+    axes[0].grid(True, linestyle=':', alpha=0.6)
+
+    # Plot 2: Log X-Scale Histogram
+    positive_peaks = row_peaks[row_peaks > 0]
+    if len(positive_peaks) > 0:
+        log_bins = np.logspace(np.log10(positive_peaks.min()), np.log10(positive_peaks.max()), 50)
+        axes[1].hist(positive_peaks, bins=log_bins, color='#d95f02', edgecolor='black', alpha=0.75)
+        axes[1].set_xscale('log')
+        axes[1].axvline(threshold, color='red', linestyle='--', linewidth=2, label=f'Threshold ({threshold:,})')
+        axes[1].set_title('Per-Row Peak Histogram (Log X-Scale)')
+        axes[1].set_xlabel('Max Peak Intensity per Row (Log Scale)')
+        axes[1].set_ylabel('Row Count')
+        axes[1].legend()
+        axes[1].grid(True, linestyle=':', alpha=0.6)
+
+    # Save image and close memory buffer
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Plot saved to: {output_path}")
+
+# --- Usage ---
+# analyze_and_plot_peaks('path_to_ms9_file.csv', output_path='ms9_histogram.png')
 
 
 def animate_training(history, max_epochs, plot_animation=True):
@@ -462,3 +531,12 @@ def plot_peak_error_heatmap(
     if show:
         plt.show()
     plt.close(fig)
+
+if __name__ == '__main__':
+    print('Hi')
+
+    analyze_and_plot_peaks(
+        file_path_or_data='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/Awilliams/DATA BACKUP/Backup 9-12-2016/Spectra/Molten Salt Aerosol/MS14 5 wt_ CeCl3/Data/MS14 Rep 5.csv',
+        threshold=65535,
+        output_path='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/plots/MS14_Rep5_peak_histogram.png'
+    )

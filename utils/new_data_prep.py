@@ -2169,6 +2169,7 @@ def summation_average(
         shots_arr = pd.to_numeric(df_meta['shots'], errors='coerce').to_numpy(dtype=np.float32)
         shots_arr = np.where((shots_arr > 0) & ~np.isnan(shots_arr), shots_arr, default_shots)
     else:
+        print(f"Summation Average Shot Check Failure")
         shots_arr = np.full(len(spectra), default_shots, dtype=np.float32)
 
     # 4. Construct scale factors (shots for summed spectra, 1.0 for single-shot/averaged)
@@ -2752,36 +2753,36 @@ if __name__ == "__main__":
     # --------------------------------------------------------------------------------
     # region Full Run
     # --------------------------------------------------------------------------------
-    full_run(
-        input_csv_dir = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs",
-        enriched_csv_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/enriched_csvs',
-        combined_root = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned',
-        cleaned_h5 = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261110.h5',
-        drop_columns=DROP_COLUMNS,
-        rename_columns=RENAME_COLUMNS,
-        composition_columns=COMPOSITION_COLUMNS,
-        min_wavelength=MIN_WAVELENGTH,
-        max_wavelength=MAX_WAVELENGTH,
-        allowed_extensions=ALLOWED_EXTENSIONS,
-        required_columns=REQUIRED_COLUMNS,
-        salt_states=SALT_STATES,
-        experimental_variation_columns=EXPERIMENTAL_VARIATION_COLUMNS,
-        include_experimental_variation_columns=INCLUDE_EXPERIMENTAL_VARIATION_COLUMNS,
-        log_q=LOG_Q,
-        log_path=LOG_PATH,
-        compression=COMPRESSION,
-        compression_level=COMPRESSION_LEVEL,
-        transpose_needed=TRANSPOSE_NEEDED,
-        n_workers=N_WORKERS,
-        target_elements=TARGET_ELEMENTS,
-        clip_percentile=CLIP_PERCENTILE, # Optional parameters to filter conditions dynamically
-        # target_delay=TARGET_DELAY,
-        # target_energy=TARGET_ENERGY,
-        # target_state_molten=TARGET_STATE_MOLTEN,
-        target_energy=None,
-        target_delay=None,
-        target_state_molten=None,
-    )
+    # full_run(
+    #     input_csv_dir = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs",
+    #     enriched_csv_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/enriched_csvs',
+    #     combined_root = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned',
+    #     cleaned_h5 = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261110.h5',
+    #     drop_columns=DROP_COLUMNS,
+    #     rename_columns=RENAME_COLUMNS,
+    #     composition_columns=COMPOSITION_COLUMNS,
+    #     min_wavelength=MIN_WAVELENGTH,
+    #     max_wavelength=MAX_WAVELENGTH,
+    #     allowed_extensions=ALLOWED_EXTENSIONS,
+    #     required_columns=REQUIRED_COLUMNS,
+    #     salt_states=SALT_STATES,
+    #     experimental_variation_columns=EXPERIMENTAL_VARIATION_COLUMNS,
+    #     include_experimental_variation_columns=INCLUDE_EXPERIMENTAL_VARIATION_COLUMNS,
+    #     log_q=LOG_Q,
+    #     log_path=LOG_PATH,
+    #     compression=COMPRESSION,
+    #     compression_level=COMPRESSION_LEVEL,
+    #     transpose_needed=TRANSPOSE_NEEDED,
+    #     n_workers=N_WORKERS,
+    #     target_elements=TARGET_ELEMENTS,
+    #     clip_percentile=CLIP_PERCENTILE, # Optional parameters to filter conditions dynamically
+    #     # target_delay=TARGET_DELAY,
+    #     # target_energy=TARGET_ENERGY,
+    #     # target_state_molten=TARGET_STATE_MOLTEN,
+    #     target_energy=None,
+    #     target_delay=None,
+    #     target_state_molten=None,
+    # )
     # endregion
 
     # --------------------------------------------------------------------------------
@@ -3213,11 +3214,11 @@ if __name__ == "__main__":
     #     threshold=64500
     # )
 
-    # diagnose_flat_top_clipping(
-    #     input_h5='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
-    #     min_ties=3,
-    #     rel_tol=0
-    # )
+    diagnose_flat_top_clipping(
+        input_h5='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
+        min_ties=3,
+        rel_tol=0
+    )
 
     # endregion
 
@@ -3229,13 +3230,13 @@ if __name__ == "__main__":
     #     elements=['Ce', 'Gd', 'Sm', 'U']
     # )
 
-    # diagnose_levels_like_cleaning(
-    #     h5_file='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
-    #     elements=('Ce', 'Gd', 'Sm', 'U'),
-    #     sat=64000,
-    #     sum_thr=65535,
-    #     default_shots=50
-    # )
+    diagnose_levels_like_cleaning(
+        h5_file='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
+        elements=('Ce', 'Gd', 'Sm', 'U'),
+        sat=64000,
+        sum_thr=65535,
+        default_shots=50
+    )
 
     # with h5py.File('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5', 'r') as f:
     #     og = [x.decode('utf-8') if isinstance(x, bytes) else str(x) for x in f['metadata/og_path'][:]] # type: ignore
