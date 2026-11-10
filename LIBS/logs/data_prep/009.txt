@@ -1,0 +1,12 @@
+data_prep.py loading ...
+Hi
+/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH/Backup/Experiments & Calculations/SmCl3 Studies/SmCl3 LIBS Glovebox/Sm LIBS raw data/Trial 2/7.0-SmCl3_t2_run4.csv
+/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH/Backup/Experiments & Calculations - Copy/Pure Sm Studies/SmCl3 LIBS Glovebox/Sm LIBS raw data/ANS Samples Trial 2/SLB_run8.csv
+/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH/Backup/Experiments & Calculations/SmCl3 Studies/SmCl3 LIBS Glovebox/Sm LIBS raw data/Trial 2/10.0-SmCl3_t2_run9.csv
+/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH/Backup/Experiments & Calculations/SmCl3 Studies/SmCl3 LIBS Glovebox/Sm LIBS raw data/Trial 1/8.0-SmCl3_run8.csv
+/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH/Backup/Experiments & Calculations - Copy/Pure Sm Studies/SmCl3 LIBS Glovebox/Sm LIBS raw data/Trial 2/5.0-SmCl3_t2_run9.csv
+/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH/Backup/Experiments & Calculations/SmCl3 Studies/SmCl3 LIBS Glovebox/Sm LIBS raw data/Trial 2/2.0-SmCl3_t2_run2.csv
+/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH/Backup/Experiments & Calculations - Copy/Pure Sm Studies/SmCl3 LIBS Glovebox/Sm LIBS raw data/Trial 1/1.0-SmCl3_run9.csv
+/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH/backup 5_10_2019/Experiments & Calculations/Pure Sm Studies/SmCl3 LIBS Glovebox/Sm LIBS raw data/Trial 2/10.0-SmCl3_t2_run9.csv
+/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH/Backup/Experiments & Calculations - Copy/Sm-Gd Study/LIBS/SampleT8_t1_run10.csv
+/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH/backup 5_10_2019/Experiments & Calculations/Pure Sm Studies/SmCl3 LIBS Glovebox/Sm LIBS raw data/Trial 1/0.75-SmCl3_run10.csv

@@ -32,12 +32,12 @@ from utils import get_h5_ds
 # =============================================================================
 # Global Configuration & File Paths
 # =============================================================================
-H5_FILE = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_cts_noleak_crossval.h5"
-SPLIT_DIR = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits_NoExtraDopants')
-OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/h5_plots")
-TRAINED_MODEL_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/trained_models")
-NPZ_PATH = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/h5_plots/mlp_spectral_predictions_20261024_135220.npz")
-OUTPUT_SAVE_PATH = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/h5_plots/updated_sample_plot.png")
+H5_FILE = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261109.h5"
+SPLIT_DIR = Path('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits_NoExtraDopants/20261109')
+OUTPUT_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/h5_plots/20261109")
+TRAINED_MODEL_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/trained_models/20261109")
+NPZ_PATH = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/h5_plots/mlp_spectral_predictions_20261109.npz")
+OUTPUT_SAVE_PATH = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/h5_plots/20261109/updated_sample_plot.png")
 
 NUM_FOLDS = 7
 THRESH = 2.8
@@ -240,7 +240,6 @@ def assign_group_folds(X, group_id, is_synthetic, dopant_idx, elem_names=None,
     fold_id[exp] = best_fog[inv]
     return fold_id
 
-
 def build_splits_once(data, split_path, num_folds, seed=42):
     """Loads existing pre-computed CV splits or creates them if absent."""
     split_path = Path(split_path).with_suffix('.npz')
@@ -278,13 +277,11 @@ def build_splits_once(data, split_path, num_folds, seed=42):
              num_folds=num_folds, seed=seed)
     return test_idx, cv_idx, cv_fold_id
 
-
 def r2_calcs(y_true, y_pred):
     """Calculates overall R^2 score across high-dimensional spectral prediction."""
     ss_res = np.sum((y_true - y_pred) ** 2)
     ss_tot = np.sum((y_true - np.mean(y_true, axis=0, keepdims=True)) ** 2)
     return float(1.0 - (ss_res / ss_tot)) if ss_tot > 1e-8 else 0.0
-
 
 def plot_parity_grid(y_true, y_pred, wavelengths=None, title_tag="MLP Benchmark", save_path=None):
     """Generates a grid of intensity parity plots across top spectral emission peak bins."""
@@ -325,7 +322,6 @@ def plot_parity_grid(y_true, y_pred, wavelengths=None, title_tag="MLP Benchmark"
         plt.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"Saved Parity Plot to: {save_path}")
     plt.close()
-
 
 def plot_sample_spectra(
     y_true,
@@ -492,6 +488,7 @@ def just_plotting(sample_indices: list[int] | None = None):
         title_tag="MLP OOF (Complex vs. Trace)",
         save_path=OUTPUT_SAVE_PATH
     )    
+
 def _chunk_stats(y_true, y_pred, cols, chunk=2048):
     """SSE, SAE, SST(about per-wavelength mean) and element count over the columns `cols` (index array).
     y_pred may be [N, n_wl] or a single [n_wl] vector broadcast over rows. Never copies the full array."""
@@ -527,7 +524,6 @@ def print_benchmark_table(y_true, y_pred_model, y_train_mean, title_tag, wavelen
             print(f"{reg_name:<25} | {strat_name:<18} | {r2:10.4f} | {sae / cnt:10.4f} | {np.sqrt(sse / cnt):10.4f}")
         print("-" * 95)
  
-
 # =============================================================================
 # Fast GPU-resident training utilities
 # =============================================================================
@@ -544,13 +540,11 @@ def stash(X: torch.Tensor, name: str) -> torch.Tensor:
     print(f"  [{name}] {nbytes / 1e9:.2f} GB does not fit on GPU -> pinned CPU memory")
     return X.pin_memory()
 
-
 def gather_x(Xs: torch.Tensor, idx: torch.Tensor) -> torch.Tensor:
     bx = Xs[idx]
     if bx.device != DEVICE:
         bx = bx.to(DEVICE, non_blocking=True)
     return bx.float()
-
 
 def amp_setup():
     if not (USE_AMP and DEVICE.type == "cuda"):
@@ -558,7 +552,6 @@ def amp_setup():
     if torch.cuda.is_bf16_supported():
         return torch.bfloat16, None
     return torch.float16, torch.amp.GradScaler("cuda")  # type: ignore
-
 
 @torch.no_grad()
 def predict(model: nn.Module, Xs: torch.Tensor, idx: torch.Tensor, bs: int = 1024) -> torch.Tensor:
@@ -570,7 +563,6 @@ def predict(model: nn.Module, Xs: torch.Tensor, idx: torch.Tensor, bs: int = 102
         with torch.autocast(DEVICE.type, dtype=amp_dtype, enabled=amp_dtype is not None):
             out.append(model(bx).float())
     return torch.cat(out)
-
 
 def fit(model, Xs, Y_fit, Y_eval, tr_idx, va_idx, epochs, seed, verbose=True):
     """Training loop with validation checking and early stopping with weight restoration."""
@@ -662,7 +654,6 @@ def fit(model, Xs, Y_fit, Y_eval, tr_idx, va_idx, epochs, seed, verbose=True):
     hist["samples_per_sec"] = len(hist["epoch"]) * steps * BATCH_SIZE / dt
     return hist
 
-
 def new_model(in_dim: int, out_dim: int, init_bias: torch.Tensor) -> nn.Module:
     model = PyTorchMLP(
         in_features=in_dim, out_features=out_dim, hidden_dims=HIDDEN_DIMS,
@@ -673,18 +664,15 @@ def new_model(in_dim: int, out_dim: int, init_bias: torch.Tensor) -> nn.Module:
         model = torch.compile(model)
     return model  # type: ignore
 
-
 def fold_indices(fold_id_t: torch.Tensor, k: int):
     tr_idx = torch.nonzero(fold_id_t != k).squeeze(1)
     va_idx = torch.nonzero(fold_id_t == k).squeeze(1)
     return tr_idx, va_idx
 
-
 def mean_baseline_mse(Y: torch.Tensor, tr_idx: torch.Tensor, va_idx: torch.Tensor) -> float:
     """Held-out MSE of the constant 'predict the training mean' baseline."""
     mu = Y[tr_idx.to(Y.device)].mean(0, keepdim=True)
     return F.mse_loss(mu.expand(va_idx.numel(), -1), Y[va_idx.to(Y.device)]).item()
-
 
 # =============================================================================
 # Diagnostics
@@ -700,7 +688,6 @@ def data_report(X_cv_cpu, Y_cv_np, fold_id, target_names):
     rms = sub.pow(2).mean(1).sqrt()
     print(f"Spectra (Targets): {Y_cv_np.shape} | finite: {bool(np.isfinite(Y_cv_np).all())} | "
           f"per-spectrum RMS min/median/max: {rms.min():.3f}/{rms.median():.3f}/{rms.max():.3f} (expect ~1.0)")
-
 
 def overfit_test(Xs, Y, fold_id_t, in_dim, out_dim, seed):
     print("\n" + "=" * 80)
@@ -720,7 +707,6 @@ def overfit_test(Xs, Y, fold_id_t, in_dim, out_dim, seed):
     print("PASS" if ok else "FAIL: cannot fit 512 samples -> bug in data/targets/optimiser.")
     del model
     return ok
-
 
 def shuffle_control(Xs, Y, fold_id_t, in_dim, out_dim, seed):
     print("\n" + "=" * 80)
@@ -744,7 +730,6 @@ def shuffle_control(Xs, Y, fold_id_t, in_dim, out_dim, seed):
     del model
     return ok
 
-
 def plot_learning_curves(histories, baselines, save_path):
     n = len(histories)
     cols = min(n, 4)
@@ -767,7 +752,6 @@ def plot_learning_curves(histories, baselines, save_path):
     plt.close()
     print(f"Saved learning curves to: {save_path}")
 
-
 def print_learning_verdict(y_true, y_pred, tag):
     print(f"\n--- Learning verdict: {tag} ---")
     global_r2 = r2_calcs(y_true, y_pred)
@@ -778,7 +762,6 @@ def print_learning_verdict(y_true, y_pred, tag):
     else:
         status = "learning"
     print(f"  Global Spectrum R^2 = {global_r2:7.3f}  -> {status}")
-
 
 # =============================================================================
 # Memory-lean evaluation of saved checkpoints
@@ -795,13 +778,11 @@ CACHE_DIR = OUTPUT_DIR.parent / "cache"     # ~ (n_clean_rows * n_wavelengths * 
 STREAM_CHUNK = 1024                          # rows per chunk (~80 MB per float64 temporary at 10k wavelengths)
 N_PARITY_PEAKS = 12                          # must match the 12 channels plot_parity_grid draws
 
-
 def _cache_tag(h5_path, spike_thresh, exp_dopants, host_elements) -> str:
     st = Path(h5_path).stat()
     key = (f"{Path(h5_path).resolve()}|{st.st_size}|{int(st.st_mtime)}|{spike_thresh}|"
            f"{sorted(exp_dopants)}|{sorted(host_elements)}")
     return f"{Path(h5_path).stem}_{hashlib.md5(key.encode()).hexdigest()[:10]}"
-
 
 def load_clean_spectra_lean(
     h5_path: str,
@@ -898,7 +879,6 @@ def load_clean_spectra_lean(
     Y = np.memmap(bin_path, dtype=np.float32, mode='r', shape=(n_rows, n_wl))
     return data, Y
 
-
 def stream_spectral_stats(Y, rows, predict_fn, conc, folds=None, train_mean=None,
                           n_peaks: int = N_PARITY_PEAKS, chunk: int = STREAM_CHUNK):
     """Two chunked passes over Y[rows]; returns per-wavelength sufficient statistics.
@@ -950,7 +930,6 @@ def stream_spectral_stats(Y, rows, predict_fn, conc, folds=None, train_mean=None
                 sse_m=sse_m, sae_m=sae_m, sse_mu=sse_mu, sae_mu=sae_mu,
                 row_r2=row_r2, yt_top=yt_top, yp_top=yp_top)
 
-
 def print_table_from_stats(st, title_tag):
     """Same table as print_benchmark_table, computed from stream_spectral_stats() output."""
     mean_spec = st['mean_spec']
@@ -975,7 +954,6 @@ def print_table_from_stats(st, title_tag):
             print(f"{reg_name:<25} | {strat_name:<18} | {r2:10.4f} | {sae / cnt:10.4f} | {np.sqrt(sse / cnt):10.4f}")
         print("-" * 95)
 
-
 def print_verdict_from_stats(st, tag):
     """Same read-out as print_learning_verdict, from stats."""
     sst = float((st['s2'] - st['s1'] ** 2 / st['n']).sum())
@@ -988,7 +966,6 @@ def print_verdict_from_stats(st, tag):
     else:
         status = "learning"
     print(f"  Global Spectrum R^2 = {global_r2:7.3f}  -> {status}")
-
 
 def make_predict_fn(models, n_wl):
     @torch.no_grad()
@@ -1007,13 +984,11 @@ def make_predict_fn(models, n_wl):
         return out.cpu().numpy()
     return fn
 
-
 @torch.no_grad()
 def per_model_preds(models, conc_row):
     """[K, n_wl] predictions of every fold model for one sample (for the +-1 sigma band)."""
     x = torch.from_numpy(np.ascontiguousarray(conc_row[None], dtype=np.float32)).to(DEVICE)
     return np.stack([m(x).float().cpu().numpy()[0] for m in models])
-
 
 class _Rows:
     """Duck-typed stand-in for a big [N, n_wl] array when plot_sample_spectra only touches a few rows."""
@@ -1024,7 +999,6 @@ class _Rows:
         if isinstance(key, tuple):      # fold_preds[:, idx, :] on the 3-D [K, N, n_wl] layout
             key = key[1]
         return self.d[int(key)]
-
 
 class _Cols:
     """Duck-typed stand-in for a big [N, n_wl] array when plot_parity_grid only touches 12 columns."""
@@ -1037,13 +1011,11 @@ class _Cols:
     def __getitem__(self, key):
         return self.cols[int(key[1])]
 
-
 def _parity_views(st):
     names = [int(c) for c in st['top_cols']]
     yt = _Cols(st['mean_spec'], {c: st['yt_top'][:, j] for j, c in enumerate(names)})
     yp = _Cols(st['mean_spec'], {c: st['yp_top'][:, j] for j, c in enumerate(names)})
     return yt, yp
-
 
 def evaluate_saved_models(model_prefix: str | Path):
     print(f"=== Running Standalone Evaluation from Saved Checkpoints [{DEVICE}] ===")
@@ -1319,6 +1291,6 @@ def main():
 
 
 if __name__ == "__main__":
-    # main()
+    main()
     # evaluate_saved_models(model_prefix='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/conc_to_spec/MLP/trained_models/mlp_20261024_135220')
-    just_plotting(sample_indices=[70568, 18937])
+    # just_plotting(sample_indices=[70568, 18937])

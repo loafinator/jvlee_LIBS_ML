@@ -38,10 +38,10 @@ HOST_ELEMENTS = {'Li', 'K', 'Cl'}
 EXP_DOPANTS = {'Ce', 'Gd', 'Sm', 'U'}
 
 # Candidate range for PLS components
-# N_COMPONENTS_GRID = [1,2,5,10,20,30,40,50,60,70,80,90,100]
+N_COMPONENTS_GRID = [1,2,5,10,20,30,40,50,60,70,80,90,100]
 # N_COMPONENTS_GRID = [20,25,28,29,30,31,32,35,40]
 # N_COMPONENTS_GRID = [50,55,58,59,60,61,62,65,70]
-N_COMPONENTS_GRID = [70,75,78,79,80,81,82,85,90]
+# N_COMPONENTS_GRID = [70,75,78,79,80,81,82,85,90]
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -604,18 +604,34 @@ if __name__ == "__main__":
     #     seeds=SEEDS,
     # )
     
+    # main(
+    #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261106.h5",
+    #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261106",
+    #     output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261106/exp"),
+    #     include_synthetic=False,
+    #     seeds=SEEDS,
+    # )
+    
+    # main(
+    #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_processed-data_20261106.h5",
+    #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261106",
+    #     output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261106/exp-syn"),
+    #     include_synthetic=True,
+    #     seeds=SEEDS,
+    # )
+    
     main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261106.h5",
-        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261106",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261106/exp"),
+        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261109.h5",
+        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261109",
+        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261109/exp"),
         include_synthetic=False,
         seeds=SEEDS,
     )
     
     main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_processed-data_20261106.h5",
-        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261106",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261106/exp-syn"),
+        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_processed-data_20261109.h5",
+        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261109",
+        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261109/exp-syn"),
         include_synthetic=True,
         seeds=SEEDS,
     )

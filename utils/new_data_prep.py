@@ -82,26 +82,76 @@ _SINGLES_CONC_MAP: dict[str, str] = {
 
 # Lookup table mapping MS-series sample identifiers to CeCl3 concentrations (wt%)
 _MS_CONC_MAP: dict[str, float] = {
-    'ms4': 3.0,
-    'ms5': 2.95, # A_dissertation: 1.676 wt%Ce =~ 2.95wt%CeCl3   nom: 3.0,
-    'ms6': 0.0,
-    'ms7': 0.1,
-    'ms8': 0.055, # A_dissertation: 0.0315 wt%Ce =~ 0.055wt%CeCl3   nom: 0.1,
-    'ms9': 0.395, # A_dissertation: 0.2245 wt%Ce =~ 0.395wt%CeCl3   nom: 0.5,
-    'ms10': 1.0,
-    'ms11': 1.0,
-    'ms12': 3.0,
-    'ms13': 5.0,
-    'ms14': 5.0,
-    'ms16': 0.5,
+    # 'ms4': 3.0,
+    # 'ms5': 2.95, # A_dissertation: 1.676 wt%Ce =~ 2.95wt%CeCl3   nom: 3.0,
+    # 'ms6': 0.0,
+    # 'ms7': 0.1, # remove from data as per A_dissertation (bad optical port)
+    'ms8 ': 0.055, # A_dissertation: 0.0315 wt%Ce =~ 0.055wt%CeCl3   nom: 0.1,
+    'ms9 ': 0.395, # A_dissertation: 0.2245 wt%Ce =~ 0.395wt%CeCl3   nom: 0.5,
+    'ms10 ': 0.880,
+    'ms11 ': 0.792,
+    'ms12 ': 2.836,
+    # 'ms13 ': 5.0, # remove from data as per A_dissertation (oxygen spike)
+    'ms14 ': 4.639,
+    'ms16 ': 0.5,
 }
 
 _MSU_CONC_MAP = {
     'msu1': 0.741,  # A_dissertation: 0.741wt%UCl3   nom: 1.0,
-    'msu2': 1.0
+    'msu2': 1.080,
+    'msu3' : 0.790,
+    'msu4' : 0.810,
+    'msu5' : 0.956,
+    'msu6' : 1.805,
+    'msu7' : 2.768,
+    'msu8' : 4.681,
+    'msu9' : 0.061,
+}
+
+# # From Ammon's dissertation: [CeCl3 wt%, GdCl3 wt%]
+_AWILLIAMS_MAP: dict[str, list[float]] = {
+    'samples 1 ' : [0.5, 0.5],
+    'samples 2 ' : [0.5, 1.0],
+    'samples 3 ' : [0.5, 2.0],
+    'samples 4 ' : [0.5, 3.0],
+    'samples 5 ' : [0.5, 4.0],
+    'samples 6 ' : [0.5, 5.0],
+    'samples 7 ' : [1.0, 0.5],
+    'samples 8 ' : [1.0, 1.0],
+    'samples 9 ' : [1.0, 2.0],
+    'samples 10 ' : [1.0, 3.0],
+    'samples 11 ' : [1.0, 4.0],
+    'samples 12 ' : [1.0, 5.0],
+    'samples 13 ' : [2.0, 0.5],
+    'samples 14 ' : [2.0, 1.0],
+    'samples 15 ' : [2.0, 2.0],
+    'samples 16 ' : [2.0, 3.0],
+    'samples 17 ' : [2.0, 4.0],
+    'samples 18 ' : [2.0, 5.0],
+    'samples 19 ' : [3.0, 0.5],
+    'samples 20 ' : [3.0, 1.0],
+    'samples 21 ' : [3.0, 2.0],
+    'samples 22 ' : [3.0, 3.0],
+    'samples 23 ' : [3.0, 4.0],
+    'samples 24 ' : [3.0, 5.0],
+    'samples 25 ' : [4.0, 0.5],
+    'samples 26 ' : [4.0, 1.0],
+    'samples 27 ' : [4.0, 2.0],
+    'samples 28 ' : [4.0, 3.0],
+    'samples 29 ' : [4.0, 4.0],
+    'samples 30 ' : [4.0, 5.0],
+    'samples 31 ' : [5.0, 0.5],
+    'samples 32 ' : [5.0, 1.0],
+    'samples 33 ' : [5.0, 2.0],
+    'samples 34 ' : [5.0, 3.0],
+    'samples 35 ' : [5.0, 4.0],
+    'samples 36 ' : [5.0, 5.0],
 }
 
 # Lookup table mapping SampleU-series keys to concentrations: [UCl3 wt%, GdCl3 wt%]
+# I think these are supposed to be the trinary systems from Hunter's work
+# I need to check against the filepaths before I make the change, but here they are
+# in the [UCl3, GdCl3, MgCl3] format 
 _SAMPLE_U_MAP: dict[str, list[float]] = {
     'sampleu1' : [0.792, 0],
     'sampleu2' : [1.945, 0],
@@ -122,6 +172,127 @@ _SAMPLE_U_MAP: dict[str, list[float]] = {
     'sampleug11' : [8.739, 2.966],
     'sampleug12' : [4.879, 0.922],
     'sampleug13' : [0.814, 4.470],
+    # 'sampleu1' : [0.797, 0],
+    # 'sampleu2' : [1.999, 0],
+    # 'sampleu25' : [2.239, 0],       # Represents sample 2.5
+    # 'sampleu3' : [2.880, 0],
+    # 'sampleu4' : [3.737, 0],
+    # 'sampleu5' : [4.653, 0],
+    # 'sampleug1' : [0.855, 0.942],
+    # 'sampleug2' : [1.849, 1.831],
+    # 'sampleug3' : [2.899, 2.878],
+    # 'sampleug4' : [3.923, 3.656],
+    # 'sampleug5' : [4.954, 4.554],
+    # 'sampleug6' : [2.968, 0.961],
+    # 'sampleug7' : [3.870, 1.798],
+    # 'sampleug8' : [0.836, 2.745],  # missing from dissertation
+    # 'sampleug9' : [2.782, 4.576],  # missing from dissertation
+    # 'sampleug10' : [1.878, 3.676],  # missing from dissertation
+    # 'sampleug11' : [8.739, 2.966],  # missing from dissertation
+    # 'sampleug12' : [4.924, 0.927],
+    # 'sampleug13' : [0.807, 4.463],
+}
+
+# [SmCl3 wt%, GdCl3 wt%]
+_ANDREWSH_SMGD_MAP: dict[str, list[float]] = {
+    # Pure Host
+    'blank_run' : [0, 0],
+
+    # Single-analyte SmCl3
+    '1.0-SmCl3' : [0.424, 0],
+    '2.0-SmCl3' : [0.645, 0],
+    '3.0-SmCl3' : [0.991, 0],
+    '4.0-SmCl3' : [1.967, 0],
+    '5.0-SmCl3' : [2.837, 0],
+    '6.0-SmCl3' : [3.725, 0],   # missing from filepaths
+    '7.0-SmCl3' : [4.847, 0],
+    '8.0-SmCl3' : [6.721, 0],
+    '9.0-SmCl3' : [7.814, 0],   # missing from filepaths
+    '10.0-SmCl3' : [8.994, 0],
+
+    # Single-analyte GdCl3
+    # NOTE: Not present in filepaths?
+        # I think these are only in the data_import_lambda_t1_sample#.csv files
+        # I thought that the lambda files were just like averages or something,
+        # but they might actually be these datasets???
+        # No even better: The binary systems are marked T for 'two' so these are 
+        # all the ones that don't have T in them. 
+    'Sample1' : [0, 0.843],
+    'Sample2' : [0, 1.743],
+    'Sample3' : [0, 2.648],
+    'Sample4' : [0, 3.522],
+    'Sample5' : [0, 4.512],
+
+    # Binary SmCl3 - GdCl3
+    'SampleT1' : [1.841, 0.888],
+    'SampleT2' : [5.868, 2.808],
+    'SampleT3' : [3.835, 3.593],
+    'SampleT4' : [1.949, 3.642],
+    'SampleT5' : [7.860, 3.689],
+    'SampleT6' : [7.992, 0.996],
+    'SampleT7' : [5.954, 1.905],
+    'SampleT8' : [3.607, 2.531],
+    'SampleT9' : [3.919, 1.849],
+    'SampleT10' : [3.959, 0.975],
+}
+
+# [UCl3 wt%, GdCl3 wt%, MgCl2 wt%]
+_ANDREWSH_UGDMG_MAP: dict[str, list[float]] = {
+    # Single-analyte UCl3
+    'SampleU1'    : [0.797, 0.0, 0.0],
+    'SampleU2'    : [1.999, 0.0, 0.0],
+    'SampleU25'  : [2.239, 0.0, 0.0],
+    'SampleU3'    : [2.880, 0.0, 0.0],
+    'SampleU4'    : [3.737, 0.0, 0.0],
+    'SampleU5'    : [4.653, 0.0, 0.0],
+
+    # Binary UCl3 - GdCl3
+    'SampleUG1'   : [0.855, 0.942, 0.0],
+    'SampleUG2'   : [1.849, 1.831, 0.0],
+    'SampleUG3'   : [2.899, 2.878, 0.0],
+    'SampleUG4'   : [3.923, 3.656, 0.0],
+    'SampleUG5'   : [4.954, 4.554, 0.0],
+    'SampleUG6'   : [2.968, 0.961, 0.0],
+    'SampleUG7'   : [3.870, 1.798, 0.0],
+    # SampleUG8 - SampleUG11 are missing from dissertation
+    'SampleUG12'  : [4.924, 0.927, 0.0],
+    'SampleUG13'  : [0.807, 4.463, 0.0],
+
+    # Single-analyte MgCl2
+    'SampleM1'    : [0.0, 0.0, 0.144],
+    'SampleM2'    : [0.0, 0.0, 0.298],
+    'SampleM3'    : [0.0, 0.0, 0.669],
+    'SampleM4'    : [0.0, 0.0, 0.986],
+    'SampleM5'    : [0.0, 0.0, 1.197],
+
+    # Binary UCl3 - MgCl2
+    # NOTE: Not present in filepaths?
+    'UM1'   : [0.798, 0.0, 0.358],
+    'UM2'   : [1.756, 0.0, 0.716],
+    'UM3'   : [2.640, 0.0, 0.969],
+    'UM4'   : [3.287, 0.0, 1.274],
+
+    # Binary GdCl3 - MgCl2
+    'SampleGM1'   : [0.0, 0.777, 1.150],
+    'SampleGM2'   : [0.0, 1.590, 0.907],
+    'SampleGM3'   : [0.0, 2.580, 0.679],
+    'SampleGM4'   : [0.0, 3.405, 0.310],
+
+    # Ternary UCl3 - GdCl3 - MgCl2
+    # NOTE: Not present in filepaths?
+    'UGM1'  : [0.701, 0.851, 0.336],
+    'UGM2'  : [1.517, 1.739, 0.652],
+    'UGM3'  : [2.470, 2.631, 0.995],
+    'UGM4'  : [3.103, 3.340, 1.252],
+}
+
+# [UCl3 wt%, GdCl3 wt%, MgCl2 wt%]
+_ANDREWSH_BLINDS_MAP: dict[str, list[float]] = {
+    'B1' : [0.739, 1.830, 0.597],
+    'B2' : [2.291, 2.500, 0.900],
+    'B3' : [1.523, 2.623, 1.303],
+    'B4' : [2.324, 0.861, 0.021],  # Planned targets were 2.0% U, 1.0% Gd, 0.0% Mg
+    'B5' : [0.697, 0.006, 1.337],
 }
 
 # Lookup table mapping SL-series sample codes to SmCl3 concentration (wt%)
@@ -138,6 +309,7 @@ _SAMPLE_MG_MAP: dict[str, list[float]] = {
 }
 
 # Lookup table mapping Sample1-T10 keys to concentrations: [SmCl3 wt%, GdCl3 wt%]
+# I think this one is Hunter's
 _SAMPLE_1_THRU_T10_MAP: dict[str, list[float]] = {
     'sample1_t1' : [0, 0.895],
     'sample2_t1' : [0, 1.845],
@@ -154,6 +326,22 @@ _SAMPLE_1_THRU_T10_MAP: dict[str, list[float]] = {
     'sampleT8_t1' : [4.101, 2.916],
     'sampleT9_t1' : [3.958, 1.919],
     'sampleT10_t1' : [4.064, 1.035],
+    # From dissertation below, need to check file paths before change:
+    # 'sample1_t1' : [0, 0.843],
+    # 'sample2_t1' : [0, 1.743],
+    # 'sample3_t1' : [0, 2.648],
+    # 'sample4_t1' : [0, 3.522],
+    # 'sample5_t1' : [0, 4.512],
+    # 'sampleT1_t1' : [1.841, 0.888],
+    # 'sampleT2_t1' : [5.868, 2.808],
+    # 'sampleT3_t1' : [3.835, 3.593],
+    # 'sampleT4_t1' : [1.949, 3.642],
+    # 'sampleT5_t1' : [7.860, 3.689],
+    # 'sampleT6_t1' : [7.992, 0.996],
+    # 'sampleT7_t1' : [5.954, 1.905],
+    # 'sampleT8_t1' : [3.607, 2.531],
+    # 'sampleT9_t1' : [3.919, 1.849],
+    # 'sampleT10_t1' : [3.959, 0.975],
 }
 
 # Lookup table mapping Keith-series experiment replicate strings to: [CeCl3 wt%, GdCl3 wt%]
@@ -761,12 +949,12 @@ def parent_concentration_data(
         data: dict[str, float | str | int | None] = {
             col: 0.0 for col in composition_columns if 'conc_' in col
         }
-        data['frac_LiCl'] = 0.45  # Default LiCl eutectic wt% fraction
-        data['frac_KCl'] = 0.55   # Default KCl eutectic wt% fraction
+        data['frac_LiCl'] = 0.44  # Default LiCl eutectic wt% fraction
+        data['frac_KCl'] = 0.56   # Default KCl eutectic wt% fraction
         data['temperature_C'] = None
         data['scan_rate_mVs'] = None
         data['technique'] = None
-        data['meta_source'] = None  # 1=default, 2=parsed, 3=A_dissertation
+        data['meta_source'] = None  # 1=default, 2=parsed, 3=A_dissertation, 4=H_dissertation
         data['file_path'] = path_str
 
         # Step 1: Parse electrochemistry scan rate
@@ -789,11 +977,6 @@ def parent_concentration_data(
         fname = re.sub(r'(\d)p(\d)', r'\1.\2', path.name.lower())
         m = re.search(r'(\d+(?:\.\d+)?)\s*(ns|us|ms)(?![a-z])', fname)
         fname_hit = bool(m and 'delay' in all_text)
-        if fname_hit:
-            val, unit = float(m.group(1)), m.group(2) # type: ignore
-            data['delay'] = val * {'ns': 1e-3, 'us': 1.0, 'ms': 1e3}[unit]
-            data['delay_study'] = 1
-            data['meta_source'] = 2
         
         clean_text = re.sub(r'(\d+)p(\d+)', r'\1.\2', all_text)
         # replace 05 with 0.5 to match file name pattern in parent folder
@@ -804,7 +987,10 @@ def parent_concentration_data(
         unit_match = re.search(r'(\d+\.?\d*)\s*(us|ms|ns|s)(?![a-z])', Path(clean_text).name, re.IGNORECASE)
 
         if fname_hit:
-            pass
+            val, unit = float(m.group(1)), m.group(2) # type: ignore
+            data['delay'] = val * {'ns': 1e-3, 'us': 1.0, 'ms': 1e3}[unit]
+            data['delay_study'] = 1
+            data['meta_source'] = 2
         elif gtd_match:
             data['delay_study'] = 1
             data['delay'] = float(gtd_match.group(1))
@@ -827,6 +1013,20 @@ def parent_concentration_data(
             elif unit == 'ns': val /= 1e3
             data['delay'] = val
             data['meta_source'] = 2
+        elif 'andrewsh' in all_text:
+            data['delay_study'] = 0
+            data['delay'] = 14
+            data['meta_source'] = 4
+        elif 'awilliams' in all_text:
+            data['delay_study'] = 0
+            if re.search(r'msu\d+', all_text):
+                data['delay'] = 3.0
+            elif 'cecl3' in all_text or re.search(r'\bce\b', all_text) or 'th exp' in all_text:
+                data['delay'] = 16.0
+            elif 'ssu1' in all_text:
+                data['delay'] = 10
+            else:
+                data['delay'] = 3.0
         else:
             data['delay_study'] = 0
             data['delay'] = np.nan
@@ -845,30 +1045,35 @@ def parent_concentration_data(
             if unit == 's': val *= 1e6
             elif unit == 'ms': val *= 1e3
             data['width'] = val
+        elif 'andrewsh' in all_text:
+            data['width_study'] = 0
+            data['width'] = 8
         else:
             data['width_study'] = 1 if 'width' in all_text else 0
             data['width'] = np.nan
 
         # Step 6: Parse laser energy
         energy_match = _ENERGY_PATTERN.search(all_text)
-        neup_match = _NEUP_PATTERN.search(all_text)
         m_en = re.search(r'(\d+(?:\.\d+)?)\s*mj(?![a-z])', fname)
 
         if m_en:
             data['energy_study'] = 1
             data['energy'] = float(m_en.group(1))
+        elif energy_match:
+            data['energy_study'] = 1
+            data['energy'] = float(energy_match.group(1) or energy_match.group(2))
+        elif 'keith' in all_text:
+            data['energy_study'] = 0
+            data['energy'] = 55.0
+        elif 'andrewsh' in all_text:
+            data['energy_study'] = 0
+            data['energy'] = 13.0
+        elif 'awilliams' in all_text:
+            data['energy_study'] = 0
+            data['energy'] = 50.0
         else:
-            if energy_match:
-                data['energy_study'] = 1
-                data['energy'] = float(energy_match.group(1) or energy_match.group(2))
-            else:
-                keith_check = re.search(r'keith', all_text)
-                if keith_check:
-                    data['energy_study'] = 0
-                    data['energy'] = 55
-                else:
-                    data['energy_study'] = 0
-                    data['energy'] = np.nan
+            data['energy_study'] = 0
+            data['energy'] = np.nan
 
         # Step 7: Parse laser Q-switch delay
         qdelay_match = _QDELAY_PATTERN.search(all_text)
@@ -884,9 +1089,28 @@ def parent_concentration_data(
         if shot_match:
             data['shot_study'] = 1
             data['shots'] = float(shot_match.group(1) or shot_match.group(2))
-        else:
+        elif 'andrewsh' in all_text:
             data['shot_study'] = 0
-            data['shots'] = _STANDARD_SHOTS
+            data['shots'] = 50
+        elif 'awilliams' in all_text:
+            ms_sets = ['ms8', 'ms9', 'ms10', 'ms11', 'ms12', 'ms13', 'ms14', 'ms15', 'ms16']
+            u_sets = ['msu1', 'msu2', 'msu3', 'msu4', 'msu5', 'ucl3']
+            aw_300_shots = ms_sets + u_sets
+            data['shot_study'] = 0
+            data['shots'] = 250
+            for s in aw_300_shots:
+                if s in all_text:
+                    data['shot_study'] = 0
+                    data['shots'] = 300
+                
+        else:
+            # Explicit fallback for Sm trial/sample sets where true shot count is 200 (or 300)
+            if re.search(r'sample\d+_t\d+|samplet\d+_t\d+|trial 1|trial 2', all_text):
+                data['shot_study'] = 3  # Custom metadata source flag
+                data['shots'] = 200.0   # Update to match your actual experiment logbook (e.g., 200 or 300)
+            else:
+                data['shot_study'] = 0
+                data['shots'] = _STANDARD_SHOTS
 
         # Step 9: Parse carrier gas flow rate
         flow_match = _FLOW_PATTERN.search(all_text)
@@ -930,13 +1154,13 @@ def parent_concentration_data(
 
         # Step 15: Determine temperature conditions
         temp_match = _TEMP_PATTERN.search(all_text)
-        if data['state_aerosol'] == 1 or data['state_molten'] == 1:
+        if 'andrewsh' in all_text:
+            data['temperature_C'] = 30.0
+        elif data['state_aerosol'] == 1 or data['state_molten'] == 1:
             if temp_match:
                 data['temperature_C'] = float(temp_match.group(1))
             elif any(s in all_text for s in ['sla_', 'slb_', 'slc_', 'sld_']):
                 data['temperature_C'] = 500.0
-            elif 'andrewsh' in all_text:
-                data['temperature_C'] = 501.0
             else:
                 for part in path.parts:
                     if part.isdigit() and 300 < int(part) < 1000:
@@ -954,90 +1178,43 @@ def parent_concentration_data(
             else:
                 data['temperature_C'] = np.nan
 
-        # Step 16: Extract Chemical Concentrations via Casing-Insensitive Parsing
-        filename_text = path.name.upper()
-        sorted_keys = sorted(_SPECIES_MAP.keys(), key=len, reverse=True)
+        # Step 16: EXPERIMENTAL CONCENTRATION MAPS (Explicit Dictionaries)
+        msu_match = re.search(r'msu(\d+)', all_text)
+        if msu_match:
+            if 'ms16_300' in all_text:
+                data['conc_UCl3_wt%'] = np.nan
+            elif data.get('blank') == 1:
+                data['conc_UCl3_wt%'] = 0.0
+            else:
+                data['conc_UCl3_wt%'] = _MSU_CONC_MAP.get(f'msu{msu_match.group(1)}', np.nan)
 
-        for key in sorted_keys:
-            nice_name = _SPECIES_MAP[key]
-            pattern = re.compile(
-                rf"(?<![\d.])(\d+\.?\d*)\s*(?:_str|_wt%?|wt%?|ppm)?\s*[-_ ]?\s*{re.escape(key)}(?=[_\s.\-/\\(]|$)",
-                re.IGNORECASE)
-            
-            match = pattern.search(filename_text)
-            if match:
-                val_str = match.group(1)
-                col = f"conc_{nice_name}_wt%"
-                if nice_name == "H2o":
-                    col = "conc_H2o_wt%"
-                    
-                if col in _DEFAULT_CONC_COLS:
-                    try:
-                        val = float(val_str)
-                        context_around = filename_text[max(0, match.start()-5):match.end()+5]
-                        if 'PPM' in context_around:
-                            val = val / 10000.0  # Convert PPM to wt%
-                        data[col] = val
-                    except ValueError:
-                        continue
-
-        # Step 16b: concentrations written in parent foldernames (ex. "5 wt_ CeCl3")
-        folder_text = ' '.join(path.parts[:-1]).upper()
-        salt_keys = [k for k in sorted_keys if k.endswith(('CL', 'CL2', 'CL3'))]
-        for key in salt_keys:
-            col = f"conc_{_SPECIES_MAP[key]}_wt%"
-            if col not in _DEFAULT_CONC_COLS or data.get(col, 0.0) != 0.0:
-                continue   # the filename already supplied a value
-            m = re.search(rf"(?<![\d.])(\d+\.?\d*)\s*(?:WT%?|%|WT_)\s*[-_ ]?{re.escape(key)}(?=[_\s.\-/\\(]|$)", folder_text)
-            if m:
-                data[col] = float(m.group(1))
-
-        # Step 16c: folder rule for ppm
-        if 'CECL3-LICL-KCL-H2O' in folder_text and data.get('conc_Ce_wt%', 0.0) == 0.0:
-            PPM = r'(\d+\.?\d*)\s*PPM(?![A-Z])'
-            name_ppm = re.search(PPM, path.name.upper())
-            dir_ppm = re.search(PPM, path.parent.name.upper())
-            if name_ppm and dir_ppm and float(name_ppm.group(1)) != float(dir_ppm.group(1)):
-                data['conc_Ce_wt%'] = np.nan      # filename and folder disagree: exclude
-            elif name_ppm or dir_ppm:
-                data['conc_Ce_wt%'] = float((name_ppm or dir_ppm).group(1)) / 10000.0 # type: ignore
-
-        # Step 17: Apply Hardcoded Concentration Mapping Libraries
-        if 'wavelength (nm),sum,' in all_text:
-            for key, target_col in sorted(_SINGLES_CONC_MAP.items(), key=lambda x: -len(x[0])):
-                pattern = rf'wavelength \(nm\),sum,{key.lower()}(?:\s+[ivxlcdm]+)?'
-                if re.search(pattern, all_text, re.IGNORECASE):
-                    if target_col in composition_columns:
-                        data[target_col] = 1.0
-                    break
-
-        if re.search(r'(?<![a-z])ms\d', all_text) and not re.search(r'msu\d', all_text):
+        if re.search(r'(?<![a-z])ms\d+', all_text) and not re.search(r'msu\d+', all_text):
             if data.get('blank') == 1:
                 data['conc_CeCl3_wt%'] = 0.0
             else:
-                # av_conc = sum(_MS_CONC_MAP.values()) / len(_MS_CONC_MAP)
                 for key, conc in sorted(_MS_CONC_MAP.items(), key=lambda x: -len(x[0])):
                     if key in all_text:
                         data['conc_CeCl3_wt%'] = conc
                         break
-                else:
-                    data['conc_CeCl3_wt%'] = np.nan
 
-        if re.search(r'msu\d', all_text):
-            if 'ms16_300' in all_text:
-                data['conc_UCl3_wt%'] = np.nan        # misfiled? excluded
-            elif data.get('blank') == 1:
-                data['conc_UCl3_wt%'] = 0.0
-            elif data.get('conc_UCl3_wt%', 0.0) == 0.0:
-                m = re.search(r'msu(\d)', all_text)
-                assert m is not None
-                data['conc_UCl3_wt%'] = _MSU_CONC_MAP.get(f'msu{m.group(1)}', np.nan)
+        if 'andrewsh' in all_text:
+            for key, conc in sorted(_ANDREWSH_SMGD_MAP.items(), key=lambda x: -len(x[0])):
+                if key.lower() in all_text:
+                    data['conc_SmCl3_wt%'], data['conc_GdCl3_wt%'] = conc[0], conc[1]
+                    break
+            for key, conc in sorted(_ANDREWSH_UGDMG_MAP.items(), key=lambda x: -len(x[0])):
+                if key.lower() in all_text:
+                    data['conc_UCl3_wt%'], data['conc_GdCl3_wt%'], data['conc_MgCl2_wt%'] = conc[0], conc[1], conc[2]
+                    break
+            for key, conc in sorted(_ANDREWSH_BLINDS_MAP.items(), key=lambda x: -len(x[0])):
+                if key.lower() in all_text:
+                    data['conc_UCl3_wt%'], data['conc_GdCl3_wt%'], data['conc_MgCl2_wt%'] = conc[0], conc[1], conc[2]
+                    break
 
         if re.search('sampleu', all_text):
             for key, conc in sorted(_SAMPLE_U_MAP.items(), key=lambda x: -len(x[0])):
                 if key in all_text:
-                    data['conc_UCl3_wt%'] = conc[0]
-                    data['conc_GdCl3_wt%'] = conc[1]
+                    data['conc_UCl3_wt%'], data['conc_GdCl3_wt%'] = conc[0], conc[1]
                     break
 
         if re.search(r'sl[abcd]', all_text):
@@ -1049,22 +1226,19 @@ def parent_concentration_data(
         if re.search('samplem', all_text):
             for key, conc in sorted(_SAMPLE_MG_MAP.items(), key=lambda x: -len(x[0])):
                 if key in all_text:
-                    data['conc_U_wt%'] = conc[0]
-                    data['conc_Mg_wt%'] = conc[1]
+                    data['conc_U_wt%'], data['conc_Mg_wt%'] = conc[0], conc[1]
                     break
 
         if re.search(r'sample\d+_t\d+|samplet\d+_t\d+', all_text):
             for key, conc in sorted(_SAMPLE_1_THRU_T10_MAP.items(), key=lambda x: -len(x[0])):
                 if key.lower() in all_text:
-                    data['conc_SmCl3_wt%'] = conc[0]
-                    data['conc_GdCl3_wt%'] = conc[1]
+                    data['conc_SmCl3_wt%'], data['conc_GdCl3_wt%'] = conc[0], conc[1]
                     break
 
         if re.search('keith', all_text):
             for key, conc in sorted(_KEITH_CECL3_MAP.items(), key=lambda x: -len(x[0])):
                 if key in all_text:
-                    data['conc_CeCl3_wt%'] = conc[0]
-                    data['conc_GdCl3_wt%'] = conc[1]
+                    data['conc_CeCl3_wt%'], data['conc_GdCl3_wt%'] = conc[0], conc[1]
                     break
 
         if re.search(r'trial 1|trial 2', all_text):
@@ -1079,10 +1253,42 @@ def parent_concentration_data(
                     data['conc_UCl3_wt%'] = conc
                     break
 
+        # Step 17: FALLBACK REGEX PARSING (Unmapped Files Only)
+        filename_text = path.name.upper()
+        sorted_keys = sorted(_SPECIES_MAP.keys(), key=len, reverse=True)
+        for key in sorted_keys:
+            nice_name = _SPECIES_MAP[key]
+            col = f"conc_{nice_name}_wt%"
+            if data.get(col, 0.0) != 0.0:
+                continue
+
+            pattern = re.compile(
+                rf"(?<![\d.])(\d+\.?\d*)\s*(?:_str|_wt%?|wt%?|ppm)?\s*[-_ ]?\s*{re.escape(key)}(?=[_\s.\-/\\(]|$)",
+                re.IGNORECASE)
+            match = pattern.search(filename_text)
+            if match:
+                try:
+                    val = float(match.group(1))
+                    if 'PPM' in filename_text[max(0, match.start()-5):match.end()+5]:
+                        val /= 10000.0
+                    data[col] = val
+                except ValueError:
+                    continue
+
+        folder_text = ' '.join(path.parts[:-1]).upper()
+        salt_keys = [k for k in sorted_keys if k.endswith(('CL', 'CL2', 'CL3'))]
+        for key in salt_keys:
+            col = f"conc_{_SPECIES_MAP[key]}_wt%"
+            if col not in composition_columns or data.get(col, 0.0) != 0.0:
+                continue
+            m = re.search(rf"(?<![\d.])(\d+\.?\d*)\s*(?:WT%?|%|WT_)\s*[-_ ]?{re.escape(key)}(?=[_\s.\-/\\(]|$)", folder_text)
+            if m:
+                data[col] = float(m.group(1))
+
         if 'keith' in all_text and data['meta_source'] == 1:
             data['delay'] = 6.0
             data['width'] = 20.0
-            data['shots'] = 200
+            data['shots'] = 200.0
             data['energy'] = 55.0
             data['meta_source'] = 3
 
@@ -1412,6 +1618,192 @@ def dataset_cleaning(
     input_h5: Path | str,
     output_h5: Path | str,
     target_elements: list[str] | None = None,
+    clip_percentile: float | None = None,
+    target_delay: float | None = None,
+    target_energy: float | None = None,
+    target_state_molten: int | None = None,
+    min_ties: int = 3,
+    rel_tol: float = 0.0,
+    drop_saturated: bool = True,
+) -> None:
+    """Prepares raw spectral HDF5 dataset into clean X (Spectra) and y (Concentrations) for PLS."""
+    input_h5, output_h5 = Path(input_h5), Path(output_h5)
+    
+    with h5py.File(input_h5, 'r') as hf_in:
+        raw_spectra = get_h5_ds(hf_in, 'spectra')[:]
+        wavelengths = get_h5_ds(hf_in, 'wavelengths')[:]
+        
+        meta_dict = {}
+        if 'metadata' in hf_in:
+            metadata = cast(h5py.Group, get_h5_ds(hf_in, 'metadata'))
+            for k in metadata.keys():
+                data = cast(h5py.Dataset, metadata[k])[:]
+                if data.dtype.kind in ('O', 'S', 'V'):
+                    meta_dict[k] = [x.decode('utf-8') if isinstance(x, bytes) else x for x in data]
+                else:
+                    meta_dict[k] = data
+        if 'is_synthetic' in hf_in:
+            meta_dict['is_synthetic'] = hf_in['is_synthetic'][:] # type: ignore
+        elif 'meta/is_synthetic' in hf_in:
+            meta_dict['is_synthetic'] = hf_in['meta/is_synthetic'][:] # type: ignore
+        df_meta = pd.DataFrame(meta_dict)
+
+        if 'is_synthetic' not in df_meta.columns:
+            df_meta['is_synthetic'] = False
+
+    # --- Step 1a: Pre-Clipping Peak Behavior Check ---
+    # Must run on un-subtracted, un-normalized raw spectra to preserve exact channel ties
+    raw_max_counts = raw_spectra.max(axis=1)
+    is_flat_top = clipped_mask(raw_spectra, min_peak=5000.0, min_ties=min_ties, rel_tol=rel_tol)
+    is_raw_summed = raw_max_counts > 65535.0  # 16-bit ADC hardware ceiling
+
+    # Hybrid Rule: Flag if flat-topped OR (single-shot/averaged AND peak > 64,500)
+    is_saturated = is_flat_top | (~is_raw_summed & (raw_max_counts > 64500.0))
+    
+    # Store sat_check metadata so models can be compared with/without flagged rows
+    df_meta['is_flat_top'] = is_flat_top
+    df_meta['sat_check_pass'] = ~is_saturated
+
+    # Remove NaN and zero-intensity rows
+    valid_mask = ~np.isnan(raw_spectra).any(axis=1) & (raw_spectra.sum(axis=1) > 0)
+    conc_cols = [c for c in df_meta.columns if c.startswith('conc_')]
+    valid_mask &= ~df_meta[conc_cols].isna().any(axis=1).to_numpy()
+
+    # Drop exact duplicate spectra
+    og_arr = df_meta['og_path'].astype(str).to_numpy()
+    conc_vals = df_meta[conc_cols].to_numpy(np.float64)
+    study_cols = [c for c in df_meta.columns if c.endswith('_study')]
+    explicit = (df_meta[study_cols].to_numpy(np.float64).sum(axis=1)
+                if study_cols else np.zeros(len(df_meta)))
+
+    groups_by_hash = {}
+    for i in np.flatnonzero(valid_mask):
+        h = hashlib.blake2b(raw_spectra[i].tobytes(), digest_size=16).digest()
+        groups_by_hash.setdefault(h, []).append(i)
+
+    keep = np.zeros(len(valid_mask), dtype=bool)
+    n_conflict = 0
+    for idx in groups_by_hash.values():
+        if len(idx) > 1 and not (conc_vals[idx] == conc_vals[idx[0]]).all():
+            n_conflict += 1
+            continue
+        keep[min(idx, key=lambda i: (-explicit[i], og_arr[i]))] = True
+
+    print(f"Duplicate rows removed: {int(valid_mask.sum() - keep.sum()) - n_conflict}; "
+          f"groups dropped for conflicting concentrations: {n_conflict}")
+    valid_mask &= keep
+
+    # Apply hybrid saturation mask to filter out clipped rows
+    # Step 1a: Filter duplicates and saturation
+    print(f"Hybrid Saturation Audit:")
+    print(f"  • Flat-top peaks flagged (clipped_mask): {is_flat_top.sum():,}")
+    print(f"  • Single-shot/averaged > 64,500 counts: {(~is_raw_summed & (raw_max_counts > 64500.0)).sum():,}")
+    print(f"  • Total saturated rows flagged: {(is_saturated & valid_mask).sum():,}")
+
+    if drop_saturated:
+        valid_mask &= ~is_saturated
+        print(f"  • Saturated rows dropped from output dataset.")
+    else:
+        print(f"  • Saturated rows retained in output dataset (flagged in metadata as sat_check_pass=False).")
+
+    spectra = raw_spectra[valid_mask]
+    del raw_spectra
+    df_meta = df_meta[valid_mask].reset_index(drop=True)
+
+    # Step 1b: Apply experimental condition mask
+    condition_mask = np.ones(len(df_meta), dtype=bool)
+    if target_delay is not None and 'delay' in df_meta.columns:
+        condition_mask &= (df_meta['delay'] == target_delay)
+    if target_energy is not None and 'energy' in df_meta.columns:
+        condition_mask &= (df_meta['energy'] == target_energy)
+    if target_state_molten is not None and 'state_molten' in df_meta.columns:
+        condition_mask &= (df_meta['state_molten'] == target_state_molten)
+
+    spectra = spectra[condition_mask]
+    df_meta = df_meta[condition_mask].reset_index(drop=True)
+
+    # Step 1c: Scale integrated summed spectra to per-shot average counts
+    spectra, df_meta = summation_average(
+        input_data=spectra,
+        df_meta=df_meta,
+        threshold=65535.0,
+        default_shots=50.0
+    )
+
+    # Step 2: Baseline subtraction & area normalization
+    X_clean = clean_libs_spectrum(spectra)
+
+    # Step 3: Elemental Stoichiometric Conversion for Targets (y)
+    df_elemental_all = compute_elemental_wt(df_meta)
+    if target_elements:
+        df_elemental = df_elemental_all[[e for e in target_elements if e in df_elemental_all.columns]]
+    else:
+        df_elemental = df_elemental_all
+    aux_cols = [c for c in df_elemental_all.columns if c not in df_elemental.columns]
+
+    # Step 4: Drop Inactive Target Columns (Zero Variance)
+    selector = VarianceThreshold(threshold=1e-6)
+    y_filtered = selector.fit_transform(df_elemental)
+    surviving_cols = df_elemental.columns[selector.get_support()].tolist()
+
+    # Split groups & generate lockbox split
+    _, initial_groups = np.unique(np.round(y_filtered, 3), axis=0, return_inverse=True)
+    is_zero_shot = (y_filtered < 1e-5).all(axis=1)
+    if is_zero_shot.any():
+        file_ids = df_meta['file_id'].to_numpy()
+        _, zero_file_inv = np.unique(file_ids[is_zero_shot], return_inverse=True)
+        max_nonzero_grp = initial_groups[~is_zero_shot].max() if (~is_zero_shot).any() else 0
+        groups = initial_groups.copy()
+        groups[is_zero_shot] = max_nonzero_grp + 1 + zero_file_inv
+    else:
+        groups = initial_groups
+
+    unique_groups = np.unique(groups)
+    n_lockbox_groups = max(1, int(0.15 * len(unique_groups)))
+    group_present = np.array([(y_filtered[groups == g] > 1e-5).any(axis=0) for g in unique_groups])
+    sig = (group_present.astype(int) * (1 << np.arange(group_present.shape[1]))).sum(axis=1)
+    rng = np.random.default_rng(42)
+
+    lockbox_groups = []
+    for s in np.unique(sig):
+        members = rng.permutation(unique_groups[sig == s])
+        n_select = max(1, int(0.15 * len(members))) if len(members) > 1 else (1 if len(lockbox_groups) < n_lockbox_groups else 0)
+        lockbox_groups.extend(members[:n_select])
+
+    is_lockbox = np.isin(groups, lockbox_groups)
+
+    # Step 5: Save Clean PLS-Ready Dataset to HDF5
+    comp_kwargs = {'compression': 'gzip', 'compression_opts': 3} 
+    with h5py.File(output_h5, 'w') as hf_out: 
+        meta_out = hf_out.create_group('meta') 
+        for c in ['delay', 'energy', 'repetition', 'meta_source', 'is_synthetic', 'is_flat_top', 'sat_check_pass']: 
+            if c in df_meta.columns: 
+                dtype = bool if c in ('is_synthetic', 'is_flat_top', 'sat_check_pass') else np.float32
+                meta_out.create_dataset(c, data=df_meta[c].to_numpy(dtype))
+        meta_out.create_dataset(
+            'file_id',
+            data=np.char.encode(df_meta['file_id'].astype(str).to_numpy(dtype='U'), 'utf-8'),
+            compression='gzip')
+        if aux_cols: 
+            hf_out.create_dataset('y_aux', data=df_elemental_all[aux_cols].to_numpy(np.float32), **comp_kwargs)
+            hf_out.create_dataset('y_aux_names', data=np.char.encode(np.array(aux_cols, dtype='U'), 'utf-8')) 
+        for c in ['frac_LiCl', 'frac_KCl', 'temperature_C']:
+            if c in df_meta.columns: 
+                meta_out.create_dataset(c, data=df_meta[c].to_numpy(np.float32))
+        
+        hf_out.create_dataset('groups', data=groups.ravel().astype(np.int32))
+        hf_out.create_dataset('is_lockbox', data=is_lockbox.astype(bool), **comp_kwargs)
+        hf_out.create_dataset('X', data=X_clean.astype(np.float32, copy=False), **comp_kwargs) 
+        hf_out.create_dataset('y', data=y_filtered.astype(np.float32, copy=False), **comp_kwargs) 
+        hf_out.create_dataset('wavelengths', data=wavelengths.astype(np.float32, copy=False)) 
+        
+        str_dt = h5py.string_dtype(encoding='utf-8') 
+        hf_out.create_dataset('target_elements', data=np.array(surviving_cols, dtype=object), dtype=str_dt)
+
+def old_dataset_cleaning(
+    input_h5: Path | str,
+    output_h5: Path | str,
+    target_elements: list[str] | None = None,
     clip_percentile: float | None = None,# Optional parameters to filter conditions dynamically
     target_delay: float | None = None,
     target_energy: float | None = None,
@@ -1509,22 +1901,24 @@ def dataset_cleaning(
 
     print(f"Filtered dataset down to {len(spectra)} shots matching condition parameters.")
 
-    # Step 1c: Scale integrated summed spectra to per-shot average counts
-    spectra, df_meta = summation_average(
-        input_data=spectra,
-        df_meta=df_meta,
-        threshold=65535.0,  # 16-bit ADC hardware ceiling
-        default_shots=50.0
-    )
+    # # Step 1c: Scale integrated summed spectra to per-shot average counts
+    # spectra, df_meta = summation_average(
+    #     input_data=spectra,
+    #     df_meta=df_meta,
+    #     threshold=65535.0,  # 16-bit ADC hardware ceiling
+    #     default_shots=50.0
+    # )
 
-    # Step 1d: Filter true single-shot hardware saturation & cosmic rays
-    RAW_SATURATION_THRESH = 64500.0
-    per_shot_max = spectra.max(axis=1)
-    unsaturated_mask = per_shot_max <= RAW_SATURATION_THRESH
+    # # Step 1d: Filter true single-shot hardware saturation & cosmic rays
+    # RAW_SATURATION_THRESH = 64500.0
+    # per_shot_max = spectra.max(axis=1)
+    # unsaturated_mask = per_shot_max <= RAW_SATURATION_THRESH
 
-    print(f"Dropping {(~unsaturated_mask).sum()} true saturated shots (> {RAW_SATURATION_THRESH} counts/shot)")
-    spectra = spectra[unsaturated_mask]
-    df_meta = df_meta[unsaturated_mask].reset_index(drop=True)
+    # print(f"Dropping {(~unsaturated_mask).sum()} true saturated shots (> {RAW_SATURATION_THRESH} counts/shot)")
+    # spectra = spectra[unsaturated_mask]
+    # df_meta = df_meta[unsaturated_mask].reset_index(drop=True)
+
+
 
     # Step 2: Baseline subtraction & area normalization
     X_clean = clean_libs_spectrum(spectra)
@@ -1665,7 +2059,7 @@ def compute_elemental_wt(df_meta: pd.DataFrame) -> pd.DataFrame:
 
     # Calculate carrier matrix mass fraction (LiCl-KCl Eutectic: 45 wt% LiCl / 55 wt% KCl)
     base_scale = np.maximum(0.0, 100.0 - dopant_salt_wt_total) / 100.0
-    for elem, default_wt, n_cl in [('Li', 45.0, 1), ('K', 55.0, 1)]:
+    for elem, default_wt, n_cl in [('Li', 44.0, 1), ('K', 56.0, 1)]:
         mw_m, mw_cl = MW_ELEMENTS[elem], MW_ELEMENTS['Cl']
         mw_salt = mw_m + (n_cl * mw_cl)
         scaled_salt_wt = default_wt * base_scale
@@ -1674,6 +2068,41 @@ def compute_elemental_wt(df_meta: pd.DataFrame) -> pd.DataFrame:
 
     elemental_df['Cl'] = total_cl_wt
     return elemental_df
+
+# 3.d. Clip by flat tops
+def clipped_mask(
+    spectra: np.ndarray, 
+    min_peak: float = 5000.0, 
+    min_ties: int = 3, 
+    rel_tol: float = 0.0
+) -> np.ndarray:
+    """
+    Detects saturated/clipped spectra by checking for flat-topped peak profiles (tied maxima).
+
+    Parameters
+    ----------
+    spectra : np.ndarray
+        2D array of raw spectral intensities (N_shots x N_wavelengths). Must be passed 
+        prior to baseline subtraction or normalization.
+    min_peak : float, default=5000.0
+        Minimum peak intensity threshold to prevent false positives on low-count noise.
+    min_ties : int, default=3
+        Minimum number of wavelength channels sharing the maximum value to flag a flat top.
+    rel_tol : float, default=0.0
+        Relative tolerance for counting tied peak pixels (e.g., 2e-3 if digitizer noise blurs exact ties).
+
+    Returns
+    -------
+    np.ndarray
+        Boolean array where True indicates a clipped / flat-topped spectrum.
+    """
+    mx = spectra.max(axis=1, keepdims=True)
+    if rel_tol > 0.0:
+        ties = (spectra >= mx * (1.0 - rel_tol)).sum(axis=1)
+    else:
+        ties = (spectra == mx).sum(axis=1)
+    
+    return (mx[:, 0] > min_peak) & (ties >= min_ties)
 
 # 3.d. Average the summation datasets
 def summation_average(
@@ -1778,10 +2207,13 @@ def full_run(
         transpose_needed: bool = False,
         n_workers: int | None = None,
         target_elements: list[str] | None = None,
-        clip_percentile: float | None = None,# Optional parameters to filter conditions dynamically
+        clip_percentile: float | None = None,
         target_delay: float | None = 14.0,
         target_energy: float | None = None,
         target_state_molten: int | None = None,
+        min_ties: int = 3,
+        rel_tol: float = 0.0,
+        drop_saturated: bool = True,
 ):
     input_csv_dir = Path(input_csv_dir).resolve()
     enriched_csv_dir = Path(enriched_csv_dir).resolve()
@@ -1791,7 +2223,15 @@ def full_run(
     all_csvs = list(input_csv_dir.rglob('*.csv'))
 
     input_files = [
-        f for f in all_csvs if 'data_import' not in f.name.lower() and 'lambda' not in f.name.lower()
+        f for f in all_csvs if 'data_import' not in f.name.lower() 
+        and 'lambda' not in f.name.lower() 
+        and 'lamba' not in f.name.lower()
+        and 'du1 rep' not in str(f).lower()     # This is the depleted uranium metal Ammon tested prior to salts
+        and 'ms7' not in str(f).lower()         # remove from data as per A_dissertation (bad optical port)
+        and '7th exp' not in str(f).lower()
+        and 'ms13' not in str(f).lower()        # remove from data as per A_dissertation (oxygen spike)
+        and 'ms15' not in str(f).lower()        # not in A_dissertation so no metadata available
+        and 'ssu1' not in str(f).lower()
     ]
 
     print(f"Total CSVs found: {len(all_csvs)} | Clean single-run files kept: {len(input_files)}")
@@ -1830,10 +2270,13 @@ def full_run(
         input_h5=input_h5,
         output_h5=cleaned_h5,
         target_elements=target_elements,
-        clip_percentile=clip_percentile,# Optional parameters to filter conditions dynamically
+        clip_percentile=clip_percentile,
         target_delay=target_delay,
         target_energy=target_energy,
         target_state_molten=target_state_molten,
+        min_ties=min_ties,
+        rel_tol=rel_tol,
+        drop_saturated=drop_saturated,
     )
 
 # =============================================================================
@@ -2018,6 +2461,70 @@ def diagnose_element_levels_from_h5(
         df_meta = pd.DataFrame(meta_dict)
     
     diagnose_element_levels(df_meta, elements=elements)
+
+def diagnose_flat_top_clipping(
+    input_h5: str | Path, 
+    min_ties: int = 3, 
+    rel_tol: float = 0.0
+) -> pd.DataFrame:
+    """
+    Audits flat-top detection across unique original file paths in the dataset.
+    """
+    with h5py.File(input_h5, 'r') as hf:
+        raw_spectra = hf['spectra'][:] # type: ignore
+        og_paths = [x.decode('utf-8') if isinstance(x, bytes) else str(x) 
+                    for x in hf['metadata/og_path'][:]] # type: ignore
+
+    df = pd.DataFrame({'og_path': og_paths})
+    df['is_flat_top'] = clipped_mask(raw_spectra, min_peak=5000.0, min_ties=min_ties, rel_tol=rel_tol) # type: ignore
+    df['peak_max'] = raw_spectra.max(axis=1) # type: ignore
+
+    summary = df.groupby('og_path').agg(
+        total_rows=('is_flat_top', 'count'),
+        flagged_flat=('is_flat_top', 'sum'),
+        flagged_pct=('is_flat_top', lambda x: f"{x.mean():.1%}"),
+        median_peak=('peak_max', 'median')
+    ).reset_index()
+
+    print("=== Keith Rows (Expected: ~75% - 99% Flagged) ===")
+    keith = summary[summary['og_path'].str.contains('keith', case=False, na=False)]
+    print(keith.head(10).to_string(index=False))
+
+    print("\n=== Clean Datasets (Expected: ~0% Flagged) ===")
+    clean = summary[summary['median_peak'].between(20000, 35000)]
+    print(clean.head(10).to_string(index=False))
+
+    return summary
+
+def diagnose_levels_like_cleaning(h5_file, elements=('Sm', 'U'), sat=60000.0,
+                                  sum_thr=65535.0, default_shots=50.0):
+    with h5py.File(h5_file, 'r') as hf:
+        ds = hf['spectra']
+        raw_max = np.concatenate([ds[i:i+20000].max(axis=1) # type: ignore
+                                  for i in range(0, ds.shape[0], 20000)]) # type: ignore
+        m = hf['metadata']; cols = {}
+        for k in m.keys(): # type: ignore
+            v = m[k][:] # type: ignore
+            cols[k] = ([x.decode() if isinstance(x, bytes) else x for x in v] # type: ignore
+                       if v.dtype.kind in 'OSV' else v) # type: ignore
+    df = pd.DataFrame(cols)
+    shots = pd.to_numeric(df['shots'], errors='coerce')
+    df['shots_eff'] = shots.where(shots > 0, default_shots).fillna(default_shots)
+    df['raw_max'] = raw_max
+    df['summed'] = df.raw_max > sum_thr
+    df['per_shot'] = df.raw_max / np.where(df.summed, df.shots_eff, 1.0)
+    df['dropped'] = df.per_shot > sat
+    wt = compute_elemental_wt(df)
+    for e in elements:
+        sel = wt[e] > 0
+        d = df[sel].assign(level=wt.loc[sel, e].round(4))
+        print(f'\n--- {e} ---')
+        print(d.groupby('level').agg(
+            rows=('raw_max', 'size'), files=('og_path', 'nunique'),
+            summed=('summed', 'sum'), dropped=('dropped', 'sum'),
+            shots_default=('shot_study', lambda s: (s == 0).sum()),
+            med_raw=('raw_max', 'median'), med_per_shot=('per_shot', 'median')
+        ).to_string())
 
 def diagnose_saturation_drops(input_h5: str | Path, threshold: float = 64500.0) -> pd.DataFrame:
     """Break down saturated spectra drops by is_summed, delay, and concentration."""
@@ -2249,7 +2756,7 @@ if __name__ == "__main__":
         input_csv_dir = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs",
         enriched_csv_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/enriched_csvs',
         combined_root = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned',
-        cleaned_h5 = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261106.h5',
+        cleaned_h5 = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261110.h5',
         drop_columns=DROP_COLUMNS,
         rename_columns=RENAME_COLUMNS,
         composition_columns=COMPOSITION_COLUMNS,
@@ -2602,12 +3109,7 @@ if __name__ == "__main__":
     # import os
     # from pathlib import Path
 
-    # TARGET_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs")
-    # # OUTPUT_FILE = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/Awilliams_files.txt")
-
-    # PATTERNS = [
-    #     "Awilliams"
-    # ]
+    # TARGET_DIR = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs/AndrewsH")
 
     # def search_filepaths(directory):
     #     if not directory.exists():
@@ -2617,12 +3119,12 @@ if __name__ == "__main__":
     #     matching_count = 0
     #     print(f"Searching in: {directory.resolve()}\n" + "-" * 50)
 
-    #     for path in directory.rglob("*"):
-    #         if path.is_file():
-    #             path_str = str(path)
-    #             if any(pattern in path_str for pattern in PATTERNS):
-    #                 print(path_str)
-    #                 matching_count += 1
+    #     # followlinks=True ensures symlinked folders are traversed
+    #     for root, _, files in os.walk(directory, followlinks=True):
+    #         for file in files:
+    #             full_path = os.path.join(root, file)
+    #             print(full_path)
+    #             matching_count += 1
 
     #     print("-" * 50)
     #     print(f"Found {matching_count} matching files.")
@@ -2710,6 +3212,13 @@ if __name__ == "__main__":
     #     input_h5='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
     #     threshold=64500
     # )
+
+    # diagnose_flat_top_clipping(
+    #     input_h5='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
+    #     min_ties=3,
+    #     rel_tol=0
+    # )
+
     # endregion
 
     # --------------------------------------------------------------------------------
@@ -2719,4 +3228,21 @@ if __name__ == "__main__":
     #     h5_file='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
     #     elements=['Ce', 'Gd', 'Sm', 'U']
     # )
+
+    # diagnose_levels_like_cleaning(
+    #     h5_file='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
+    #     elements=('Ce', 'Gd', 'Sm', 'U'),
+    #     sat=64000,
+    #     sum_thr=65535,
+    #     default_shots=50
+    # )
+
+    # with h5py.File('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5', 'r') as f:
+    #     og = [x.decode('utf-8') if isinstance(x, bytes) else str(x) for x in f['metadata/og_path'][:]] # type: ignore
+
+    # df = pd.DataFrame({'og_path': og})
+    # sm_paths = df[df['og_path'].str.contains('Sample1_t1|sampleT|trial 1|trial 2', case=False, na=False)]['og_path'].unique()
+
+    # for p in sm_paths[:10]:
+    #     print(p)
     # endregion
