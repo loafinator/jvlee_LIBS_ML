@@ -379,9 +379,9 @@ def main(
         output_dir: Path | str = OUTPUT_DIR,
         include_synthetic: bool = False,
         seeds: list[int] = SEEDS,
+        dataset_tag: str = '20261110b'
 ):
     TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
-    dataset_tag = Path(h5_file).stem
     print(f"=== Starting GPU-Accelerated PLS Benchmark Pipeline [{DEVICE}] ===")
     print(f"Dataset: {dataset_tag} | Repeated K-Fold: {NUM_FOLDS} Folds x {len(seeds)} Seeds ({len(seeds)*NUM_FOLDS} models per grid point)")
     t0_start = time.perf_counter()
@@ -562,8 +562,8 @@ def main(
     )
 
     # 5. Parity Plots with Unique Dataset & Timestamp Tagging
-    oof_parity_path = output_dir / f"gpu_pls_oof_parity_{dataset_tag}_{TIMESTAMP}.png"
-    lockbox_parity_path = output_dir / f"gpu_pls_lockbox_parity_{dataset_tag}_{TIMESTAMP}.png"
+    oof_parity_path = output_dir / f"pls_oof_parity_{dataset_tag}_{TIMESTAMP}.png"
+    lockbox_parity_path = output_dir / f"pls_lbx_parity_{dataset_tag}_{TIMESTAMP}.png"
 
     plot_parity_grid(true_cv_wt, pred_cv_wt, target_names, title_tag=f"PLS ENSEMBLED OOF ({len(seeds)} Seeds)", save_path=oof_parity_path)
     plot_parity_grid(true_test_wt, pred_test_wt, target_names, title_tag=f"PLS LOCKBOX ENSEMBLE ({total_models} Models)", save_path=lockbox_parity_path)
@@ -572,6 +572,9 @@ def main(
 
 
 if __name__ == "__main__":
+    """
+    Did you run the final combo in NIST_data.py to get the synthetic data set already?
+    """
     # main(
     #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TD14_TEN.h5",
     #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/exp_TD14_TEN",
@@ -621,17 +624,19 @@ if __name__ == "__main__":
     # )
     
     main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261109.h5",
-        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261109",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261109/exp"),
+        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
+        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
+        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261110b/exp"),
         include_synthetic=False,
         seeds=SEEDS,
+        dataset_tag='20261110b'
     )
     
     main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_processed-data_20261109.h5",
-        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261109",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261109/exp-syn"),
+        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
+        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
+        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261110b/exp-syn"),
         include_synthetic=True,
         seeds=SEEDS,
+        dataset_tag='20261110b'
     )

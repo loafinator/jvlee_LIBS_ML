@@ -1,0 +1,95 @@
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting GPU-Accelerated PLS Benchmark Pipeline [cuda] ===
+Dataset: processed-data_20261110b | Repeated K-Fold: 7 Folds x 1 Seeds (7 models per grid point)
+Loaded 147985 total shots | Real: 147985 | Synthetic: 0
+
+--- Tuning PLS Components via Multi-Seed GPU Cross-Validation ---
+n_components =  1 | Ensembled OOF Mean RMSE:  0.7154 wt% (R^2:  0.2312) | Elapsed: 14.07s
+n_components =  2 | Ensembled OOF Mean RMSE:  0.6856 wt% (R^2:  0.2822) | Elapsed: 1.18s
+n_components =  5 | Ensembled OOF Mean RMSE:  0.6122 wt% (R^2:  0.3785) | Elapsed: 1.91s
+n_components = 10 | Ensembled OOF Mean RMSE:  0.5678 wt% (R^2:  0.4295) | Elapsed: 1.91s
+n_components = 20 | Ensembled OOF Mean RMSE:  0.5475 wt% (R^2:  0.4439) | Elapsed: 1.95s
+n_components = 30 | Ensembled OOF Mean RMSE:  0.5352 wt% (R^2:  0.4511) | Elapsed: 1.96s
+n_components = 40 | Ensembled OOF Mean RMSE:  0.5304 wt% (R^2:  0.4535) | Elapsed: 2.14s
+n_components = 50 | Ensembled OOF Mean RMSE:  0.5273 wt% (R^2:  0.4565) | Elapsed: 2.57s
+n_components = 60 | Ensembled OOF Mean RMSE:  0.5258 wt% (R^2:  0.4571) | Elapsed: 3.20s
+n_components = 70 | Ensembled OOF Mean RMSE:  0.5248 wt% (R^2:  0.4575) | Elapsed: 3.29s
+n_components = 80 | Ensembled OOF Mean RMSE:  0.5240 wt% (R^2:  0.4582) | Elapsed: 3.68s
+n_components = 90 | Ensembled OOF Mean RMSE:  0.5237 wt% (R^2:  0.4582) | Elapsed: 4.08s
+n_components = 100 | Ensembled OOF Mean RMSE:  0.5243 wt% (R^2:  0.4569) | Elapsed: 4.47s
+
+Optimal PLS Components: 90 (Ensembled OOF Mean RMSE: 0.5237 wt% | R^2: 0.4582)
+
+--- Running Final Lockbox Ensemble Evaluation on GPU (7 total models) ---
+
+===============================================================================================
+ GPU PLS Ensembled OOF Benchmarks (n_components=90, 1 Seeds) [Exp Only]
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.776 |     0.9871 |     1.4931 |      2.842
+Ce       | Predict Mean       |   -0.000 |     1.0185 |     1.1203 |      2.842
+Ce       | PLS Model          |    0.897 |     0.2382 |     0.3597 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.188 |     0.3554 |     0.8940 |      2.937
+Gd       | Predict Mean       |   -0.000 |     0.5860 |     0.8204 |      2.937
+Gd       | PLS Model          |    0.482 |     0.2980 |     0.5907 |      2.937
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.010 |     0.0544 |     0.5525 |      5.857
+Sm       | Predict Mean       |   -0.000 |     0.1076 |     0.5498 |      5.857
+Sm       | PLS Model          |   -0.074 |     0.1270 |     0.5699 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.294 |     0.4538 |     0.9520 |      6.040
+U        | Predict Mean       |   -0.000 |     0.5870 |     0.8368 |      6.040
+U        | PLS Model          |    0.528 |     0.2504 |     0.5747 |      6.040
+-----------------------------------------------------------------------------------------------
+
+===============================================================================================
+ GPU PLS Lockbox Benchmarks (Ensemble of 7 Models)
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.568 |     0.7439 |     1.2357 |      2.842
+Ce       | Predict Mean       |   -0.061 |     0.9364 |     1.0162 |      2.842
+Ce       | PLS Model          |    0.893 |     0.2020 |     0.3232 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.344 |     0.5583 |     1.1040 |      2.937
+Gd       | Predict Mean       |   -0.045 |     0.7197 |     0.9739 |      2.937
+Gd       | PLS Model          |    0.607 |     0.3181 |     0.5974 |      2.937
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.002 |     0.0065 |     0.1559 |      5.857
+Sm       | Predict Mean       |   -0.095 |     0.0607 |     0.1630 |      5.857
+Sm       | PLS Model          |   -0.537 |     0.0833 |     0.1931 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.451 |     0.5712 |     1.0248 |      6.040
+U        | Predict Mean       |   -0.019 |     0.6330 |     0.8589 |      6.040
+U        | PLS Model          |    0.647 |     0.3151 |     0.5056 |      6.040
+-----------------------------------------------------------------------------------------------
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261110b/exp/gpu_pls_oof_parity_processed-data_20261110b_20261110_121237.png
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261110b/exp/gpu_pls_lockbox_parity_processed-data_20261110b_20261110_121237.png
+GPU Pipeline completed in 117.79 seconds.
+=== Starting GPU-Accelerated PLS Benchmark Pipeline [cuda] ===
+Dataset: exp-syn_processed-data_20261110b | Repeated K-Fold: 7 Folds x 1 Seeds (7 models per grid point)
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/pls_benchmark.py", line 634, in <module>
+    main(
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/pls_benchmark.py", line 395, in main
+    data = load_crossval_data(h5_file)
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/pls_benchmark.py", line 233, in load_crossval_data
+    with h5py.File(h5_path, 'r') as hf:
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/.venv/lib64/python3.9/site-packages/h5py/_hl/files.py", line 564, in __init__
+    fid = make_fid(name, mode, userblock_size, fapl, fcpl, swmr=swmr)
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/.venv/lib64/python3.9/site-packages/h5py/_hl/files.py", line 238, in make_fid
+    fid = h5f.open(name, flags, fapl=fapl)
+  File "h5py/_objects.pyx", line 56, in h5py._objects.with_phil.wrapper
+  File "h5py/_objects.pyx", line 57, in h5py._objects.with_phil.wrapper
+  File "h5py/h5f.pyx", line 102, in h5py.h5f.open
+FileNotFoundError: [Errno 2] Unable to synchronously open file (unable to open file: name = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_processed-data_20261110b.h5', errno = 2, error message = 'No such file or directory', flags = 0, o_flags = 0)

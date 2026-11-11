@@ -1,0 +1,47 @@
+data_prep.py loading ...
+Hi
+Loading data for diagnostic audit from: combined_libs.h5...
+
+============================================================
+      MIXED SUM FILE DIAGNOSTIC AUDIT (Threshold: 65,535)
+============================================================
+Total Files Evaluated:    3,929
+Suspicious Mixed Files:   285
+  • High-Fraction (≥10%): 191 (True Summed Files)
+  • Low-Fraction  (<10%): 94 (Single-Shot Outlier Files)
+
+Distribution of 'frac_above' in Suspicious Files:
+count    285.000000
+mean       0.281220
+std        0.279025
+min        0.003333
+25%        0.032000
+50%        0.184570
+75%        0.436000
+max        0.880000
+
+Top High-Fraction Mixed Files (True Summed Candidates):
+  • 1 us rep 4.csv                      -> 220 / 250 rows (88.0%)
+  • 5 us rep 3.csv                      -> 220 / 250 rows (88.0%)
+  • 1 us rep 4.csv                      -> 220 / 250 rows (88.0%)
+  • 5 us rep 3.csv                      -> 220 / 250 rows (88.0%)
+  • 5 us rep 3.csv                      -> 220 / 250 rows (88.0%)
+  • 1 us rep 4.csv                      -> 220 / 250 rows (88.0%)
+  • 1 us rep 4.csv                      -> 220 / 250 rows (88.0%)
+  • 5 us rep 3.csv                      -> 220 / 250 rows (88.0%)
+  • Rep 11.csv                          -> 217 / 250 rows (86.8%)
+  • Rep 11.csv                          -> 217 / 250 rows (86.8%)
+
+Sample Low-Fraction Files (<10% rows > 65,535 counts — Protected from 50x scaling):
+  • MS12 Rep 3.csv                      ->   1 / 300 rows (0.33%)
+  • MS12 20 Rep 1.csv                   ->   1 / 300 rows (0.33%)
+  • MS12 17 Rep 3.csv                   ->   1 / 300 rows (0.33%)
+  • 05 us delay K 3.csv                 ->   1 / 250 rows (0.40%)
+  • 5 mm flow KR 3.csv                  ->   1 / 250 rows (0.40%)
+  • 05 us delay K 2.csv                 ->   1 / 250 rows (0.40%)
+  • 5 mm flow KR 3.csv                  ->   1 / 250 rows (0.40%)
+  • 5 mm flow KR 2.csv                  ->   1 / 250 rows (0.40%)
+  • 05 us delay K 3.csv                 ->   1 / 250 rows (0.40%)
+  • 05 us delay K 2.csv                 ->   1 / 250 rows (0.40%)
+============================================================
+

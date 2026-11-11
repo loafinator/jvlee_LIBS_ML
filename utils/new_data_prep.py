@@ -14,6 +14,10 @@ concentration maps, stoichiometric conversion tables, and standard experimental 
 
 print('data_prep.py loading ...')
 
+# --------------------------------------------------------------------------------------
+# region Imports
+# --------------------------------------------------------------------------------------
+
 # Standard Library Imports
 import re 
 import logging
@@ -43,20 +47,11 @@ from numpy.typing import NDArray
 from sklearn.feature_selection import VarianceThreshold
 from scipy.ndimage import minimum_filter1d, uniform_filter1d
 
-# Suppress performance warnings caused by step-by-step DataFrame modifications (fragmentation)
-warnings.filterwarnings('ignore', message='DataFrame is highly fragmented', category=pd.errors.PerformanceWarning)
+# endregion
 
-# Global logging queue handle used across worker processes during multiprocessing execution
-_worker_log_q = None
-
-# Standard spectral wavelength sampling grid parameters across target detectors
-TARGET_MIN_WL: float = 250.0   # Minimum target wavelength in nanometers (nm)
-TARGET_MAX_WL: float = 1000.0  # Maximum target wavelength in nanometers (nm)
-TARGET_N_PTS: int = 10000       # Target resolution (number of interpolated points)
-
-# Pre-computed linear wavelength vector for uniform resampling across raw spectral files
-target_grid: NDArray[np.float64] = np.linspace(TARGET_MIN_WL, TARGET_MAX_WL, TARGET_N_PTS)
-
+# --------------------------------------------------------------------------------------
+# region Maps
+# --------------------------------------------------------------------------------------
 # Map individual element symbols to their target output weight percentage column names
 _SINGLES_CONC_MAP: dict[str, str] = {
     'Ba': 'conc_Ba_wt%',
@@ -527,7 +522,35 @@ _COMPILED_SPECIES_PATTERNS: dict[re.Pattern, str] = {
     for key, nice_name in _SPECIES_MAP.items()
 }
 
+MW_ELEMENTS = {
+    'Ba': 137.327, 'Ca': 40.078, 'Ce': 140.116, 'Cr': 51.996, 'Cs': 132.905,
+    'Fe': 55.845,  'Gd': 157.25,  'La': 138.905, 'Li': 6.941,  'K': 39.098,
+    'Mg': 24.305,  'Mn': 54.938,  'Nd': 144.242, 'Ni': 58.693, 'Sm': 150.36,
+    'Sr': 87.62,   'U': 238.029,  'Y': 88.906,   'Cl': 35.453
+}
+
+NUM_CL = {
+    'Ba': 2, 'Ca': 2, 'Ce': 3, 'Cr': 2, 'Cs': 1, 'Fe': 2, 
+    'Gd': 3, 'K': 1, 'La': 3, 'Li': 1, 'Mg': 2, 'Mn': 2, 
+    'Nd': 3, 'Ni': 2, 'Sm': 3, 'Sr': 2, 'U': 3, 'Y': 3
+}
+# endregion
+
 # region Gloabl Inputs
+# Suppress performance warnings caused by step-by-step DataFrame modifications (fragmentation)
+warnings.filterwarnings('ignore', message='DataFrame is highly fragmented', category=pd.errors.PerformanceWarning)
+
+# Global logging queue handle used across worker processes during multiprocessing execution
+_worker_log_q = None
+
+# Standard spectral wavelength sampling grid parameters across target detectors
+TARGET_MIN_WL: float = 250.0   # Minimum target wavelength in nanometers (nm)
+TARGET_MAX_WL: float = 1000.0  # Maximum target wavelength in nanometers (nm)
+TARGET_N_PTS: int = 10000       # Target resolution (number of interpolated points)
+
+# Pre-computed linear wavelength vector for uniform resampling across raw spectral files
+target_grid: NDArray[np.float64] = np.linspace(TARGET_MIN_WL, TARGET_MAX_WL, TARGET_N_PTS)
+
 DROP_COLUMNS = None
 RENAME_COLUMNS = None
 COMPOSITION_COLUMNS = _DEFAULT_CONC_COLS
@@ -561,19 +584,6 @@ TARGET_ENERGY = None    # Float (e.g., 100.0) or None
 TARGET_STATE_MOLTEN = None  # Int (1) or None
 # RAW_SATURATION_THRESH = 64500.0
 # endregion
-
-MW_ELEMENTS = {
-    'Ba': 137.327, 'Ca': 40.078, 'Ce': 140.116, 'Cr': 51.996, 'Cs': 132.905,
-    'Fe': 55.845,  'Gd': 157.25,  'La': 138.905, 'Li': 6.941,  'K': 39.098,
-    'Mg': 24.305,  'Mn': 54.938,  'Nd': 144.242, 'Ni': 58.693, 'Sm': 150.36,
-    'Sr': 87.62,   'U': 238.029,  'Y': 88.906,   'Cl': 35.453
-}
-
-NUM_CL = {
-    'Ba': 2, 'Ca': 2, 'Ce': 3, 'Cr': 2, 'Cs': 1, 'Fe': 2, 
-    'Gd': 3, 'K': 1, 'La': 3, 'Li': 1, 'Mg': 2, 'Mn': 2, 
-    'Nd': 3, 'Ni': 2, 'Sm': 3, 'Sr': 2, 'U': 3, 'Y': 3
-}
 # =============================================================================
 # 1. Enrich data
 # =============================================================================
@@ -1285,7 +1295,7 @@ def parent_concentration_data(
             if m:
                 data[col] = float(m.group(1))
 
-        if 'keith' in all_text and data['meta_source'] == 1:
+        if 'keith' in all_text:
             data['delay'] = 6.0
             data['width'] = 20.0
             data['shots'] = 200.0
@@ -1652,15 +1662,26 @@ def dataset_cleaning(
             df_meta['is_synthetic'] = False
 
     # --- Step 1a: Pre-Clipping Peak Behavior Check ---
-    # Must run on un-subtracted, un-normalized raw spectra to preserve exact channel ties
     raw_max_counts = raw_spectra.max(axis=1)
     is_flat_top = clipped_mask(raw_spectra, min_peak=5000.0, min_ties=min_ties, rel_tol=rel_tol)
-    is_raw_summed = raw_max_counts > 65535.0  # 16-bit ADC hardware ceiling
 
-    # Hybrid Rule: Flag if flat-topped OR (single-shot/averaged AND peak > 64,500)
+    # Standardized file column key (positional numpy array)
+    file_col = 'og_path' if 'og_path' in df_meta.columns else ('file_id' if 'file_id' in df_meta.columns else None)
+    if file_col:
+        file_key = df_meta[file_col].to_numpy()
+        # Require >= 10% of file rows to exceed threshold to classify as summed file
+        frac_above = pd.Series(raw_max_counts > 65535.0).groupby(file_key).transform('mean').to_numpy()
+        is_raw_summed = frac_above >= 0.10
+    else:
+        is_raw_summed = raw_max_counts > 65535.0
+
+    # Store in df_meta so it carries through all downstream row slicing!
+    df_meta['is_summed'] = is_raw_summed
+
+    # Hybrid Saturation Rule: Flag if flat-topped OR (single-shot/averaged AND peak > 64,500)
     is_saturated = is_flat_top | (~is_raw_summed & (raw_max_counts > 64500.0))
-    
-    # Store sat_check metadata so models can be compared with/without flagged rows
+
+    # Store metadata checks
     df_meta['is_flat_top'] = is_flat_top
     df_meta['sat_check_pass'] = ~is_saturated
 
@@ -1694,7 +1715,6 @@ def dataset_cleaning(
     valid_mask &= keep
 
     # Apply hybrid saturation mask to filter out clipped rows
-    # Step 1a: Filter duplicates and saturation
     print(f"Hybrid Saturation Audit:")
     print(f"  • Flat-top peaks flagged (clipped_mask): {is_flat_top.sum():,}")
     print(f"  • Single-shot/averaged > 64,500 counts: {(~is_raw_summed & (raw_max_counts > 64500.0)).sum():,}")
@@ -1741,22 +1761,22 @@ def dataset_cleaning(
         df_elemental = df_elemental_all
     aux_cols = [c for c in df_elemental_all.columns if c not in df_elemental.columns]
 
-    # Step 4: Drop Inactive Target Columns (Zero Variance)
+    # --- Step 4: Drop Inactive Targets & Set Up Group Split ---
     selector = VarianceThreshold(threshold=1e-6)
     y_filtered = selector.fit_transform(df_elemental)
     surviving_cols = df_elemental.columns[selector.get_support()].tolist()
 
-    # Split groups & generate lockbox split
-    _, initial_groups = np.unique(np.round(y_filtered, 3), axis=0, return_inverse=True)
+    file_ids = df_meta['file_id'].to_numpy()
+    _, groups = np.unique(file_ids, return_inverse=True)
     is_zero_shot = (y_filtered < 1e-5).all(axis=1)
     if is_zero_shot.any():
         file_ids = df_meta['file_id'].to_numpy()
         _, zero_file_inv = np.unique(file_ids[is_zero_shot], return_inverse=True)
-        max_nonzero_grp = initial_groups[~is_zero_shot].max() if (~is_zero_shot).any() else 0
-        groups = initial_groups.copy()
+        max_nonzero_grp = groups[~is_zero_shot].max() if (~is_zero_shot).any() else 0
+        groups = groups.copy()
         groups[is_zero_shot] = max_nonzero_grp + 1 + zero_file_inv
     else:
-        groups = initial_groups
+        groups = groups
 
     unique_groups = np.unique(groups)
     n_lockbox_groups = max(1, int(0.15 * len(unique_groups)))
@@ -1799,215 +1819,6 @@ def dataset_cleaning(
         
         str_dt = h5py.string_dtype(encoding='utf-8') 
         hf_out.create_dataset('target_elements', data=np.array(surviving_cols, dtype=object), dtype=str_dt)
-
-def old_dataset_cleaning(
-    input_h5: Path | str,
-    output_h5: Path | str,
-    target_elements: list[str] | None = None,
-    clip_percentile: float | None = None,# Optional parameters to filter conditions dynamically
-    target_delay: float | None = None,
-    target_energy: float | None = None,
-    target_state_molten: int | None = None,
-) -> None:
-    """Prepares raw spectral HDF5 dataset into clean X (Spectra) and y (Concentrations) for PLS."""
-    input_h5, output_h5 = Path(input_h5), Path(output_h5)
-    
-    with h5py.File(input_h5, 'r') as hf_in:
-        raw_spectra = get_h5_ds(hf_in,'spectra')[:]
-        wavelengths = get_h5_ds(hf_in,'wavelengths')[:]
-        metadata = cast(h5py.Group, get_h5_ds(hf_in, 'metadata'))
-        
-        # Load metadata columns into DataFrame
-        meta_dict = {}
-        if 'metadata' in hf_in:
-            metadata = cast(h5py.Group, get_h5_ds(hf_in, 'metadata'))
-            for k in metadata.keys():
-                data = cast(h5py.Dataset, metadata[k])[:]
-
-                if data.dtype.kind in ('O', 'S', 'V'):
-                    meta_dict[k] = [x.decode('utf-8') if isinstance(x, bytes) else x for x in data]
-                else:
-                    meta_dict[k] = data
-        if 'is_synthetic' in hf_in:
-            meta_dict['is_synthetic'] = hf_in['is_synthetic'][:] # type: ignore
-        elif 'meta/is_synthetic' in hf_in:
-            meta_dict['is_synthetic'] = hf_in['meta/is_synthetic'][:] # type: ignore
-        df_meta = pd.DataFrame(meta_dict)
-
-        if 'is_synthetic' not in df_meta.columns:
-            df_meta['is_synthetic'] = False
-        
-    # Step 1a: Remove NaN and zero-intensity rows
-    valid_mask = ~np.isnan(raw_spectra).any(axis=1) & (raw_spectra.sum(axis=1) > 0)
-    conc_cols = [c for c in df_meta.columns if c.startswith('conc_')]
-    valid_mask &= ~df_meta[conc_cols].isna().any(axis=1).to_numpy()
-
-    # energy is only trustworthy when parsed explicitly from the path
-    if {'energy', 'energy_study'} <= set(df_meta.columns):
-        df_meta.loc[df_meta['energy_study'] == 0, 'energy'] = np.nan
-
-    # Step 1a-ii: drop exact duplicate spectra (copies in several backup folders)
-    og_arr = df_meta['og_path'].astype(str).to_numpy()
-    conc_vals = df_meta[conc_cols].to_numpy(np.float64)
-    study_cols = [c for c in df_meta.columns if c.endswith('_study')]
-    explicit = (df_meta[study_cols].to_numpy(np.float64).sum(axis=1)
-                if study_cols else np.zeros(len(df_meta)))
-
-    groups_by_hash = {}
-    for i in np.flatnonzero(valid_mask):
-        h = hashlib.blake2b(raw_spectra[i].tobytes(), digest_size=16).digest()
-        groups_by_hash.setdefault(h, []).append(i)
-
-    keep = np.zeros(len(valid_mask), dtype=bool)
-    n_conflict = 0
-    for idx in groups_by_hash.values():
-        if len(idx) > 1 and not (conc_vals[idx] == conc_vals[idx[0]]).all():
-            n_conflict += 1                  # same spectrum, different concentration labels
-            continue
-        keep[min(idx, key=lambda i: (-explicit[i], og_arr[i]))] = True   # most explicit copy; ties by path
-
-    print(f'duplicate rows removed: {int(valid_mask.sum() - keep.sum()) - n_conflict}; '
-          f'groups dropped for conflicting concentrations: {n_conflict}')
-    valid_mask &= keep
-
-    spectra = raw_spectra[valid_mask]
-    del raw_spectra
-    df_meta = df_meta[valid_mask].reset_index(drop=True)
-
-    # diagnostic only (delete once you've settled on filters)
-    df_diag = compute_elemental_wt(df_meta)
-    diag_cols = [c for c in ['state_molten', 'delay', 'energy'] if c in df_meta.columns]
-    tmp = pd.concat([df_meta[diag_cols], df_diag[['Ce', 'Gd', 'Sm', 'U']].round(3)], axis=1)
-    for e in ['Ce', 'Gd', 'Sm', 'U']:
-        print(e)
-        print(tmp[tmp[e] > 0].groupby(diag_cols, dropna=False)[e].agg(['size', 'nunique']))
-
-
-    # Step 1b: Apply experimental condition mask
-    condition_mask = np.ones(len(df_meta), dtype=bool)
-
-    if target_delay is not None and 'delay' in df_meta.columns:
-        condition_mask &= (df_meta['delay'] == target_delay)
-        
-    if target_energy is not None and 'energy' in df_meta.columns:
-        condition_mask &= (df_meta['energy'] == target_energy)
-
-    if target_state_molten is not None and 'state_molten' in df_meta.columns:
-        condition_mask &= (df_meta['state_molten'] == target_state_molten)
-
-    # Apply mask to keep spectra and metadata synchronized
-    spectra = spectra[condition_mask]
-    df_meta = df_meta[condition_mask].reset_index(drop=True)
-
-    print(f"Filtered dataset down to {len(spectra)} shots matching condition parameters.")
-
-    # # Step 1c: Scale integrated summed spectra to per-shot average counts
-    # spectra, df_meta = summation_average(
-    #     input_data=spectra,
-    #     df_meta=df_meta,
-    #     threshold=65535.0,  # 16-bit ADC hardware ceiling
-    #     default_shots=50.0
-    # )
-
-    # # Step 1d: Filter true single-shot hardware saturation & cosmic rays
-    # RAW_SATURATION_THRESH = 64500.0
-    # per_shot_max = spectra.max(axis=1)
-    # unsaturated_mask = per_shot_max <= RAW_SATURATION_THRESH
-
-    # print(f"Dropping {(~unsaturated_mask).sum()} true saturated shots (> {RAW_SATURATION_THRESH} counts/shot)")
-    # spectra = spectra[unsaturated_mask]
-    # df_meta = df_meta[unsaturated_mask].reset_index(drop=True)
-
-
-
-    # Step 2: Baseline subtraction & area normalization
-    X_clean = clean_libs_spectrum(spectra)
-
-    # Step 3: Elemental Stoichiometric Conversion for Targets (y)
-    df_elemental_all = compute_elemental_wt(df_meta)
-    if target_elements:
-        df_elemental = df_elemental_all[[e for e in target_elements if e in df_elemental_all.columns]]
-    else:
-        df_elemental = df_elemental_all
-    aux_cols = [c for c in df_elemental_all.columns if c not in df_elemental.columns]
-    
-    for c in df_elemental.columns:
-        nz = df_elemental[c] > 0
-        print(f"{c}: {nz.sum()} shots, {np.unique(np.round(df_elemental.loc[nz, c], 3)).size} distinct levels")
-
-    # Step 4: Drop Inactive Target Columns (Zero Variance)
-    selector = VarianceThreshold(threshold=1e-6)
-    y_filtered = selector.fit_transform(df_elemental)
-    surviving_cols = df_elemental.columns[selector.get_support()].tolist()
-
-    # --- 4a. Compute Group IDs (with Zero-Group Splitting) ---
-    _, initial_groups = np.unique(np.round(y_filtered, 3), axis=0, return_inverse=True)
-    
-    # Split all-zero shots by file_id so blank samples don't land in one single group
-    is_zero_shot = (y_filtered < 1e-5).all(axis=1)
-    if is_zero_shot.any():
-        file_ids = df_meta['file_id'].to_numpy()
-        _, zero_file_inv = np.unique(file_ids[is_zero_shot], return_inverse=True)
-        max_nonzero_grp = initial_groups[~is_zero_shot].max() if (~is_zero_shot).any() else 0
-        
-        groups = initial_groups.copy()
-        groups[is_zero_shot] = max_nonzero_grp + 1 + zero_file_inv
-    else:
-        groups = initial_groups
-
-    # --- 4b. Generate Group-Stratified Lockbox Split (~15% of unique groups) ---
-    unique_groups = np.unique(groups)
-    n_lockbox_groups = max(1, int(0.15 * len(unique_groups)))
-
-    # Determine dopant presence per unique group for stratification
-    group_present = np.array([
-        (y_filtered[groups == g] > 1e-5).any(axis=0) for g in unique_groups
-    ])
-
-    sig = (group_present.astype(int) * (1 << np.arange(group_present.shape[1]))).sum(axis=1)
-    rng = np.random.default_rng(42)
-
-    lockbox_groups = []
-    for s in np.unique(sig):
-        members = rng.permutation(unique_groups[sig == s])
-        n_select = max(1, int(0.15 * len(members))) if len(members) > 1 else (1 if len(lockbox_groups) < n_lockbox_groups else 0)
-        lockbox_groups.extend(members[:n_select])
-
-    is_lockbox = np.isin(groups, lockbox_groups)
-
-    # Step 5: Save Clean PLS-Ready Dataset to HDF5
-    comp_kwargs = {'compression': 'gzip', 'compression_opts': 3} 
-    with h5py.File(output_h5, 'w') as hf_out: 
-        meta_out = hf_out.create_group('meta') 
-        for c in ['delay', 'energy', 'repetition', 'meta_source', 'is_synthetic']: 
-            if c in df_meta.columns: 
-                dtype = bool if c == 'is_synthetic' else np.float32
-                meta_out.create_dataset(c, data=df_meta[c].to_numpy(dtype))
-        meta_out.create_dataset(
-            'file_id',
-            data=np.char.encode(df_meta['file_id'].astype(str).to_numpy(dtype='U'), 'utf-8'),
-            compression='gzip')
-        if aux_cols: 
-            hf_out.create_dataset('y_aux', data=df_elemental_all[aux_cols].to_numpy(np.float32), **comp_kwargs)
-            hf_out.create_dataset('y_aux_names', data=np.char.encode(np.array(aux_cols, dtype='U'), 'utf-8')) 
-        for c in ['frac_LiCl', 'frac_KCl', 'temperature_C']:
-            if c in df_meta.columns: 
-                meta_out.create_dataset(c, data=df_meta[c].to_numpy(np.float32))
-        
-        # Save group IDs and explicit lockbox mask
-        hf_out.create_dataset('groups', data=groups.ravel().astype(np.int32))
-        hf_out.create_dataset('is_lockbox', data=is_lockbox.astype(bool), **comp_kwargs)
-
-        hf_out.create_dataset('X', data=X_clean.astype(np.float32, copy=False), **comp_kwargs) 
-        hf_out.create_dataset('y', data=y_filtered.astype(np.float32, copy=False), **comp_kwargs) 
-        hf_out.create_dataset('wavelengths', data=wavelengths.astype(np.float32, copy=False)) 
-        
-        str_dt = h5py.string_dtype(encoding='utf-8') 
-        hf_out.create_dataset('target_elements', data=np.array(surviving_cols, dtype=object), dtype=str_dt)
-        
-    print(f"✅ Cleaned dataset saved to {output_h5}")
-    print(f"   Spectra Matrix (X): {X_clean.shape}")
-    print(f"   Target Matrix (y) : {y_filtered.shape} -> Elements: {surviving_cols}")
 
 # 3.a Load in the initial h5 file
 def get_h5_ds(hf: h5py.File, key: str) -> h5py.Dataset:
@@ -2111,24 +1922,8 @@ def summation_average(
     threshold: float = 65535.0,
     default_shots: float = 50.0
 ) -> tuple[np.ndarray, pd.DataFrame]:
-    """Identifies accumulated summed spectra exceeding the intensity threshold and scales 
-    them to a per-shot average using parsed or fallback shot counts.
-
-    Parameters
-    ----------
-    input_data : Path | str | np.ndarray
-        HDF5 file path or pre-loaded 2D spectra matrix (N_shots x N_wavelengths).
-    df_meta : pd.DataFrame | None
-        Metadata DataFrame matching input_data (required if input_data is an array).
-    threshold : float, default=65535.0
-        Peak count threshold to flag integrated summed spectra (16-bit ADC limit).
-    default_shots : float, default=50.0
-        Fallback shot count used when 'shots' metadata is missing or unparsed.
-
-    Returns
-    -------
-    tuple[np.ndarray, pd.DataFrame]
-        Scaled 2D spectra matrix and updated metadata DataFrame.
+    """Identifies accumulated summed spectra files exceeding the intensity threshold 
+    and scales every row in affected files to per-shot average counts.
     """
     # 1. Load data if HDF5 path is passed
     if isinstance(input_data, (str, Path)):
@@ -2151,14 +1946,29 @@ def summation_average(
             raise ValueError("df_meta must be provided when input_data is a NumPy array.")
         df_meta = df_meta.copy()
 
-    # 2. Identify candidate summed spectra by peak intensity
-    max_counts = spectra.max(axis=1) # type: ignore
-    summed_mask = max_counts > threshold
+    # 2. Identify candidate summed files by maximum peak intensity across each file
+    # Identify candidate summed files by maximum peak intensity using positional array
+    max_counts = pd.Series(spectra.max(axis=1)) # type: ignore
+    file_col = 'og_path' if 'og_path' in df_meta.columns else ('file_id' if 'file_id' in df_meta.columns else None)
+
+    # Reuse pre-computed classification if passed from Step 1a
+    if 'is_summed' in df_meta.columns:
+        summed_mask = df_meta['is_summed'].to_numpy(dtype=bool)
+    elif file_col:
+        file_key = df_meta[file_col].to_numpy()
+        frac_above = (max_counts > threshold).groupby(file_key).transform('mean').to_numpy()
+        summed_mask = frac_above >= 0.10
+    else:
+        summed_mask = (max_counts > threshold).to_numpy()
+
+    n_summed_files = df_meta.loc[summed_mask, file_col].nunique() if file_col else 0
+    
     n_summed = summed_mask.sum()
     total_shots = len(max_counts)
 
-    print(f"\nTotal spectra evaluated: {total_shots:,}")
-    print(f"Summed spectra identified (> {threshold:,.0f} counts): {n_summed:,} ({n_summed / total_shots:.2%})")
+    print(f"\nTotal spectra evaluated: {total_shots:,}" + (f" across {n_summed_files:,} files" if file_col else ""))
+    print(f"Summed spectra identified (> {threshold:,.0f} file peak max): {n_summed:,} rows" +
+          (f" across {n_summed_files:,} files ({n_summed / total_shots:.2%})" if file_col else f" ({n_summed / total_shots:.2%})"))
 
     if n_summed == 0:
         print("No spectra found exceeding threshold. Returning unscaled arrays.")
@@ -2169,21 +1979,31 @@ def summation_average(
         shots_arr = pd.to_numeric(df_meta['shots'], errors='coerce').to_numpy(dtype=np.float32)
         shots_arr = np.where((shots_arr > 0) & ~np.isnan(shots_arr), shots_arr, default_shots)
     else:
-        print(f"Summation Average Shot Check Failure")
+        print("Summation Average Shot Check Failure")
         shots_arr = np.full(len(spectra), default_shots, dtype=np.float32)
 
-    # 4. Construct scale factors (shots for summed spectra, 1.0 for single-shot/averaged)
+    # 4. Construct scale factors (shots for summed files, 1.0 for single-shot/averaged)
     scale_factors = np.where(summed_mask, shots_arr, 1.0)
 
-    # 5. Broadcast 1D scale factors across the 2D spectra matrix (N x 1 layout)
+    # 5. Broadcast 1D scale factors across the 2D spectra matrix
     scaled_spectra = spectra / scale_factors[:, None]
 
     # 6. Audit metadata tracking
     df_meta['is_summed'] = summed_mask.astype(int)
     df_meta['scale_factor'] = scale_factors
 
-    print(f"✅ Successfully scaled {n_summed:,} summed spectra to per-shot average counts.")
+    # 7. Post-scaling intensity sanity check
+    over_mask = scaled_spectra.max(axis=1) > threshold
+    if over_mask.any():
+        print(f"\n⚠️ WARNING: {over_mask.sum():,} rows still exceed {threshold:,.0f} counts after scaling!")
+        if file_col:
+            over_files = df_meta[over_mask].groupby(file_col).size().sort_values(ascending=False)
+            print("Top files with post-scaling overflow (incorrect shot count or non-summed saturation):")
+            print(over_files.head(20).to_string())
+
+    print(f"✅ Successfully scaled {n_summed:,} rows across {n_summed_files:,} summed files to per-shot average counts.")
     return scaled_spectra, df_meta
+
 
 
 def full_run(
@@ -2283,6 +2103,90 @@ def full_run(
 # =============================================================================
 # 4. Data inspection
 # =============================================================================
+def audit_mixed_sum_files(
+    h5_file: str | Path | None = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
+    df_meta: pd.DataFrame | None = None,
+    raw_spectra: np.ndarray | None = None,
+    threshold: float = 65535.0
+) -> pd.DataFrame:
+    """
+    Audits spectral datasets to identify mixed files where a fraction of rows exceed 65,535 counts.
+    Distinguishes true summed files (>=10% rows above threshold) from single-shot outlier files (<10%).
+    """
+    # 1. Load data if not supplied
+    if raw_spectra is None or df_meta is None:
+        if h5_file is None:
+            raise ValueError("Must provide either an h5_file path or both df_meta and raw_spectra.")
+        
+        h5_path = Path(h5_file).resolve()
+        if not h5_path.exists():
+            raise FileNotFoundError(f"HDF5 file not found at: {h5_path}")
+        
+        print(f"Loading data for diagnostic audit from: {h5_path.name}...")
+        with h5py.File(h5_path, 'r') as hf:
+            raw_spectra = hf['spectra'][:]  # type: ignore
+            meta_grp = hf['metadata']
+            meta_dict = {}
+            for k in meta_grp.keys():  # type: ignore
+                ds = meta_grp[k][:]  # type: ignore
+                if ds.dtype.kind in ('O', 'S', 'V'): # type: ignore
+                    meta_dict[k] = [x.decode('utf-8') if isinstance(x, bytes) else str(x) for x in ds] # type: ignore
+                else:
+                    meta_dict[k] = ds
+            df_meta = pd.DataFrame(meta_dict)
+
+    # 2. Extract per-row max peaks
+    raw_max = raw_spectra.max(axis=1) # type: ignore
+    
+    # 3. Determine file grouping column
+    file_col = 'og_path' if 'og_path' in df_meta.columns else ('file_id' if 'file_id' in df_meta.columns else None)
+    if file_col is None:
+        raise KeyError("Neither 'og_path' nor 'file_id' found in metadata columns.")
+
+    # 4. Positional array grouping & explicit column renaming
+    file_key = df_meta[file_col].to_numpy()
+    is_above = pd.Series(raw_max > threshold)
+    
+    summary = is_above.groupby(file_key).agg(
+        frac_above='mean',
+        total_rows='count',
+        rows_above='sum'
+    ).reset_index()
+    # Fix KeyError: rename default 'index' column to the actual file_col name
+    summary.rename(columns={'index': file_col}, inplace=True)
+
+    # 5. Categorize mixed files
+    suspicious = summary[(summary['frac_above'] > 0) & (summary['frac_above'] < 0.90)].sort_values('frac_above', ascending=False)
+    low_frac = summary[(summary['frac_above'] > 0) & (summary['frac_above'] < 0.10)].sort_values('frac_above', ascending=True)
+    
+    # 6. Report findings
+    print("\n" + "=" * 60)
+    print(f"      MIXED SUM FILE DIAGNOSTIC AUDIT (Threshold: {threshold:,.0f})")
+    print("=" * 60)
+    print(f"Total Files Evaluated:    {len(summary):,}")
+    print(f"Suspicious Mixed Files:   {len(suspicious):,}")
+    print(f"  • High-Fraction (≥10%): {len(suspicious) - len(low_frac):,} (True Summed Files)")
+    print(f"  • Low-Fraction  (<10%): {len(low_frac):,} (Single-Shot Outlier Files)")
+    
+    if not suspicious.empty:
+        print("\nDistribution of 'frac_above' in Suspicious Files:")
+        print(suspicious['frac_above'].describe().to_string())
+        
+        print("\nTop High-Fraction Mixed Files (True Summed Candidates):")
+        for _, row in suspicious.head(10).iterrows():
+            fname = Path(str(row[file_col])).name
+            print(f"  • {fname:<35s} -> {row['rows_above']:>3d} / {row['total_rows']:>3d} rows ({row['frac_above']:.1%})")
+
+    if not low_frac.empty:
+        print(f"\nSample Low-Fraction Files (<10% rows > {threshold:,.0f} counts — Protected from 50x scaling):")
+        for _, row in low_frac.head(10).iterrows():
+            fname = Path(str(row[file_col])).name
+            print(f"  • {fname:<35s} -> {row['rows_above']:>3d} / {row['total_rows']:>3d} rows ({row['frac_above']:.2%})")
+
+    print("=" * 60 + "\n")
+
+    return summary
+
 def check_summed_files_shots(
     h5_file: str | Path = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
     threshold: float = 70000.0
@@ -2434,7 +2338,10 @@ def detect_scaled_duplicates(
 
     return df_matches
 
-def diagnose_element_levels(df_meta: pd.DataFrame, elements: list[str] = ['U', 'Sm']):
+def diagnose_element_levels(
+        df_meta: pd.DataFrame, 
+        elements: list[str] = ['U', 'Sm']
+):
     """Print detailed shot counts per concentration level before and after filtering."""
     df_wt = compute_elemental_wt(df_meta)
     for elem in elements:
@@ -2497,34 +2404,55 @@ def diagnose_flat_top_clipping(
 
     return summary
 
-def diagnose_levels_like_cleaning(h5_file, elements=('Sm', 'U'), sat=60000.0,
-                                  sum_thr=65535.0, default_shots=50.0):
+def diagnose_levels_like_cleaning(
+        h5_file, 
+        elements=('Sm', 'U'), 
+        sat=64000.0,
+        sum_thr=65535.0, 
+        default_shots=50.0
+):
     with h5py.File(h5_file, 'r') as hf:
         ds = hf['spectra']
         raw_max = np.concatenate([ds[i:i+20000].max(axis=1) # type: ignore
                                   for i in range(0, ds.shape[0], 20000)]) # type: ignore
-        m = hf['metadata']; cols = {}
+        m = hf['metadata']
+        cols = {}
         for k in m.keys(): # type: ignore
             v = m[k][:] # type: ignore
             cols[k] = ([x.decode() if isinstance(x, bytes) else x for x in v] # type: ignore
                        if v.dtype.kind in 'OSV' else v) # type: ignore
     df = pd.DataFrame(cols)
+    
+    file_col = 'og_path' if 'og_path' in df.columns else ('file_id' if 'file_id' in df.columns else None)
+    df['raw_max'] = raw_max
+    
+    # --- Update in diagnose_levels_like_cleaning ---
+    if file_col:
+        file_key = df[file_col].to_numpy()
+        # Updated to match dataset_cleaning and summation_average
+        frac_above = pd.Series(raw_max > sum_thr).groupby(file_key).transform('mean').to_numpy()
+        df['summed'] = frac_above >= 0.10
+    else:
+        df['summed'] = df['raw_max'] > sum_thr
+
     shots = pd.to_numeric(df['shots'], errors='coerce')
     df['shots_eff'] = shots.where(shots > 0, default_shots).fillna(default_shots)
-    df['raw_max'] = raw_max
-    df['summed'] = df.raw_max > sum_thr
-    df['per_shot'] = df.raw_max / np.where(df.summed, df.shots_eff, 1.0)
-    df['dropped'] = df.per_shot > sat
+    df['per_shot'] = df['raw_max'] / np.where(df['summed'], df['shots_eff'], 1.0)
+    df['dropped'] = df['per_shot'] > sat
+    
     wt = compute_elemental_wt(df)
     for e in elements:
         sel = wt[e] > 0
         d = df[sel].assign(level=wt.loc[sel, e].round(4))
         print(f'\n--- {e} ---')
         print(d.groupby('level').agg(
-            rows=('raw_max', 'size'), files=('og_path', 'nunique'),
-            summed=('summed', 'sum'), dropped=('dropped', 'sum'),
-            shots_default=('shot_study', lambda s: (s == 0).sum()),
-            med_raw=('raw_max', 'median'), med_per_shot=('per_shot', 'median')
+            rows=('raw_max', 'size'),
+            files=(file_col, 'nunique') if file_col else ('raw_max', 'size'),
+            summed=('summed', 'sum'),
+            dropped=('dropped', 'sum'),
+            default_meta_source=('shot_study', lambda s: (s == 0).sum()),
+            med_raw=('raw_max', 'median'),
+            med_per_shot=('per_shot', 'median')
         ).to_string())
 
 def diagnose_saturation_drops(input_h5: str | Path, threshold: float = 64500.0) -> pd.DataFrame:
@@ -2753,36 +2681,36 @@ if __name__ == "__main__":
     # --------------------------------------------------------------------------------
     # region Full Run
     # --------------------------------------------------------------------------------
-    # full_run(
-    #     input_csv_dir = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs",
-    #     enriched_csv_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/enriched_csvs',
-    #     combined_root = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned',
-    #     cleaned_h5 = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261110.h5',
-    #     drop_columns=DROP_COLUMNS,
-    #     rename_columns=RENAME_COLUMNS,
-    #     composition_columns=COMPOSITION_COLUMNS,
-    #     min_wavelength=MIN_WAVELENGTH,
-    #     max_wavelength=MAX_WAVELENGTH,
-    #     allowed_extensions=ALLOWED_EXTENSIONS,
-    #     required_columns=REQUIRED_COLUMNS,
-    #     salt_states=SALT_STATES,
-    #     experimental_variation_columns=EXPERIMENTAL_VARIATION_COLUMNS,
-    #     include_experimental_variation_columns=INCLUDE_EXPERIMENTAL_VARIATION_COLUMNS,
-    #     log_q=LOG_Q,
-    #     log_path=LOG_PATH,
-    #     compression=COMPRESSION,
-    #     compression_level=COMPRESSION_LEVEL,
-    #     transpose_needed=TRANSPOSE_NEEDED,
-    #     n_workers=N_WORKERS,
-    #     target_elements=TARGET_ELEMENTS,
-    #     clip_percentile=CLIP_PERCENTILE, # Optional parameters to filter conditions dynamically
-    #     # target_delay=TARGET_DELAY,
-    #     # target_energy=TARGET_ENERGY,
-    #     # target_state_molten=TARGET_STATE_MOLTEN,
-    #     target_energy=None,
-    #     target_delay=None,
-    #     target_state_molten=None,
-    # )
+    full_run(
+        input_csv_dir = "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/csvs",
+        enriched_csv_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/enriched_csvs',
+        combined_root = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned',
+        cleaned_h5 = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261110b.h5',
+        drop_columns=DROP_COLUMNS,
+        rename_columns=RENAME_COLUMNS,
+        composition_columns=COMPOSITION_COLUMNS,
+        min_wavelength=MIN_WAVELENGTH,
+        max_wavelength=MAX_WAVELENGTH,
+        allowed_extensions=ALLOWED_EXTENSIONS,
+        required_columns=REQUIRED_COLUMNS,
+        salt_states=SALT_STATES,
+        experimental_variation_columns=EXPERIMENTAL_VARIATION_COLUMNS,
+        include_experimental_variation_columns=INCLUDE_EXPERIMENTAL_VARIATION_COLUMNS,
+        log_q=LOG_Q,
+        log_path=LOG_PATH,
+        compression=COMPRESSION,
+        compression_level=COMPRESSION_LEVEL,
+        transpose_needed=TRANSPOSE_NEEDED,
+        n_workers=N_WORKERS,
+        target_elements=TARGET_ELEMENTS,
+        clip_percentile=CLIP_PERCENTILE, # Optional parameters to filter conditions dynamically
+        # target_delay=TARGET_DELAY,
+        # target_energy=TARGET_ENERGY,
+        # target_state_molten=TARGET_STATE_MOLTEN,
+        target_energy=None,
+        target_delay=None,
+        target_state_molten=None,
+    )
     # endregion
 
     # --------------------------------------------------------------------------------
@@ -3214,11 +3142,11 @@ if __name__ == "__main__":
     #     threshold=64500
     # )
 
-    diagnose_flat_top_clipping(
-        input_h5='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
-        min_ties=3,
-        rel_tol=0
-    )
+    # diagnose_flat_top_clipping(
+    #     input_h5='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
+    #     min_ties=3,
+    #     rel_tol=0
+    # )
 
     # endregion
 
@@ -3230,13 +3158,13 @@ if __name__ == "__main__":
     #     elements=['Ce', 'Gd', 'Sm', 'U']
     # )
 
-    diagnose_levels_like_cleaning(
-        h5_file='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
-        elements=('Ce', 'Gd', 'Sm', 'U'),
-        sat=64000,
-        sum_thr=65535,
-        default_shots=50
-    )
+    # diagnose_levels_like_cleaning(
+    #     h5_file='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5',
+    #     elements=('Ce', 'Gd', 'Sm', 'U'),
+    #     sat=64000,
+    #     sum_thr=65535,
+    #     default_shots=50
+    # )
 
     # with h5py.File('/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5', 'r') as f:
     #     og = [x.decode('utf-8') if isinstance(x, bytes) else str(x) for x in f['metadata/og_path'][:]] # type: ignore
@@ -3246,4 +3174,12 @@ if __name__ == "__main__":
 
     # for p in sm_paths[:10]:
     #     print(p)
+    # endregion
+    
+    # --------------------------------------------------------------------------------
+    # region Audit mixed sum files
+    # --------------------------------------------------------------------------------
+    # audit_mixed_sum_files(
+    #     h5_file='/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/combined_libs.h5'
+    # )
     # endregion
