@@ -1,0 +1,37 @@
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting GPU Reverse PLS Pipeline (Concentrations -> Spectra) [cuda] ===
+
+--- Tuning Reverse PLS Components via Multi-Seed GPU Cross-Validation ---
+n_components =  1 | Spectral OOF RMSE: 0.00569 | Overall R^2:  0.6466 | Elapsed: 11.93s
+n_components =  2 | Spectral OOF RMSE: 0.00574 | Overall R^2:  0.6400 | Elapsed: 0.27s
+n_components =  3 | Spectral OOF RMSE: 0.00573 | Overall R^2:  0.6408 | Elapsed: 0.47s
+n_components =  4 | Spectral OOF RMSE: 0.00578 | Overall R^2:  0.6347 | Elapsed: 0.31s
+
+--- Running Lockbox Reverse Evaluation on GPU (7 models, n_components=1) ---
+
+✅ Lockbox Reverse PLS Performance | Spectral RMSE: 0.00563 | Overall R^2: 0.6459
+Saved Reverse Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_reverse_benchmark/processed-data_20261110b/exp/reverse_pls_oof_spectra_20261110b_20261111_111119.png
+Saved Reverse Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_reverse_benchmark/processed-data_20261110b/exp/reverse_pls_lockbox_spectra_20261110b_20261111_111119.png
+Reverse PLS Pipeline completed in 129.74 seconds.
+=== Starting GPU Reverse PLS Pipeline (Concentrations -> Spectra) [cuda] ===
+
+--- Tuning Reverse PLS Components via Multi-Seed GPU Cross-Validation ---
+n_components =  1 | Spectral OOF RMSE: 0.00775 | Overall R^2:  0.3440 | Elapsed: 1.46s
+n_components =  2 | Spectral OOF RMSE: 0.00779 | Overall R^2:  0.3373 | Elapsed: 0.60s
+n_components =  3 | Spectral OOF RMSE: 0.00771 | Overall R^2:  0.3510 | Elapsed: 0.66s
+n_components =  4 | Spectral OOF RMSE: 0.00771 | Overall R^2:  0.3510 | Elapsed: 0.71s
+
+--- Running Lockbox Reverse Evaluation on GPU (7 models, n_components=4) ---
+
+✅ Lockbox Reverse PLS Performance | Spectral RMSE: 0.00792 | Overall R^2: 0.3000
+Saved Reverse Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_reverse_benchmark/processed-data_20261110b/exp-syn/reverse_pls_oof_spectra_20261110b_20261111_111329.png
+Saved Reverse Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_reverse_benchmark/processed-data_20261110b/exp-syn/reverse_pls_lockbox_spectra_20261110b_20261111_111329.png
+Reverse PLS Pipeline completed in 82.30 seconds.

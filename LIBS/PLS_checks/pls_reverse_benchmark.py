@@ -36,10 +36,11 @@ MAX_WT_PERCENT = 12.0
 SEED = 42
 HOST_ELEMENTS = {'Li', 'K', 'Cl'}
 EXP_DOPANTS = {'Ce', 'Gd', 'Sm', 'U'}
+DOPANT_NAMES = {'Ce', 'Gd', 'Sm', 'U'}
 
 # Candidate range for PLS components
 # Component number capped by number of target input elements (e.g. 4 dopants)
-N_COMPONENTS_GRID = [1,2,3,4]
+N_COMPONENTS_GRID = [1,2,3,4,5,6,7]
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -86,6 +87,7 @@ class PyTorchPLS:
             t_a = torch.matmul(X, r_a)
             t_a = t_a - t_a.mean()
             norm_t = torch.linalg.norm(t_a)
+            if norm_t < 1e-08: break
             t_a = t_a / norm_t
             r_a = r_a / norm_t
 
@@ -93,18 +95,18 @@ class PyTorchPLS:
             p_a = torch.matmul(X.T, t_a)
             q_a = torch.matmul(Y0.T, t_a)
 
-            # Deflation vector v_a (orthogonalized against previous V)
+            R[:, a] = r_a
+            Q[:, a] = q_a
+
             v_a = p_a.clone()
             if a > 0:
                 V_prev = V[:, :a]
-                v_a = v_a - torch.matmul(V_prev, torch.matmul(V_prev.T, p_a))
-            v_a = v_a / torch.linalg.norm(v_a)
-
-            # Deflate cross-covariance matrix
+                v_a = v_a - V_prev @ (V_prev.T @ p_a)
+            nv = torch.linalg.norm(v_a)
+            if nv < 1e-8:          # S exhausted: remaining components are zero
+                break
+            v_a = v_a / nv
             S = S - v_a.unsqueeze(1) @ (v_a.unsqueeze(0) @ S)
-
-            R[:, a] = r_a
-            Q[:, a] = q_a
             V[:, a] = v_a
 
         # Compute final regression weight matrix B
@@ -278,29 +280,67 @@ def plot_spectral_reconstruction(
     wavelengths: np.ndarray,
     y_concentrations: np.ndarray,
     elem_names: list[str],
-    n_samples: int = 4,
     save_path: Path | None = None
 ):
-    """Plots True vs Predicted spectra across wavelength grid for sample spectra."""
-    fig, axes = plt.subplots(n_samples, 1, figsize=(12, 2.5 * n_samples), sharex=True)
+    """Plots True vs Predicted spectra across wavelength grid for sample spectra.
+    
+    Selects representative samples: one dominant sample per dopant, one complex multi-dopant mixture,
+    and one trace concentration sample.
+    """
+    sample_indices = []
+    sample_tags = []
+
+    # in plot_spectral_reconstruction, replacing the selection block
+    dop_cols = [j for j, n in enumerate(elem_names) if n in DOPANT_NAMES]
+    Yd = y_concentrations[:, dop_cols]
+
+    # 1. One sample per dopant
+    for j in dop_cols:
+        if y_concentrations[:, j].max() <= 0:      # dopant absent in this set (e.g. lockbox)
+            continue
+        sample_indices.append(int(np.argmax(y_concentrations[:, j])))
+        sample_tags.append(f"Max {elem_names[j]}")
+
+    # 2. Complex mixture, entropy over dopants only
+    row_sums = Yd.sum(axis=1, keepdims=True)
+    conc_norm = np.divide(Yd, row_sums, out=np.zeros_like(Yd, dtype=float), where=row_sums > 0)
+    # Avoids calculating log(0) in masked slots
+    log_conc = np.zeros_like(conc_norm)
+    mask = conc_norm > 0
+    log_conc[mask] = np.log(conc_norm[mask])
+    entropy = -np.sum(conc_norm * log_conc, axis=1)
+    sample_indices.append(int(np.argmax(entropy)))
+    sample_tags.append("Complex Mixture")
+
+    # 3. Trace: lowest positive total *dopant* concentration
+    total_conc = Yd.sum(axis=1)
+    pos = np.where(total_conc > 0)[0]
+    trace_idx = int(pos[np.argmin(total_conc[pos])]) if len(pos) else int(np.argmin(total_conc))
+    sample_indices.append(trace_idx)
+    sample_tags.append("Trace Concentration")
+
+    n_plots = len(sample_indices)
+    fig, axes = plt.subplots(n_plots, 1, figsize=(12, 2.5 * n_plots), sharex=True)
     axes_flat = np.atleast_1d(axes)
 
-    # Pick representative samples across dataset
-    sample_indices = np.linspace(0, len(x_true) - 1, n_samples, dtype=int)
-
-    for plot_idx, sample_idx in enumerate(sample_indices):
+    for plot_idx, (sample_idx, tag) in enumerate(zip(sample_indices, sample_tags)):
         ax = axes_flat[plot_idx]
         xt = x_true[sample_idx]
         xp = x_pred[sample_idx]
-        conc_str = ", ".join([f"{name}: {y_concentrations[sample_idx, j]:.2f}%" 
-                              for j, name in enumerate(elem_names) if y_concentrations[sample_idx, j] > 0])
+        # Build concentration string for trace dopants ONLY (omits Li, K, Cl)
+        conc_str = ", ".join(
+            f"{elem_names[j]}: {y_concentrations[sample_idx, j]:.2f}%"
+            for j in dop_cols if y_concentrations[sample_idx, j] > 0
+        )
+        if not conc_str:
+            conc_str = "0.00%"
 
         r2 = r2_score(xt, xp)
         rmse = np.sqrt(mean_squared_error(xt, xp))
 
         ax.plot(wavelengths, xt, label="True Spectrum", color="black", alpha=0.7, lw=1.0)
         ax.plot(wavelengths, xp, label="PLS Reverse Pred", color="crimson", alpha=0.8, lw=0.9, linestyle="--")
-        ax.set_title(f"Sample {sample_idx} ({conc_str}) | $R^2$: {r2:.4f} | RMSE: {rmse:.5f}", fontsize=9, fontweight="bold")
+        ax.set_title(f"[{tag}] Sample {sample_idx} ({conc_str}) | $R^2$: {r2:.4f} | RMSE: {rmse:.5f}", fontsize=9, fontweight="bold")
         ax.set_ylabel("Norm Intensity", fontsize=8)
         ax.grid(True, linestyle=":", alpha=0.5)
         if plot_idx == 0:
@@ -380,7 +420,8 @@ def main(
         output_dir: Path | str = OUTPUT_DIR,
         include_synthetic: bool = False,
         seeds: list[int] = SEEDS,
-        dataset_tag: str = '20261110b'
+        dataset_tag: str = '20261110b',
+        target_names: list[str] | None = None
 ):
     TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
     print(f"=== Starting GPU Reverse PLS Pipeline (Concentrations -> Spectra) [{DEVICE}] ===")
@@ -402,20 +443,24 @@ def main(
     test_idx = seed_splits[seeds[0]][0]
     cv_idx = seed_splits[seeds[0]][1]
 
+    # Map requested target_names to actual columns in dataset
+    if target_names is None:
+        target_names = data['names']
+    target_indices = [data['names'].index(name) for name in target_names if name in data['names']] # type: ignore
+    actual_target_names = [data['names'][i] for i in target_indices]
+
     # Move arrays to GPU
     X_cv_gpu = data['X'][cv_idx].to(DEVICE)          # Target: Spectra (N x P)
-    Y_cv_gpu = data['y'][cv_idx].to(DEVICE)          # Input: Concentrations (N x M)
+    Y_cv_gpu = data['y'][cv_idx][:, target_indices].to(DEVICE) # Input: Concentrations (N x M)
     X_test_gpu = data['X'][test_idx].to(DEVICE)
-    Y_test_gpu = data['y'][test_idx].to(DEVICE)
+    Y_test_gpu = data['y'][test_idx][:, target_indices].to(DEVICE)
 
-    # Select active dopant columns
-    dopant_indices = [i for i, name in enumerate(data['names']) if name in EXP_DOPANTS or name in {'Ce', 'Gd', 'Sm', 'U'}]
-    if dopant_indices:
-        Y_cv_gpu = Y_cv_gpu[:, dopant_indices]
-        Y_test_gpu = Y_test_gpu[:, dopant_indices]
-        target_names = [data['names'][i] for i in dopant_indices]
-    else:
-        target_names = data['names']
+    # Standard deviation diagnostic
+    print("\n--- Input Column Variation (Y_cv) ---")
+    y_stds = Y_cv_gpu.std(dim=0)
+    for name, s in zip(actual_target_names, y_stds):
+        flag = " ⚠️ NEAR CLAMP" if s < 1e-5 else ""
+        print(f"Y input std [{name:<2s}]: {s.item():.8f}{flag}")
 
     # ---- one-time setup (after the dopant column selection) ----
     P = X_cv_gpu.shape[1]
@@ -434,9 +479,34 @@ def main(
     n_elem = X_true_exp.numel()
 
     is_synth_cv = data['is_synth'][cv_idx]
+    # after is_synth_cv is defined, before data['X'] = None isn't needed since X is on GPU
+    if include_synthetic:
+        syn_rows = torch.from_numpy(np.where(is_synth_cv == 1)[0]).to(DEVICE)
+        exp_rows_t = torch.from_numpy(np.where(is_synth_cv == 0)[0]).to(DEVICE)
+        mu_syn = X_cv_gpu[syn_rows].mean(dim=0)
+        mu_exp = X_cv_gpu[exp_rows_t].mean(dim=0)
+        diff = (mu_syn - mu_exp).cpu().numpy()
+
+        wl = data['wavelengths']
+        for lo, hi in [(250, 400), (400, 600), (600, 700), (700, 850), (850, 1000)]:
+            m = (wl >= lo) & (wl < hi)
+            print(f"{lo}-{hi} nm | mean(syn-exp): {diff[m].mean():+.2e} | mean|diff|: {np.abs(diff[m]).mean():.2e}")
 
     # free host copy of spectra now that they're on GPU
     data['X'] = None
+
+    print('\n--- Baseline prediction for PLS function comparison ---')
+    base_sum = torch.zeros((n_exp, P), device=DEVICE)
+    for seed in seeds:
+        cv_fold_id = seed_splits[seed][2]
+        for k in range(NUM_FOLDS):
+            train_np = (cv_fold_id != k) if include_synthetic else ((cv_fold_id != k) & (is_synth_cv == 0))
+            val_np = cv_fold_id == k
+            mu = X_cv_gpu[torch.from_numpy(train_np).to(DEVICE)].mean(dim=0, keepdim=True)
+            base_sum[torch.from_numpy(pos_in_exp[val_np]).to(DEVICE)] += mu
+    base = base_sum / len(seeds)
+    sse_base = ((X_true_exp - base) ** 2).sum(dtype=torch.float64)
+    print(f"Mean-spectrum baseline | RMSE: {torch.sqrt(sse_base / n_elem).item():.5f} | R^2: {(1 - sse_base / sst).item():.4f}")
     
     print("\n--- Tuning Reverse PLS Components via Multi-Seed GPU Cross-Validation ---")
     best_oof_gpu = None
@@ -473,7 +543,8 @@ def main(
         mean_rmse = torch.sqrt(sse / n_elem).item()
         mean_r2 = (1.0 - sse / sst).item()
         dt = time.perf_counter() - t_grid_start
-        print(f"n_components = {n_comp:2d} | Spectral OOF RMSE: {mean_rmse:7.5f} | Overall R^2: {mean_r2:7.4f} | Elapsed: {dt:.2f}s")
+        skill = (1.0 - sse / sse_base).item()
+        print(f"n_components = {n_comp:2d} | PLS Addition: {skill:7.4f} | Spectral OOF RMSE: {mean_rmse:7.5f} | Overall R^2: {mean_r2:7.4f} | Elapsed: {dt:.2f}s")
 
         if best_oof_gpu is None or mean_rmse < best_overall_rmse:
             best_overall_rmse, best_n_comp = mean_rmse, n_comp
@@ -522,7 +593,7 @@ def main(
         x_pred=best_oof_gpu.cpu().numpy(), # type: ignore
         wavelengths=data['wavelengths'],
         y_concentrations=Y_exp.cpu().numpy(),
-        elem_names=target_names,
+        elem_names=actual_target_names,
         save_path=oof_plot_path,
     )
 
@@ -531,7 +602,7 @@ def main(
         x_pred=lockbox_pred_avg,
         wavelengths=data['wavelengths'],
         y_concentrations=Y_test_gpu.cpu().numpy(),
-        elem_names=target_names,
+        elem_names=actual_target_names,
         save_path=lockbox_plot_path,
     )
 
@@ -552,7 +623,8 @@ if __name__ == "__main__":
         output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_reverse_benchmark/processed-data_20261110b/exp"),
         include_synthetic=False,
         seeds=SEEDS,
-        dataset_tag='20261110b'
+        dataset_tag='20261110b',
+        target_names=['Ce', 'Gd', 'Sm', 'U']
     )
     
     main(
@@ -561,5 +633,6 @@ if __name__ == "__main__":
         output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_reverse_benchmark/processed-data_20261110b/exp-syn"),
         include_synthetic=True,
         seeds=SEEDS,
-        dataset_tag='20261110b'
+        dataset_tag='20261110b',
+        target_names=['Ce', 'Gd', 'Sm', 'U']
     )
