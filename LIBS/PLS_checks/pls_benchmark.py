@@ -38,7 +38,9 @@ HOST_ELEMENTS = {'Li', 'K', 'Cl'}
 EXP_DOPANTS = {'Ce', 'Gd', 'Sm', 'U'}
 
 # Candidate range for PLS components
-N_COMPONENTS_GRID = [1,2,5,10,20,30,40,50,60,70,80,90,100]
+# Best w/out synth: 89 components
+# Best w/ synth: 96 components
+N_COMPONENTS_GRID = [89,96]
 # N_COMPONENTS_GRID = [20,25,28,29,30,31,32,35,40]
 # N_COMPONENTS_GRID = [50,55,58,59,60,61,62,65,70]
 # N_COMPONENTS_GRID = [70,75,78,79,80,81,82,85,90]
@@ -575,53 +577,6 @@ if __name__ == "__main__":
     """
     Did you run the final combo in NIST_data.py to get the synthetic data set already?
     """
-    # main(
-    #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TD14_TEN.h5",
-    #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/exp_TD14_TEN",
-    #     output_dir=OUTPUT_DIR,
-    #     include_synthetic=False,
-    #     seeds=SEEDS,
-    # )
-    
-    # main(
-    #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TDN_TEN.h5",
-    #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/exp_TDN_TEN",
-    #     output_dir=OUTPUT_DIR,
-    #     include_synthetic=False,
-    #     seeds=SEEDS,
-    # )
-    
-    # main(
-    #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TD14_TEN.h5",
-    #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/exp-syn_TD14_TEN",
-    #     output_dir=OUTPUT_DIR,
-    #     include_synthetic=True,
-    #     seeds=SEEDS,
-    # )
-    
-    # main(
-    #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TDN_TEN.h5",
-    #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/exp-syn_TDN_TEN",
-    #     output_dir=OUTPUT_DIR,
-    #     include_synthetic=True,
-    #     seeds=SEEDS,
-    # )
-    
-    # main(
-    #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261106.h5",
-    #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261106",
-    #     output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261106/exp"),
-    #     include_synthetic=False,
-    #     seeds=SEEDS,
-    # )
-    
-    # main(
-    #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_processed-data_20261106.h5",
-    #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261106",
-    #     output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261106/exp-syn"),
-    #     include_synthetic=True,
-    #     seeds=SEEDS,
-    # )
     
     main(
         h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
