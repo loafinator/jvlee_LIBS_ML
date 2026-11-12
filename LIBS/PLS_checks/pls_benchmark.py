@@ -5,6 +5,7 @@ import time
 import h5py
 import torch
 import hashlib
+import gc
 
 import numpy as np
 import pandas as pd
@@ -570,7 +571,22 @@ def main(
     plot_parity_grid(true_cv_wt, pred_cv_wt, target_names, title_tag=f"PLS ENSEMBLED OOF ({len(seeds)} Seeds)", save_path=oof_parity_path)
     plot_parity_grid(true_test_wt, pred_test_wt, target_names, title_tag=f"PLS LOCKBOX ENSEMBLE ({total_models} Models)", save_path=lockbox_parity_path)
 
+    cache_path = output_dir / f"pls_predictions_{dataset_tag}.npz"
+    np.savez(
+        cache_path,
+        y_true_cv=true_cv_wt,          # True wt% (OOF)
+        y_pred_cv=pred_cv_wt,          # Predicted wt% (OOF)
+        y_true_test=true_test_wt,      # True wt% (Lockbox)
+        y_pred_test=pred_test_wt,      # Predicted wt% (Lockbox)
+        target_names=np.array(target_names)
+    )
+    print(f"Cached forward predictions to: {cache_path}")
+
     print(f"GPU Pipeline completed in {(time.perf_counter() - t0_start):.2f} seconds.")
+
+    del X_cv_gpu, Y_cv_gpu, X_test_gpu, Y_test_gpu, lockbox_sum_gpu
+    gc.collect()
+    torch.cuda.empty_cache()
 
 
 if __name__ == "__main__":
@@ -581,7 +597,7 @@ if __name__ == "__main__":
     main(
         h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
         split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261110b/exp"),
+        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/PLS/processed-data_20261110b/exp"),
         include_synthetic=False,
         seeds=SEEDS,
         dataset_tag='20261110b'
@@ -590,7 +606,7 @@ if __name__ == "__main__":
     main(
         h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
         split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_benchmark/processed-data_20261110b/exp-syn"),
+        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/PLS/processed-data_20261110b/exp-syn"),
         include_synthetic=True,
         seeds=SEEDS,
         dataset_tag='20261110b'

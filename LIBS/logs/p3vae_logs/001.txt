@@ -1,0 +1,195 @@
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting Memory-Safe P3VAE Encoder + Decoder Benchmark Pipeline [cuda] ===
+Dataset: 20261110b (exp) | Folds: 7 | Seeds: [42]
+Loaded 347985 total shots | Real: 147985 | Synthetic: 200000
+[Range Check] Fold 0: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 1: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 3.372 / train 6.040
+[Range Check] Fold 2: Ce: val 2.842 / train 2.842 | Gd: val 2.746 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 3: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 4: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 5: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 6: Ce: val 2.842 / train 2.842 | Gd: val 2.746 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+
+--- Training P3VAE across Folds [0] [Exp Only] ---
+[F1/7] spec_scaler scale_ = 0.61381
+=== Fold 1/7: train 106162 | val 17963 ===
+F1 E001:   0%|          | 0/829 [00:00<?, ?it/s]F1 E001:   0%|          | 1/829 [00:11<2:34:15, 11.18s/it]F1 E001:  20%|██        | 167/829 [00:16<00:50, 12.99it/s]F1 E001:  49%|████▉     | 407/829 [00:21<00:16, 25.48it/s]F1 E001:  78%|███████▊  | 649/829 [00:26<00:05, 33.20it/s]                                                          [F1] Epoch 001/2 [32.2s] | Train 1.6988 | Val 0.4158 | Dopant RMSE 0.2999 wt% | Recon 0.3445 | lr 1.00e-03
+F1 E002:   0%|          | 0/829 [00:00<?, ?it/s]F1 E002:  29%|██▊       | 237/829 [00:05<00:12, 47.26it/s]F1 E002:  57%|█████▋    | 474/829 [00:10<00:07, 47.19it/s]F1 E002:  86%|████████▌ | 713/829 [00:15<00:02, 47.43it/s]                                                          [F1] Epoch 002/2 [18.7s] | Train 0.5946 | Val 0.3782 | Dopant RMSE 0.3007 wt% | Recon 0.3065 | lr 1.00e-03
+
+✅ P3VAE Encoder OOF Summary | Mean Dopant RMSE: 0.2696 wt% | Mean R^2: 0.5284
+
+===============================================================================================
+ P3VAE Encoder OOF Benchmarks [Exp Only]
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.950 |     1.1002 |     1.5761 |      2.842
+Ce       | Predict Mean       |    0.000 |     1.0477 |     1.1286 |      2.842
+Ce       | P3VAE Encoder      |    0.976 |     0.0970 |     0.1763 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.211 |     0.3906 |     0.9349 |      2.937
+Gd       | Predict Mean       |   -0.000 |     0.6352 |     0.8494 |      2.937
+Gd       | P3VAE Encoder      |    0.689 |     0.2349 |     0.4736 |      2.937
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.002 |     0.0049 |     0.1183 |      5.857
+Sm       | Predict Mean       |    0.000 |     0.0097 |     0.1182 |      5.857
+Sm       | P3VAE Encoder      |   -0.300 |     0.0692 |     0.1347 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.411 |     0.3756 |     0.6959 |      6.040
+U        | Predict Mean       |    0.000 |     0.4792 |     0.5858 |      6.040
+U        | P3VAE Encoder      |    0.749 |     0.1721 |     0.2935 |      6.040
+-----------------------------------------------------------------------------------------------
+=== Top 5 Worst Performing Composition Groups (wt%) ===
+Group 1237 | Shots: 1    | Log-MSE: 0.9033 | True: [0. 0. 0. 0.] | Pred Mean: [0.146 0.588 4.851 0.665]
+Group 1378 | Shots: 1    | Log-MSE: 0.7207 | True: [0. 0. 0. 0.] | Pred Mean: [0.109 0.578 3.828 0.538]
+Group 1228 | Shots: 1    | Log-MSE: 0.6583 | True: [0. 0. 0. 0.] | Pred Mean: [0.056 0.757 3.079 0.785]
+Group 1099 | Shots: 1    | Log-MSE: 0.6400 | True: [0.    1.769 0.    6.04 ] | Pred Mean: [0.051 1.233 1.263 0.81 ]
+Group 1359 | Shots: 1    | Log-MSE: 0.6349 | True: [0. 0. 0. 0.] | Pred Mean: [0.144 0.354 3.463 0.55 ]
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp/p3vae_oof_parity_20261110b_20261111_235055.png
+
+===============================================================================================
+ P3VAE Encoder Lockbox Benchmarks (Ensemble of 1 Folds)
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.568 |     0.7439 |     1.2357 |      2.842
+Ce       | Predict Mean       |   -0.130 |     0.9829 |     1.0490 |      2.842
+Ce       | P3VAE Encoder      |    0.967 |     0.0975 |     0.1786 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.344 |     0.5583 |     1.1040 |      2.937
+Gd       | Predict Mean       |   -0.031 |     0.7357 |     0.9671 |      2.937
+Gd       | P3VAE Encoder      |    0.645 |     0.3177 |     0.5678 |      2.937
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.002 |     0.0065 |     0.1559 |      5.857
+Sm       | Predict Mean       |   -0.000 |     0.0114 |     0.1558 |      5.857
+Sm       | P3VAE Encoder      |   -0.042 |     0.0854 |     0.1590 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.451 |     0.5712 |     1.0248 |      6.040
+U        | Predict Mean       |   -0.053 |     0.6224 |     0.8730 |      6.040
+U        | P3VAE Encoder      |    0.651 |     0.3232 |     0.5025 |      6.040
+-----------------------------------------------------------------------------------------------
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp/p3vae_lbx_parity_20261110b_20261111_235055.png
+
+=========================================================================================================
+ P3VAE Decoder OOF Spectral Reconstruction Benchmarks [Exp Only]
+ Note: Full Decoder uses spectrum-encoded matrix residual (autoencoder upper bound);
+       True-Conc Physics uses 7 modeled elements + spectrum-inferred broadening.
+=========================================================================================================
+Decoder Pathway                                      | Spectral RMSE   | Overall R^2 
+---------------------------------------------------------------------------------------------------------
+Mean-Spectrum Baseline                               |         0.00645 |       0.5525
+Physics-Only Decoder (Pred Conc -> NIST)             |         0.01000 |      -0.0760
+Physics Decoder (True 7-Elem Conc + Pred Gamma)      |         0.01000 |      -0.0760
+Full P3VAE Decoder (Physics + Matrix Residual)       |         0.00360 |       0.8603
+=========================================================================================================
+Saved Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp/p3vae_oof_spectra_full_20261110b_20261111_235055.png
+Saved Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp/p3vae_oof_spectra_physics_20261110b_20261111_235055.png
+Saved Physics vs. Residual Breakdown Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp/p3vae_oof_physics_vs_residual_20261110b_20261111_235055.png
+
+✅ Lockbox Full Decoder    | Spectral RMSE: 0.00427 | Overall R^2: 0.7968
+✅ Lockbox Physics Decoder | Spectral RMSE: 0.01000 | Overall R^2: -0.1152
+Saved Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp/p3vae_lbx_spectra_full_20261110b_20261111_235055.png
+Saved Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp/p3vae_lbx_spectra_physics_20261110b_20261111_235055.png
+Cached compact P3VAE encoder + decoder results to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp/p3vae_predictions_20261110b.npz
+P3VAE Pipeline completed in 3.93 minutes.
+=== Starting Memory-Safe P3VAE Encoder + Decoder Benchmark Pipeline [cuda] ===
+Dataset: 20261110b (exp-syn) | Folds: 7 | Seeds: [42]
+Loaded 347985 total shots | Real: 147985 | Synthetic: 200000
+[Range Check] Fold 0: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 1: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 3.372 / train 6.040
+[Range Check] Fold 2: Ce: val 2.842 / train 2.842 | Gd: val 2.746 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 3: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 4: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 5: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 6: Ce: val 2.842 / train 2.842 | Gd: val 2.746 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+
+--- Training P3VAE across Folds [0] [Syn+Exp] ---
+[F1/7] spec_scaler scale_ = 0.59355
+=== Fold 1/7: train 306162 | val 17963 ===
+F1 E001:   0%|          | 0/2391 [00:00<?, ?it/s]F1 E001:  10%|▉         | 229/2391 [00:05<00:47, 45.75it/s]F1 E001:  20%|█▉        | 470/2391 [00:10<00:40, 47.08it/s]F1 E001:  30%|██▉       | 710/2391 [00:15<00:35, 47.41it/s]F1 E001:  40%|███▉      | 950/2391 [00:20<00:30, 47.62it/s]F1 E001:  50%|████▉     | 1190/2391 [00:25<00:25, 47.75it/s]F1 E001:  60%|█████▉    | 1429/2391 [00:30<00:20, 47.76it/s]F1 E001:  70%|██████▉   | 1668/2391 [00:35<00:15, 47.77it/s]F1 E001:  80%|███████▉  | 1907/2391 [00:40<00:10, 47.78it/s]F1 E001:  90%|████████▉ | 2147/2391 [00:45<00:05, 47.83it/s]F1 E001: 100%|█████████▉| 2387/2391 [00:50<00:00, 47.79it/s]                                                            [F1] Epoch 001/2 [51.6s] | Train 1.5005 | Val 0.4742 | Dopant RMSE 0.3533 wt% | Recon 0.3769 | lr 1.00e-03
+F1 E002:   0%|          | 0/2391 [00:00<?, ?it/s]F1 E002:  10%|▉         | 238/2391 [00:05<00:45, 47.60it/s]F1 E002:  20%|██        | 479/2391 [00:10<00:39, 47.92it/s]F1 E002:  30%|███       | 719/2391 [00:15<00:34, 47.95it/s]F1 E002:  40%|████      | 960/2391 [00:20<00:29, 48.04it/s]F1 E002:  50%|█████     | 1201/2391 [00:25<00:24, 47.94it/s]F1 E002:  60%|██████    | 1441/2391 [00:30<00:19, 47.91it/s]F1 E002:  70%|███████   | 1681/2391 [00:35<00:14, 47.89it/s]F1 E002:  80%|████████  | 1923/2391 [00:40<00:09, 48.01it/s]F1 E002:  91%|█████████ | 2165/2391 [00:45<00:04, 48.10it/s]                                                            [F1] Epoch 002/2 [51.0s] | Train 0.8134 | Val 0.4233 | Dopant RMSE 0.3102 wt% | Recon 0.3468 | lr 1.00e-03
+
+✅ P3VAE Encoder OOF Summary | Mean Dopant RMSE: 0.2733 wt% | Mean R^2: 0.5116
+
+===============================================================================================
+ P3VAE Encoder OOF Benchmarks [Syn+Exp]
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.950 |     1.1002 |     1.5761 |      2.842
+Ce       | Predict Mean       |    0.000 |     1.0477 |     1.1286 |      2.842
+Ce       | P3VAE Encoder      |    0.983 |     0.0890 |     0.1463 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.211 |     0.3906 |     0.9349 |      2.937
+Gd       | Predict Mean       |   -0.000 |     0.6352 |     0.8494 |      2.937
+Gd       | P3VAE Encoder      |    0.662 |     0.2431 |     0.4942 |      2.937
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.002 |     0.0049 |     0.1183 |      5.857
+Sm       | Predict Mean       |    0.000 |     0.0097 |     0.1182 |      5.857
+Sm       | P3VAE Encoder      |   -0.304 |     0.0651 |     0.1349 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.411 |     0.3756 |     0.6959 |      6.040
+U        | Predict Mean       |    0.000 |     0.4792 |     0.5858 |      6.040
+U        | P3VAE Encoder      |    0.706 |     0.2153 |     0.3179 |      6.040
+-----------------------------------------------------------------------------------------------
+=== Top 5 Worst Performing Composition Groups (wt%) ===
+Group 1099 | Shots: 1    | Log-MSE: 0.7425 | True: [0.    1.769 0.    6.04 ] | Pred Mean: [0.202 2.361 0.105 0.287]
+Group 1255 | Shots: 1    | Log-MSE: 0.7316 | True: [0. 0. 0. 0.] | Pred Mean: [0.244 0.055 4.423 0.142]
+Group 1250 | Shots: 1    | Log-MSE: 0.6116 | True: [0. 0. 0. 0.] | Pred Mean: [0.216 0.066 3.688 0.138]
+Group 1237 | Shots: 1    | Log-MSE: 0.5973 | True: [0. 0. 0. 0.] | Pred Mean: [0.452 0.06  3.446 0.153]
+Group 1251 | Shots: 1    | Log-MSE: 0.5929 | True: [0. 0. 0. 0.] | Pred Mean: [0.234 0.085 3.563 0.138]
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/p3vae_oof_parity_20261110b_20261111_235451.png
+
+===============================================================================================
+ P3VAE Encoder Lockbox Benchmarks (Ensemble of 1 Folds)
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.568 |     0.7439 |     1.2357 |      2.842
+Ce       | Predict Mean       |   -0.130 |     0.9829 |     1.0490 |      2.842
+Ce       | P3VAE Encoder      |    0.977 |     0.0942 |     0.1489 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.344 |     0.5583 |     1.1040 |      2.937
+Gd       | Predict Mean       |   -0.031 |     0.7357 |     0.9671 |      2.937
+Gd       | P3VAE Encoder      |    0.624 |     0.3277 |     0.5843 |      2.937
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.002 |     0.0065 |     0.1559 |      5.857
+Sm       | Predict Mean       |   -0.000 |     0.0114 |     0.1558 |      5.857
+Sm       | P3VAE Encoder      |    0.028 |     0.0850 |     0.1536 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.451 |     0.5712 |     1.0248 |      6.040
+U        | Predict Mean       |   -0.053 |     0.6224 |     0.8730 |      6.040
+U        | P3VAE Encoder      |    0.632 |     0.3531 |     0.5164 |      6.040
+-----------------------------------------------------------------------------------------------
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/p3vae_lbx_parity_20261110b_20261111_235451.png
+
+=========================================================================================================
+ P3VAE Decoder OOF Spectral Reconstruction Benchmarks [Syn+Exp]
+ Note: Full Decoder uses spectrum-encoded matrix residual (autoencoder upper bound);
+       True-Conc Physics uses 7 modeled elements + spectrum-inferred broadening.
+=========================================================================================================
+Decoder Pathway                                      | Spectral RMSE   | Overall R^2 
+---------------------------------------------------------------------------------------------------------
+Mean-Spectrum Baseline                               |         0.00800 |       0.3104
+Physics-Only Decoder (Pred Conc -> NIST)             |         0.01000 |      -0.0760
+Physics Decoder (True 7-Elem Conc + Pred Gamma)      |         0.01000 |      -0.0760
+Full P3VAE Decoder (Physics + Matrix Residual)       |         0.00350 |       0.8685
+=========================================================================================================
+Saved Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/p3vae_oof_spectra_full_20261110b_20261111_235451.png
+Saved Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/p3vae_oof_spectra_physics_20261110b_20261111_235451.png
+Saved Physics vs. Residual Breakdown Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/p3vae_oof_physics_vs_residual_20261110b_20261111_235451.png
+
+✅ Lockbox Full Decoder    | Spectral RMSE: 0.00415 | Overall R^2: 0.8074
+✅ Lockbox Physics Decoder | Spectral RMSE: 0.01000 | Overall R^2: -0.1152
+Saved Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/p3vae_lbx_spectra_full_20261110b_20261111_235451.png
+Saved Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/p3vae_lbx_spectra_physics_20261110b_20261111_235451.png
+Cached compact P3VAE encoder + decoder results to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/p3vae_predictions_20261110b.npz
+P3VAE Pipeline completed in 3.47 minutes.

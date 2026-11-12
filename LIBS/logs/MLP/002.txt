@@ -1,0 +1,468 @@
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting Fast Reverse MLP Pipeline (Concentrations -> Spectra) [cuda] ===
+Dataset: 20261110b | K-Fold: 7 Folds x 1 Seeds
+Loaded 147985 total shots | Real: 147985 | Synthetic: 0
+⚠️ Stale or un-fingerprinted split cache detected in max12_7_folds_seed42.npz. Recomputing folds...
+  [CV Concentrations] 0.00 GB (fp16) -> GPU
+  [CV Spectra] 2.48 GB (fp16) -> GPU
+
+--- Training Reverse MLP across K Folds ---
+Fold 1/7 | train rows 106162 | held-out rows 17963
+    ep   1/150 | train Spectral MSE 0.013171 | held-out MSE 0.000032 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.001098 | held-out MSE 0.000152 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000101 | held-out MSE 0.000031 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000063 | held-out MSE 0.000021 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000477 | held-out MSE 0.000081 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000076 | held-out MSE 0.000022 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000059 | held-out MSE 0.000020 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000043 | held-out MSE 0.000040 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000076 | held-out MSE 0.000021 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000050 | held-out MSE 0.000020 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000039 | held-out MSE 0.000021 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000037 | held-out MSE 0.000020 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000031 | held-out MSE 0.000020 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.016235 | held-out MSE 0.000031 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.002371 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000034 | held-out MSE 0.000022 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.001394 | held-out MSE 0.000024 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000112 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000030 | held-out MSE 0.000022 | lr 5.00e-04
+    ep  20/150 | train Spectral MSE 0.000028 | held-out MSE 0.000021 | lr 5.00e-04
+    ep  21/150 | train Spectral MSE 0.000028 | held-out MSE 0.000020 | lr 5.00e-04
+    ep  22/150 | train Spectral MSE 0.000027 | held-out MSE 0.000020 | lr 5.00e-04
+    --> Early stopping triggered at epoch 22. Best Val Spectral MSE: 0.000020
+Fold 2/7 | train rows 106986 | held-out rows 17139
+    ep   1/150 | train Spectral MSE 0.014545 | held-out MSE 0.000279 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000066 | held-out MSE 0.000118 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000076 | held-out MSE 0.000277 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000086 | held-out MSE 0.000286 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000085 | held-out MSE 0.000320 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000077 | held-out MSE 0.000427 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000136 | held-out MSE 0.001115 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.002246 | held-out MSE 0.000805 | lr 5.00e-04
+    ep   9/150 | train Spectral MSE 0.000049 | held-out MSE 0.000083 | lr 5.00e-04
+    ep  10/150 | train Spectral MSE 0.000033 | held-out MSE 0.000088 | lr 5.00e-04
+    ep  11/150 | train Spectral MSE 0.000033 | held-out MSE 0.000110 | lr 5.00e-04
+    ep  12/150 | train Spectral MSE 0.000032 | held-out MSE 0.000120 | lr 5.00e-04
+    ep  13/150 | train Spectral MSE 0.000033 | held-out MSE 0.000180 | lr 5.00e-04
+    ep  14/150 | train Spectral MSE 0.000033 | held-out MSE 0.000336 | lr 5.00e-04
+    ep  15/150 | train Spectral MSE 0.000034 | held-out MSE 0.000272 | lr 2.50e-04
+    ep  16/150 | train Spectral MSE 0.000028 | held-out MSE 0.000061 | lr 2.50e-04
+    ep  17/150 | train Spectral MSE 0.000031 | held-out MSE 0.000075 | lr 2.50e-04
+    ep  18/150 | train Spectral MSE 0.000029 | held-out MSE 0.000068 | lr 2.50e-04
+    ep  19/150 | train Spectral MSE 0.000029 | held-out MSE 0.000118 | lr 2.50e-04
+    ep  20/150 | train Spectral MSE 0.000031 | held-out MSE 0.000095 | lr 2.50e-04
+    ep  21/150 | train Spectral MSE 0.000117 | held-out MSE 0.000121 | lr 2.50e-04
+    ep  22/150 | train Spectral MSE 0.000028 | held-out MSE 0.000114 | lr 1.25e-04
+    ep  23/150 | train Spectral MSE 0.000055 | held-out MSE 0.000049 | lr 1.25e-04
+    ep  24/150 | train Spectral MSE 0.000108 | held-out MSE 0.000054 | lr 1.25e-04
+    ep  25/150 | train Spectral MSE 0.000026 | held-out MSE 0.000055 | lr 1.25e-04
+    ep  26/150 | train Spectral MSE 0.000031 | held-out MSE 0.000076 | lr 1.25e-04
+    ep  27/150 | train Spectral MSE 0.000026 | held-out MSE 0.000049 | lr 1.25e-04
+    ep  28/150 | train Spectral MSE 0.000026 | held-out MSE 0.000096 | lr 1.25e-04
+    ep  29/150 | train Spectral MSE 0.000025 | held-out MSE 0.000078 | lr 1.25e-04
+    ep  30/150 | train Spectral MSE 0.000026 | held-out MSE 0.000062 | lr 1.25e-04
+    ep  31/150 | train Spectral MSE 0.000025 | held-out MSE 0.000071 | lr 1.25e-04
+    ep  32/150 | train Spectral MSE 0.000025 | held-out MSE 0.000058 | lr 1.25e-04
+    ep  33/150 | train Spectral MSE 0.000025 | held-out MSE 0.000065 | lr 6.25e-05
+    ep  34/150 | train Spectral MSE 0.000025 | held-out MSE 0.000084 | lr 6.25e-05
+    ep  35/150 | train Spectral MSE 0.000025 | held-out MSE 0.000065 | lr 6.25e-05
+    ep  36/150 | train Spectral MSE 0.000025 | held-out MSE 0.000069 | lr 6.25e-05
+    ep  37/150 | train Spectral MSE 0.000037 | held-out MSE 0.000076 | lr 6.25e-05
+    ep  38/150 | train Spectral MSE 0.000025 | held-out MSE 0.000042 | lr 6.25e-05
+    ep  39/150 | train Spectral MSE 0.000024 | held-out MSE 0.000060 | lr 6.25e-05
+    ep  40/150 | train Spectral MSE 0.000024 | held-out MSE 0.000096 | lr 6.25e-05
+    ep  41/150 | train Spectral MSE 0.000024 | held-out MSE 0.000089 | lr 6.25e-05
+    ep  42/150 | train Spectral MSE 0.000024 | held-out MSE 0.000063 | lr 6.25e-05
+    ep  43/150 | train Spectral MSE 0.000024 | held-out MSE 0.000066 | lr 6.25e-05
+    ep  44/150 | train Spectral MSE 0.000024 | held-out MSE 0.000056 | lr 3.13e-05
+    ep  45/150 | train Spectral MSE 0.000026 | held-out MSE 0.000051 | lr 3.13e-05
+    ep  46/150 | train Spectral MSE 0.000024 | held-out MSE 0.000057 | lr 3.13e-05
+    ep  47/150 | train Spectral MSE 0.000024 | held-out MSE 0.000049 | lr 3.13e-05
+    ep  48/150 | train Spectral MSE 0.000024 | held-out MSE 0.000058 | lr 3.13e-05
+    ep  49/150 | train Spectral MSE 0.000024 | held-out MSE 0.000050 | lr 3.13e-05
+    ep  50/150 | train Spectral MSE 0.000025 | held-out MSE 0.000052 | lr 1.56e-05
+    ep  51/150 | train Spectral MSE 0.000024 | held-out MSE 0.000044 | lr 1.56e-05
+    ep  52/150 | train Spectral MSE 0.000024 | held-out MSE 0.000076 | lr 1.56e-05
+    ep  53/150 | train Spectral MSE 0.000024 | held-out MSE 0.000043 | lr 1.56e-05
+    --> Early stopping triggered at epoch 53. Best Val Spectral MSE: 0.000042
+Fold 3/7 | train rows 106056 | held-out rows 18069
+    ep   1/150 | train Spectral MSE 0.012999 | held-out MSE 0.000398 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000490 | held-out MSE 0.002396 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000317 | held-out MSE 0.000118 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000116 | held-out MSE 0.000122 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.004619 | held-out MSE 0.000050 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000633 | held-out MSE 0.000027 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000338 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000055 | held-out MSE 0.000026 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000084 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000058 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000048 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000049 | held-out MSE 0.000024 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000073 | held-out MSE 0.000024 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000043 | held-out MSE 0.000024 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000036 | held-out MSE 0.000024 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000035 | held-out MSE 0.000024 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000033 | held-out MSE 0.000024 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000032 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000030 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  20/150 | train Spectral MSE 0.000030 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  21/150 | train Spectral MSE 0.000027 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  22/150 | train Spectral MSE 0.000026 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  23/150 | train Spectral MSE 0.000026 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  24/150 | train Spectral MSE 0.000025 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  25/150 | train Spectral MSE 0.000025 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  26/150 | train Spectral MSE 0.000025 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  27/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  28/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  29/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  30/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  31/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  32/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  33/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  34/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  35/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  36/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  37/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  38/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  39/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  40/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  41/150 | train Spectral MSE 0.000023 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  42/150 | train Spectral MSE 0.000023 | held-out MSE 0.000022 | lr 1.00e-03
+    ep  43/150 | train Spectral MSE 0.000023 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  44/150 | train Spectral MSE 0.000023 | held-out MSE 0.000023 | lr 1.00e-03
+    --> Early stopping triggered at epoch 44. Best Val Spectral MSE: 0.000023
+Fold 4/7 | train rows 105742 | held-out rows 18383
+    ep   1/150 | train Spectral MSE 0.011073 | held-out MSE 0.000044 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000103 | held-out MSE 0.000072 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000521 | held-out MSE 0.005897 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000223 | held-out MSE 0.000100 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000046 | held-out MSE 0.000031 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000058 | held-out MSE 0.000039 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000384 | held-out MSE 0.000047 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000050 | held-out MSE 0.000031 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000045 | held-out MSE 0.000032 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000055 | held-out MSE 0.000031 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000042 | held-out MSE 0.000030 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000077 | held-out MSE 0.000030 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000034 | held-out MSE 0.000030 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000036 | held-out MSE 0.000030 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000030 | held-out MSE 0.000030 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000032 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000030 | held-out MSE 0.000030 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000028 | held-out MSE 0.000030 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000027 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  20/150 | train Spectral MSE 0.000026 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  21/150 | train Spectral MSE 0.000026 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  22/150 | train Spectral MSE 0.000026 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  23/150 | train Spectral MSE 0.000024 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  24/150 | train Spectral MSE 0.000024 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  25/150 | train Spectral MSE 0.000024 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  26/150 | train Spectral MSE 0.000026 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  27/150 | train Spectral MSE 0.000024 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  28/150 | train Spectral MSE 0.000028 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  29/150 | train Spectral MSE 0.000024 | held-out MSE 0.000029 | lr 1.00e-03
+    --> Early stopping triggered at epoch 29. Best Val Spectral MSE: 0.000030
+Fold 5/7 | train rows 106672 | held-out rows 17453
+    ep   1/150 | train Spectral MSE 0.012375 | held-out MSE 0.000042 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000375 | held-out MSE 0.003023 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.001680 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000083 | held-out MSE 0.000055 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000104 | held-out MSE 0.000027 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000056 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000052 | held-out MSE 0.000026 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000131 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000081 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000063 | held-out MSE 0.000026 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000043 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000042 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000033 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000033 | held-out MSE 0.000024 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000030 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000028 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000027 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000033 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.019643 | held-out MSE 0.000026 | lr 1.00e-03
+    ep  20/150 | train Spectral MSE 0.001245 | held-out MSE 0.000026 | lr 5.00e-04
+    ep  21/150 | train Spectral MSE 0.000030 | held-out MSE 0.000025 | lr 5.00e-04
+    ep  22/150 | train Spectral MSE 0.000029 | held-out MSE 0.000024 | lr 5.00e-04
+    ep  23/150 | train Spectral MSE 0.000028 | held-out MSE 0.000023 | lr 5.00e-04
+    ep  24/150 | train Spectral MSE 0.000027 | held-out MSE 0.000023 | lr 5.00e-04
+    ep  25/150 | train Spectral MSE 0.000027 | held-out MSE 0.000023 | lr 5.00e-04
+    ep  26/150 | train Spectral MSE 0.000027 | held-out MSE 0.000023 | lr 5.00e-04
+    ep  27/150 | train Spectral MSE 0.000026 | held-out MSE 0.000023 | lr 5.00e-04
+    ep  28/150 | train Spectral MSE 0.000026 | held-out MSE 0.000022 | lr 5.00e-04
+    ep  29/150 | train Spectral MSE 0.000026 | held-out MSE 0.000023 | lr 5.00e-04
+    ep  30/150 | train Spectral MSE 0.000026 | held-out MSE 0.000022 | lr 5.00e-04
+    ep  31/150 | train Spectral MSE 0.000026 | held-out MSE 0.000023 | lr 5.00e-04
+    ep  32/150 | train Spectral MSE 0.000027 | held-out MSE 0.000023 | lr 5.00e-04
+    ep  33/150 | train Spectral MSE 0.000025 | held-out MSE 0.000022 | lr 5.00e-04
+    ep  34/150 | train Spectral MSE 0.000025 | held-out MSE 0.000022 | lr 5.00e-04
+    ep  35/150 | train Spectral MSE 0.000073 | held-out MSE 0.000029 | lr 5.00e-04
+    ep  36/150 | train Spectral MSE 0.000026 | held-out MSE 0.000023 | lr 5.00e-04
+    ep  37/150 | train Spectral MSE 0.000026 | held-out MSE 0.000022 | lr 5.00e-04
+    ep  38/150 | train Spectral MSE 0.000025 | held-out MSE 0.000022 | lr 5.00e-04
+    ep  39/150 | train Spectral MSE 0.000025 | held-out MSE 0.000023 | lr 5.00e-04
+    ep  40/150 | train Spectral MSE 0.000025 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  41/150 | train Spectral MSE 0.000025 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  42/150 | train Spectral MSE 0.000025 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  43/150 | train Spectral MSE 0.000025 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  44/150 | train Spectral MSE 0.000025 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  45/150 | train Spectral MSE 0.000025 | held-out MSE 0.000022 | lr 2.50e-04
+    --> Early stopping triggered at epoch 45. Best Val Spectral MSE: 0.000022
+Fold 6/7 | train rows 106689 | held-out rows 17436
+    ep   1/150 | train Spectral MSE 0.011975 | held-out MSE 0.000130 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000092 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.003288 | held-out MSE 0.000059 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000056 | held-out MSE 0.000034 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000058 | held-out MSE 0.000031 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000059 | held-out MSE 0.000033 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000074 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000055 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000061 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000055 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000038 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000035 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000033 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000030 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000095 | held-out MSE 0.000043 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000031 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000028 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000027 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000026 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  20/150 | train Spectral MSE 0.000025 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  21/150 | train Spectral MSE 0.000025 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  22/150 | train Spectral MSE 0.000024 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  23/150 | train Spectral MSE 0.000024 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  24/150 | train Spectral MSE 0.000024 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  25/150 | train Spectral MSE 0.000024 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  26/150 | train Spectral MSE 0.000024 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  27/150 | train Spectral MSE 0.000023 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  28/150 | train Spectral MSE 0.000023 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  29/150 | train Spectral MSE 0.000023 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  30/150 | train Spectral MSE 0.000023 | held-out MSE 0.000027 | lr 5.00e-04
+    ep  31/150 | train Spectral MSE 0.000023 | held-out MSE 0.000027 | lr 5.00e-04
+    ep  32/150 | train Spectral MSE 0.000023 | held-out MSE 0.000027 | lr 5.00e-04
+    ep  33/150 | train Spectral MSE 0.000023 | held-out MSE 0.000027 | lr 5.00e-04
+    ep  34/150 | train Spectral MSE 0.000023 | held-out MSE 0.000027 | lr 5.00e-04
+    ep  35/150 | train Spectral MSE 0.000023 | held-out MSE 0.000027 | lr 5.00e-04
+    --> Early stopping triggered at epoch 35. Best Val Spectral MSE: 0.000027
+Fold 7/7 | train rows 106443 | held-out rows 17682
+    ep   1/150 | train Spectral MSE 0.015270 | held-out MSE 0.000550 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.004512 | held-out MSE 0.000052 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000202 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000034 | held-out MSE 0.000026 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000032 | held-out MSE 0.000027 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000034 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000040 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000046 | held-out MSE 0.000045 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000072 | held-out MSE 0.000039 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.165682 | held-out MSE 0.000082 | lr 5.00e-04
+    ep  11/150 | train Spectral MSE 0.001994 | held-out MSE 0.000046 | lr 5.00e-04
+    ep  12/150 | train Spectral MSE 0.000130 | held-out MSE 0.000037 | lr 5.00e-04
+    ep  13/150 | train Spectral MSE 0.008763 | held-out MSE 0.000390 | lr 5.00e-04
+    ep  14/150 | train Spectral MSE 0.003041 | held-out MSE 0.000038 | lr 5.00e-04
+    ep  15/150 | train Spectral MSE 0.000099 | held-out MSE 0.000038 | lr 5.00e-04
+    ep  16/150 | train Spectral MSE 0.000064 | held-out MSE 0.000032 | lr 2.50e-04
+    ep  17/150 | train Spectral MSE 0.000049 | held-out MSE 0.000025 | lr 2.50e-04
+    ep  18/150 | train Spectral MSE 0.000047 | held-out MSE 0.000026 | lr 2.50e-04
+    ep  19/150 | train Spectral MSE 0.000057 | held-out MSE 0.000025 | lr 2.50e-04
+    --> Early stopping triggered at epoch 19. Best Val Spectral MSE: 0.000026
+
+✅ OOF Reverse MLP Performance | Spectral RMSE: 0.00513 | Overall R^2: 0.7122
+Saved Reverse Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/MLP/h5_plots/processed-data_20261110b/exp/gpu_mlp_reverse_oof_spectra_20261110b_20261111_153201.png
+Reverse MLP Pipeline completed in 469.40 seconds.
+=== Starting Fast Reverse MLP Pipeline (Concentrations -> Spectra) [cuda] ===
+Dataset: 20261110b | K-Fold: 7 Folds x 1 Seeds
+Loaded 347985 total shots | Real: 147985 | Synthetic: 200000
+⚠️ Stale or un-fingerprinted split cache detected in max12_7_folds_seed42.npz. Recomputing folds...
+  [CV Concentrations] 0.00 GB (fp16) -> GPU
+  [CV Spectra] 6.48 GB (fp16) -> GPU
+
+--- Training Reverse MLP across K Folds ---
+Fold 1/7 | train rows 306162 | held-out rows 17963
+    ep   1/150 | train Spectral MSE 0.003436 | held-out MSE 0.000140 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000126 | held-out MSE 0.000120 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000210 | held-out MSE 0.000027 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000079 | held-out MSE 0.000024 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000064 | held-out MSE 0.000024 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000062 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000060 | held-out MSE 0.000031 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000059 | held-out MSE 0.000023 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000059 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000059 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000059 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000059 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000058 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000058 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000219 | held-out MSE 0.000064 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000073 | held-out MSE 0.000038 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000067 | held-out MSE 0.000035 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000068 | held-out MSE 0.000036 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000065 | held-out MSE 0.000027 | lr 5.00e-04
+    ep  20/150 | train Spectral MSE 0.000063 | held-out MSE 0.000026 | lr 5.00e-04
+    ep  21/150 | train Spectral MSE 0.000064 | held-out MSE 0.000027 | lr 5.00e-04
+    ep  22/150 | train Spectral MSE 0.000063 | held-out MSE 0.000027 | lr 5.00e-04
+    ep  23/150 | train Spectral MSE 0.000063 | held-out MSE 0.000027 | lr 5.00e-04
+    ep  24/150 | train Spectral MSE 0.000063 | held-out MSE 0.000026 | lr 5.00e-04
+    --> Early stopping triggered at epoch 24. Best Val Spectral MSE: 0.000023
+Fold 2/7 | train rows 306986 | held-out rows 17139
+    ep   1/150 | train Spectral MSE 0.003550 | held-out MSE 0.000179 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000226 | held-out MSE 0.000128 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000201 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000079 | held-out MSE 0.000035 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000062 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000059 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000059 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000059 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000059 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 5.00e-04
+    ep  12/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 5.00e-04
+    ep  13/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 5.00e-04
+    ep  14/150 | train Spectral MSE 0.000078 | held-out MSE 0.000056 | lr 5.00e-04
+    ep  15/150 | train Spectral MSE 0.000090 | held-out MSE 0.000030 | lr 5.00e-04
+    ep  16/150 | train Spectral MSE 0.000061 | held-out MSE 0.000030 | lr 5.00e-04
+    ep  17/150 | train Spectral MSE 0.000060 | held-out MSE 0.000029 | lr 2.50e-04
+    ep  18/150 | train Spectral MSE 0.000060 | held-out MSE 0.000030 | lr 2.50e-04
+    ep  19/150 | train Spectral MSE 0.000060 | held-out MSE 0.000030 | lr 2.50e-04
+    ep  20/150 | train Spectral MSE 0.000060 | held-out MSE 0.000030 | lr 2.50e-04
+    --> Early stopping triggered at epoch 20. Best Val Spectral MSE: 0.000028
+Fold 3/7 | train rows 306056 | held-out rows 18069
+    ep   1/150 | train Spectral MSE 0.003710 | held-out MSE 0.000087 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000272 | held-out MSE 0.000269 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000138 | held-out MSE 0.000045 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000083 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000067 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000061 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000060 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000059 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000059 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    --> Early stopping triggered at epoch 19. Best Val Spectral MSE: 0.000028
+Fold 4/7 | train rows 305742 | held-out rows 18383
+    ep   1/150 | train Spectral MSE 0.003309 | held-out MSE 0.000084 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000192 | held-out MSE 0.000152 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000229 | held-out MSE 0.000031 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000091 | held-out MSE 0.000039 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000061 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000059 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000059 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000059 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000059 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 5.00e-04
+    ep  18/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 5.00e-04
+    ep  19/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 5.00e-04
+    ep  20/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 5.00e-04
+    ep  21/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 5.00e-04
+    ep  22/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 5.00e-04
+    ep  23/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 5.00e-04
+    ep  24/150 | train Spectral MSE 0.000057 | held-out MSE 0.000028 | lr 5.00e-04
+    ep  25/150 | train Spectral MSE 0.000057 | held-out MSE 0.000028 | lr 5.00e-04
+    ep  26/150 | train Spectral MSE 0.000057 | held-out MSE 0.000028 | lr 2.50e-04
+    ep  27/150 | train Spectral MSE 0.000057 | held-out MSE 0.000028 | lr 2.50e-04
+    ep  28/150 | train Spectral MSE 0.000057 | held-out MSE 0.000028 | lr 2.50e-04
+    ep  29/150 | train Spectral MSE 0.000057 | held-out MSE 0.000028 | lr 2.50e-04
+    ep  30/150 | train Spectral MSE 0.000057 | held-out MSE 0.000028 | lr 2.50e-04
+    ep  31/150 | train Spectral MSE 0.000057 | held-out MSE 0.000028 | lr 2.50e-04
+    ep  32/150 | train Spectral MSE 0.000057 | held-out MSE 0.000028 | lr 2.50e-04
+    ep  33/150 | train Spectral MSE 0.000057 | held-out MSE 0.000028 | lr 2.50e-04
+    --> Early stopping triggered at epoch 33. Best Val Spectral MSE: 0.000028
+Fold 5/7 | train rows 306672 | held-out rows 17453
+    ep   1/150 | train Spectral MSE 0.003989 | held-out MSE 0.000355 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000169 | held-out MSE 0.000051 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000248 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000063 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000067 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000060 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000059 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000059 | held-out MSE 0.000031 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000059 | held-out MSE 0.000030 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000058 | held-out MSE 0.000030 | lr 5.00e-04
+    ep  11/150 | train Spectral MSE 0.000058 | held-out MSE 0.000031 | lr 5.00e-04
+    ep  12/150 | train Spectral MSE 0.000058 | held-out MSE 0.000031 | lr 5.00e-04
+    ep  13/150 | train Spectral MSE 0.000058 | held-out MSE 0.000031 | lr 5.00e-04
+    ep  14/150 | train Spectral MSE 0.000058 | held-out MSE 0.000032 | lr 5.00e-04
+    ep  15/150 | train Spectral MSE 0.000058 | held-out MSE 0.000032 | lr 5.00e-04
+    ep  16/150 | train Spectral MSE 0.000058 | held-out MSE 0.000031 | lr 2.50e-04
+    ep  17/150 | train Spectral MSE 0.000058 | held-out MSE 0.000031 | lr 2.50e-04
+    ep  18/150 | train Spectral MSE 0.000058 | held-out MSE 0.000031 | lr 2.50e-04
+    ep  19/150 | train Spectral MSE 0.000058 | held-out MSE 0.000031 | lr 2.50e-04
+    --> Early stopping triggered at epoch 19. Best Val Spectral MSE: 0.000028
+Fold 6/7 | train rows 306689 | held-out rows 17436
+    ep   1/150 | train Spectral MSE 0.003971 | held-out MSE 0.000086 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000229 | held-out MSE 0.000060 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000205 | held-out MSE 0.000034 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000079 | held-out MSE 0.000033 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000076 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000061 | held-out MSE 0.000040 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000059 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000059 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000059 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000059 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  20/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  21/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  22/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  23/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    --> Early stopping triggered at epoch 23. Best Val Spectral MSE: 0.000028
+Fold 7/7 | train rows 306443 | held-out rows 17682
+    ep   1/150 | train Spectral MSE 0.003603 | held-out MSE 0.000054 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000148 | held-out MSE 0.000063 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000153 | held-out MSE 0.000581 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000119 | held-out MSE 0.000035 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000063 | held-out MSE 0.000038 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000061 | held-out MSE 0.000035 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000060 | held-out MSE 0.000033 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000060 | held-out MSE 0.000033 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000059 | held-out MSE 0.000034 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 5.00e-04
+    ep  15/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 5.00e-04
+    ep  16/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 5.00e-04
+    ep  17/150 | train Spectral MSE 0.000061 | held-out MSE 0.000034 | lr 5.00e-04
+    ep  18/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 5.00e-04
+    ep  19/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 5.00e-04
+    ep  20/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 5.00e-04
+    ep  21/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 5.00e-04
+    ep  22/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 5.00e-04
+    --> Early stopping triggered at epoch 22. Best Val Spectral MSE: 0.000033
+
+✅ OOF Reverse MLP Performance | Spectral RMSE: 0.00529 | Overall R^2: 0.6940
+Saved Reverse Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/MLP/h5_plots/processed-data_20261110b/exp-syn/gpu_mlp_reverse_oof_spectra_20261110b_20261111_153951.png
+Reverse MLP Pipeline completed in 815.86 seconds.

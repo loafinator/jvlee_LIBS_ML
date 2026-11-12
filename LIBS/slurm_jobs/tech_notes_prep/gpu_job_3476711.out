@@ -1,0 +1,1770 @@
+=== CUDA & SLURM DIAGNOSTICS ===
+CUDA_VISIBLE_DEVICES = 0
+Thu Nov 12 00:48:10 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.178.04             Driver Version: 580.178.04     CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  Tesla V100S-PCIE-32GB          On  |   00000000:27:00.0 Off |                    0 |
+| N/A   33C    P0             25W /  250W |       0MiB /  32768MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+CUDA Available: True
+Device Count: 1
+=================================
+==========================================================================
+ 🚀 STARTING EXPERIMENT: pls_benchmark.py
+==========================================================================
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting GPU-Accelerated PLS Benchmark Pipeline [cuda] ===
+Dataset: 20261110b | Repeated K-Fold: 7 Folds x 1 Seeds (7 models per grid point)
+Loaded 347985 total shots | Real: 147985 | Synthetic: 200000
+
+--- Tuning PLS Components via Multi-Seed GPU Cross-Validation ---
+n_components = 89 | Ensembled OOF Mean RMSE:  0.5236 wt% (R^2:  0.4585) | Elapsed: 20.02s
+n_components = 96 | Ensembled OOF Mean RMSE:  0.5240 wt% (R^2:  0.4576) | Elapsed: 7.57s
+
+Optimal PLS Components: 89 (Ensembled OOF Mean RMSE: 0.5236 wt% | R^2: 0.4585)
+
+--- Running Final Lockbox Ensemble Evaluation on GPU (7 total models) ---
+
+===============================================================================================
+ GPU PLS Ensembled OOF Benchmarks (n_components=89, 1 Seeds) [Exp Only]
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.776 |     0.9871 |     1.4931 |      2.842
+Ce       | Predict Mean       |   -0.000 |     1.0185 |     1.1203 |      2.842
+Ce       | PLS Model          |    0.897 |     0.2381 |     0.3596 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.188 |     0.3554 |     0.8940 |      2.937
+Gd       | Predict Mean       |   -0.000 |     0.5860 |     0.8204 |      2.937
+Gd       | PLS Model          |    0.482 |     0.2976 |     0.5904 |      2.937
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.010 |     0.0544 |     0.5525 |      5.857
+Sm       | Predict Mean       |   -0.000 |     0.1076 |     0.5498 |      5.857
+Sm       | PLS Model          |   -0.073 |     0.1266 |     0.5697 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.294 |     0.4538 |     0.9520 |      6.040
+U        | Predict Mean       |   -0.000 |     0.5870 |     0.8368 |      6.040
+U        | PLS Model          |    0.528 |     0.2501 |     0.5748 |      6.040
+-----------------------------------------------------------------------------------------------
+
+===============================================================================================
+ GPU PLS Lockbox Benchmarks (Ensemble of 7 Models)
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.568 |     0.7439 |     1.2357 |      2.842
+Ce       | Predict Mean       |   -0.061 |     0.9364 |     1.0162 |      2.842
+Ce       | PLS Model          |    0.893 |     0.2018 |     0.3233 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.344 |     0.5583 |     1.1040 |      2.937
+Gd       | Predict Mean       |   -0.045 |     0.7197 |     0.9739 |      2.937
+Gd       | PLS Model          |    0.606 |     0.3182 |     0.5976 |      2.937
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.002 |     0.0065 |     0.1559 |      5.857
+Sm       | Predict Mean       |   -0.095 |     0.0607 |     0.1630 |      5.857
+Sm       | PLS Model          |   -0.534 |     0.0832 |     0.1930 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.451 |     0.5712 |     1.0248 |      6.040
+U        | Predict Mean       |   -0.019 |     0.6330 |     0.8589 |      6.040
+U        | PLS Model          |    0.646 |     0.3151 |     0.5062 |      6.040
+-----------------------------------------------------------------------------------------------
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/PLS/processed-data_20261110b/exp/pls_oof_parity_20261110b_20261112_005203.png
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/PLS/processed-data_20261110b/exp/pls_lbx_parity_20261110b_20261112_005203.png
+Cached forward predictions to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/PLS/processed-data_20261110b/exp/pls_predictions_20261110b.npz
+GPU Pipeline completed in 159.62 seconds.
+=== Starting GPU-Accelerated PLS Benchmark Pipeline [cuda] ===
+Dataset: 20261110b | Repeated K-Fold: 7 Folds x 1 Seeds (7 models per grid point)
+Loaded 347985 total shots | Real: 147985 | Synthetic: 200000
+
+--- Tuning PLS Components via Multi-Seed GPU Cross-Validation ---
+❌ FAILURE: pls_benchmark.py failed with exit code 1. Moving to next experiment...
+
+==========================================================================
+ 🚀 STARTING EXPERIMENT: pls_reverse_benchmark.py
+==========================================================================
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting GPU Reverse PLS Pipeline (Concentrations -> Spectra) [cuda] ===
+
+--- Input Column Variation (Y_cv) ---
+Y input std [Ce]: 1.56620765
+Y input std [Gd]: 1.45682728
+Y input std [Sm]: 1.40899479
+Y input std [U ]: 1.46852529
+250-400 nm | mean(syn-exp): +1.62e-04 | mean|diff|: 2.18e-03
+400-600 nm | mean(syn-exp): -2.10e-03 | mean|diff|: 2.70e-03
+600-700 nm | mean(syn-exp): -4.18e-03 | mean|diff|: 4.21e-03
+700-850 nm | mean(syn-exp): -1.59e-03 | mean|diff|: 3.35e-03
+850-1000 nm | mean(syn-exp): -1.65e-03 | mean|diff|: 1.65e-03
+
+--- Baseline prediction for PLS function comparison ---
+Mean-spectrum baseline | RMSE: 0.00810 | R^2: 0.2830
+
+--- Tuning Reverse PLS Components via Multi-Seed GPU Cross-Validation ---
+n_components =  1 | PLS Addition:  0.0851 | Spectral OOF RMSE: 0.00775 | Overall R^2:  0.3440 | Elapsed: 0.92s
+n_components =  2 | PLS Addition:  0.0758 | Spectral OOF RMSE: 0.00779 | Overall R^2:  0.3373 | Elapsed: 0.68s
+n_components =  3 | PLS Addition:  0.0949 | Spectral OOF RMSE: 0.00771 | Overall R^2:  0.3510 | Elapsed: 0.80s
+n_components =  4 | PLS Addition:  0.0949 | Spectral OOF RMSE: 0.00771 | Overall R^2:  0.3510 | Elapsed: 0.89s
+
+--- Running Lockbox Reverse Evaluation on GPU (7 models, n_components=4) ---
+
+✅ Lockbox Reverse PLS Performance | Spectral RMSE: 0.00792 | Overall R^2: 0.3000
+Saved Reverse Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/PLS_reverse/processed-data_20261110b/exp-syn/reverse_pls_oof_spectra_20261110b_20261112_005617.png
+Saved Reverse Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/PLS_reverse/processed-data_20261110b/exp-syn/reverse_pls_lockbox_spectra_20261110b_20261112_005617.png
+Reverse PLS Pipeline completed in 92.88 seconds.
+Cached predictions to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/PLS_reverse/processed-data_20261110b/exp-syn/pls_reverse_prediction_20261110b.npz
+✅ SUCCESS: pls_reverse_benchmark.py finished cleanly.
+
+==========================================================================
+ 🚀 STARTING EXPERIMENT: h5_MLP_003.py
+==========================================================================
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting Fast Reverse MLP Pipeline (Concentrations -> Spectra) [cuda] ===
+Dataset: 20261110b | K-Fold: 7 Folds x 1 Seeds
+Loaded 347985 total shots | Real: 147985 | Synthetic: 200000
+  [CV Concentrations] 0.00 GB (fp16) -> GPU
+  [CV Spectra] 6.48 GB (fp16) -> GPU
+
+--- Training Reverse MLP across K Folds ---
+Fold 1/7 | train rows 106162 | held-out rows 17963
+    ep   1/150 | train Spectral MSE 0.013139 | held-out MSE 0.000031 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.001100 | held-out MSE 0.000149 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000096 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000069 | held-out MSE 0.000021 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000416 | held-out MSE 0.000071 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000060 | held-out MSE 0.000021 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000042 | held-out MSE 0.000020 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000042 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.006135 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000302 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000046 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000038 | held-out MSE 0.000022 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000037 | held-out MSE 0.000021 | lr 5.00e-04
+    ep  14/150 | train Spectral MSE 0.000066 | held-out MSE 0.000021 | lr 5.00e-04
+    ep  15/150 | train Spectral MSE 0.000029 | held-out MSE 0.000021 | lr 5.00e-04
+    ep  16/150 | train Spectral MSE 0.000029 | held-out MSE 0.000020 | lr 5.00e-04
+    ep  17/150 | train Spectral MSE 0.000029 | held-out MSE 0.000020 | lr 5.00e-04
+    ep  18/150 | train Spectral MSE 0.000030 | held-out MSE 0.000020 | lr 5.00e-04
+    ep  19/150 | train Spectral MSE 0.000029 | held-out MSE 0.000020 | lr 2.50e-04
+    --> Early stopping triggered at epoch 19. Best Val Spectral MSE: 0.000021
+Fold 2/7 | train rows 106986 | held-out rows 17139
+    ep   1/150 | train Spectral MSE 0.014545 | held-out MSE 0.000245 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000069 | held-out MSE 0.000124 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000082 | held-out MSE 0.000172 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000081 | held-out MSE 0.000182 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000088 | held-out MSE 0.000257 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000122 | held-out MSE 0.000238 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000197 | held-out MSE 0.003415 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000488 | held-out MSE 0.000282 | lr 5.00e-04
+    ep   9/150 | train Spectral MSE 0.000030 | held-out MSE 0.000078 | lr 5.00e-04
+    ep  10/150 | train Spectral MSE 0.000029 | held-out MSE 0.000094 | lr 5.00e-04
+    ep  11/150 | train Spectral MSE 0.000028 | held-out MSE 0.000095 | lr 5.00e-04
+    ep  12/150 | train Spectral MSE 0.000028 | held-out MSE 0.000159 | lr 5.00e-04
+    ep  13/150 | train Spectral MSE 0.000029 | held-out MSE 0.000282 | lr 5.00e-04
+    ep  14/150 | train Spectral MSE 0.000030 | held-out MSE 0.000152 | lr 5.00e-04
+    ep  15/150 | train Spectral MSE 0.000029 | held-out MSE 0.000261 | lr 2.50e-04
+    ep  16/150 | train Spectral MSE 0.000025 | held-out MSE 0.000067 | lr 2.50e-04
+    ep  17/150 | train Spectral MSE 0.000025 | held-out MSE 0.000065 | lr 2.50e-04
+    ep  18/150 | train Spectral MSE 0.000025 | held-out MSE 0.000086 | lr 2.50e-04
+    ep  19/150 | train Spectral MSE 0.000025 | held-out MSE 0.000100 | lr 2.50e-04
+    ep  20/150 | train Spectral MSE 0.000026 | held-out MSE 0.000081 | lr 2.50e-04
+    ep  21/150 | train Spectral MSE 0.000030 | held-out MSE 0.000086 | lr 2.50e-04
+    ep  22/150 | train Spectral MSE 0.000025 | held-out MSE 0.000117 | lr 2.50e-04
+    ep  23/150 | train Spectral MSE 0.000025 | held-out MSE 0.000077 | lr 1.25e-04
+    ep  24/150 | train Spectral MSE 0.000037 | held-out MSE 0.000055 | lr 1.25e-04
+    ep  25/150 | train Spectral MSE 0.000040 | held-out MSE 0.000046 | lr 1.25e-04
+    ep  26/150 | train Spectral MSE 0.000032 | held-out MSE 0.000054 | lr 1.25e-04
+    ep  27/150 | train Spectral MSE 0.000025 | held-out MSE 0.000046 | lr 1.25e-04
+    ep  28/150 | train Spectral MSE 0.000025 | held-out MSE 0.000059 | lr 1.25e-04
+    ep  29/150 | train Spectral MSE 0.000024 | held-out MSE 0.000063 | lr 1.25e-04
+    ep  30/150 | train Spectral MSE 0.000024 | held-out MSE 0.000057 | lr 1.25e-04
+    ep  31/150 | train Spectral MSE 0.000024 | held-out MSE 0.000064 | lr 6.25e-05
+    ep  32/150 | train Spectral MSE 0.000024 | held-out MSE 0.000044 | lr 6.25e-05
+    ep  33/150 | train Spectral MSE 0.000024 | held-out MSE 0.000046 | lr 6.25e-05
+    ep  34/150 | train Spectral MSE 0.000023 | held-out MSE 0.000067 | lr 6.25e-05
+    ep  35/150 | train Spectral MSE 0.000023 | held-out MSE 0.000059 | lr 6.25e-05
+    ep  36/150 | train Spectral MSE 0.000023 | held-out MSE 0.000054 | lr 6.25e-05
+    ep  37/150 | train Spectral MSE 0.000024 | held-out MSE 0.000064 | lr 6.25e-05
+    ep  38/150 | train Spectral MSE 0.000025 | held-out MSE 0.000039 | lr 6.25e-05
+    ep  39/150 | train Spectral MSE 0.000023 | held-out MSE 0.000041 | lr 6.25e-05
+    ep  40/150 | train Spectral MSE 0.000023 | held-out MSE 0.000094 | lr 6.25e-05
+    ep  41/150 | train Spectral MSE 0.000023 | held-out MSE 0.000068 | lr 6.25e-05
+    ep  42/150 | train Spectral MSE 0.000024 | held-out MSE 0.000062 | lr 6.25e-05
+    ep  43/150 | train Spectral MSE 0.000023 | held-out MSE 0.000048 | lr 6.25e-05
+    ep  44/150 | train Spectral MSE 0.000023 | held-out MSE 0.000038 | lr 6.25e-05
+    ep  45/150 | train Spectral MSE 0.000042 | held-out MSE 0.000053 | lr 6.25e-05
+    ep  46/150 | train Spectral MSE 0.000023 | held-out MSE 0.000059 | lr 6.25e-05
+    ep  47/150 | train Spectral MSE 0.000024 | held-out MSE 0.000062 | lr 6.25e-05
+    ep  48/150 | train Spectral MSE 0.000023 | held-out MSE 0.000051 | lr 6.25e-05
+    ep  49/150 | train Spectral MSE 0.000023 | held-out MSE 0.000054 | lr 6.25e-05
+    ep  50/150 | train Spectral MSE 0.000057 | held-out MSE 0.000040 | lr 3.13e-05
+    ep  51/150 | train Spectral MSE 0.000023 | held-out MSE 0.000042 | lr 3.13e-05
+    ep  52/150 | train Spectral MSE 0.000023 | held-out MSE 0.000054 | lr 3.13e-05
+    ep  53/150 | train Spectral MSE 0.000023 | held-out MSE 0.000041 | lr 3.13e-05
+    --> Early stopping triggered at epoch 53. Best Val Spectral MSE: 0.000039
+Fold 3/7 | train rows 106056 | held-out rows 18069
+    ep   1/150 | train Spectral MSE 0.012987 | held-out MSE 0.000452 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000423 | held-out MSE 0.001248 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000362 | held-out MSE 0.000182 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000113 | held-out MSE 0.000073 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.002423 | held-out MSE 0.000052 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000090 | held-out MSE 0.000026 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000045 | held-out MSE 0.000026 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000051 | held-out MSE 0.000026 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000079 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000067 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000046 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000046 | held-out MSE 0.000024 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000047 | held-out MSE 0.000024 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000040 | held-out MSE 0.000024 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000057 | held-out MSE 0.000024 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000033 | held-out MSE 0.000024 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000031 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000029 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000028 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  20/150 | train Spectral MSE 0.000027 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  21/150 | train Spectral MSE 0.000026 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  22/150 | train Spectral MSE 0.000026 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  23/150 | train Spectral MSE 0.000025 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  24/150 | train Spectral MSE 0.000025 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  25/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  26/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  27/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  28/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  29/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 1.00e-03
+    --> Early stopping triggered at epoch 29. Best Val Spectral MSE: 0.000024
+Fold 4/7 | train rows 105742 | held-out rows 18383
+    ep   1/150 | train Spectral MSE 0.011069 | held-out MSE 0.000045 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000112 | held-out MSE 0.000061 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000413 | held-out MSE 0.008536 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000233 | held-out MSE 0.000362 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000052 | held-out MSE 0.000033 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000558 | held-out MSE 0.000044 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000158 | held-out MSE 0.000031 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000042 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000059 | held-out MSE 0.000030 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000041 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000033 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000037 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000031 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000031 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000028 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000027 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000026 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000025 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000025 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  20/150 | train Spectral MSE 0.000024 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  21/150 | train Spectral MSE 0.000024 | held-out MSE 0.000029 | lr 5.00e-04
+    ep  22/150 | train Spectral MSE 0.000041 | held-out MSE 0.000029 | lr 5.00e-04
+    ep  23/150 | train Spectral MSE 0.000023 | held-out MSE 0.000029 | lr 5.00e-04
+    ep  24/150 | train Spectral MSE 0.000023 | held-out MSE 0.000029 | lr 5.00e-04
+    ep  25/150 | train Spectral MSE 0.000023 | held-out MSE 0.000029 | lr 5.00e-04
+    --> Early stopping triggered at epoch 25. Best Val Spectral MSE: 0.000029
+Fold 5/7 | train rows 106672 | held-out rows 17453
+    ep   1/150 | train Spectral MSE 0.012426 | held-out MSE 0.000040 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000356 | held-out MSE 0.002759 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.001606 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000064 | held-out MSE 0.000283 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000128 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000077 | held-out MSE 0.000031 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000040 | held-out MSE 0.000026 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000152 | held-out MSE 0.000032 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000101 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000060 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000049 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000039 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000030 | held-out MSE 0.000026 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000032 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000030 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000028 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000027 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000027 | held-out MSE 0.000026 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000030 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  20/150 | train Spectral MSE 0.000154 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  21/150 | train Spectral MSE 0.000030 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  22/150 | train Spectral MSE 0.000026 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  23/150 | train Spectral MSE 0.000157 | held-out MSE 0.000046 | lr 1.00e-03
+    ep  24/150 | train Spectral MSE 0.000028 | held-out MSE 0.000025 | lr 1.00e-03
+    ep  25/150 | train Spectral MSE 0.000054 | held-out MSE 0.000028 | lr 5.00e-04
+    --> Early stopping triggered at epoch 25. Best Val Spectral MSE: 0.000025
+Fold 6/7 | train rows 106689 | held-out rows 17436
+    ep   1/150 | train Spectral MSE 0.011950 | held-out MSE 0.000143 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000122 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.003221 | held-out MSE 0.000061 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000067 | held-out MSE 0.000033 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000062 | held-out MSE 0.000034 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000074 | held-out MSE 0.000032 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000052 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000058 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000081 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000063 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000038 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000032 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000041 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000029 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000041 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000029 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000027 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000026 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000025 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  20/150 | train Spectral MSE 0.000025 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  21/150 | train Spectral MSE 0.000025 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  22/150 | train Spectral MSE 0.000024 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  23/150 | train Spectral MSE 0.000024 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  24/150 | train Spectral MSE 0.000023 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  25/150 | train Spectral MSE 0.000023 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  26/150 | train Spectral MSE 0.000023 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  27/150 | train Spectral MSE 0.000023 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  28/150 | train Spectral MSE 0.000023 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  29/150 | train Spectral MSE 0.000023 | held-out MSE 0.000027 | lr 1.00e-03
+    --> Early stopping triggered at epoch 29. Best Val Spectral MSE: 0.000027
+Fold 7/7 | train rows 106443 | held-out rows 17682
+    ep   1/150 | train Spectral MSE 0.015281 | held-out MSE 0.000667 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.005490 | held-out MSE 0.000125 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000216 | held-out MSE 0.000051 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000105 | held-out MSE 0.000157 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000127 | held-out MSE 0.000071 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000102 | held-out MSE 0.000075 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000052 | held-out MSE 0.000032 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000048 | held-out MSE 0.000048 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000057 | held-out MSE 0.000035 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.003581 | held-out MSE 0.000069 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000556 | held-out MSE 0.000045 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000036 | held-out MSE 0.000059 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000045 | held-out MSE 0.000075 | lr 5.00e-04
+    ep  14/150 | train Spectral MSE 0.000032 | held-out MSE 0.000033 | lr 5.00e-04
+    ep  15/150 | train Spectral MSE 0.000029 | held-out MSE 0.000041 | lr 5.00e-04
+    ep  16/150 | train Spectral MSE 0.000029 | held-out MSE 0.000037 | lr 5.00e-04
+    ep  17/150 | train Spectral MSE 0.000030 | held-out MSE 0.000050 | lr 5.00e-04
+    ep  18/150 | train Spectral MSE 0.000031 | held-out MSE 0.000054 | lr 5.00e-04
+    ep  19/150 | train Spectral MSE 0.000031 | held-out MSE 0.000046 | lr 2.50e-04
+    ep  20/150 | train Spectral MSE 0.000027 | held-out MSE 0.000029 | lr 2.50e-04
+    ep  21/150 | train Spectral MSE 0.000027 | held-out MSE 0.000036 | lr 2.50e-04
+    ep  22/150 | train Spectral MSE 0.000027 | held-out MSE 0.000034 | lr 2.50e-04
+    ep  23/150 | train Spectral MSE 0.000027 | held-out MSE 0.000030 | lr 2.50e-04
+    ep  24/150 | train Spectral MSE 0.000027 | held-out MSE 0.000032 | lr 2.50e-04
+    ep  25/150 | train Spectral MSE 0.000027 | held-out MSE 0.000029 | lr 2.50e-04
+    ep  26/150 | train Spectral MSE 0.000027 | held-out MSE 0.000031 | lr 2.50e-04
+    ep  27/150 | train Spectral MSE 0.000026 | held-out MSE 0.000030 | lr 2.50e-04
+    ep  28/150 | train Spectral MSE 0.000026 | held-out MSE 0.000029 | lr 2.50e-04
+    ep  29/150 | train Spectral MSE 0.000027 | held-out MSE 0.000027 | lr 2.50e-04
+    ep  30/150 | train Spectral MSE 0.000026 | held-out MSE 0.000026 | lr 2.50e-04
+    ep  31/150 | train Spectral MSE 0.000026 | held-out MSE 0.000027 | lr 2.50e-04
+    ep  32/150 | train Spectral MSE 0.000026 | held-out MSE 0.000027 | lr 2.50e-04
+    ep  33/150 | train Spectral MSE 0.000025 | held-out MSE 0.000027 | lr 2.50e-04
+    ep  34/150 | train Spectral MSE 0.000025 | held-out MSE 0.000024 | lr 2.50e-04
+    ep  35/150 | train Spectral MSE 0.000025 | held-out MSE 0.000024 | lr 2.50e-04
+    ep  36/150 | train Spectral MSE 0.000028 | held-out MSE 0.000025 | lr 2.50e-04
+    ep  37/150 | train Spectral MSE 0.000025 | held-out MSE 0.000023 | lr 2.50e-04
+    ep  38/150 | train Spectral MSE 0.000025 | held-out MSE 0.000025 | lr 2.50e-04
+    ep  39/150 | train Spectral MSE 0.000025 | held-out MSE 0.000023 | lr 2.50e-04
+    ep  40/150 | train Spectral MSE 0.000024 | held-out MSE 0.000024 | lr 2.50e-04
+    ep  41/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 2.50e-04
+    ep  42/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  43/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  44/150 | train Spectral MSE 0.000025 | held-out MSE 0.000023 | lr 2.50e-04
+    ep  45/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  46/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  47/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  48/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  49/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  50/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  51/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  52/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  53/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  54/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  55/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  56/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  57/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  58/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  59/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 2.50e-04
+    ep  60/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 2.50e-04
+    ep  61/150 | train Spectral MSE 0.000024 | held-out MSE 0.000023 | lr 2.50e-04
+    ep  62/150 | train Spectral MSE 0.000024 | held-out MSE 0.000022 | lr 2.50e-04
+    ep  63/150 | train Spectral MSE 0.000023 | held-out MSE 0.000023 | lr 1.25e-04
+    ep  64/150 | train Spectral MSE 0.000023 | held-out MSE 0.000023 | lr 1.25e-04
+    --> Early stopping triggered at epoch 64. Best Val Spectral MSE: 0.000022
+
+✅ OOF Reverse MLP Performance | Spectral RMSE: 0.00509 | Overall R^2: 0.7170
+Saved Reverse Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/MLP/processed-data_20261110b/exp/gpu_mlp_reverse_oof_spectra_20261110b_20261112_005820.png
+Cached reverse MLP predictions to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/MLP/processed-data_20261110b/exp/mlp_reverse_prediction_20261110b.npz
+Reverse MLP Pipeline completed in 852.35 seconds.
+=== Starting Fast Reverse MLP Pipeline (Concentrations -> Spectra) [cuda] ===
+Dataset: 20261110b | K-Fold: 7 Folds x 1 Seeds
+Loaded 347985 total shots | Real: 147985 | Synthetic: 200000
+  [CV Concentrations] 0.00 GB (fp16) -> GPU
+  [CV Spectra] 6.48 GB (fp16) -> GPU
+
+--- Training Reverse MLP across K Folds ---
+Fold 1/7 | train rows 306162 | held-out rows 17963
+    ep   1/150 | train Spectral MSE 0.003429 | held-out MSE 0.000059 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000174 | held-out MSE 0.000045 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000153 | held-out MSE 0.000034 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000088 | held-out MSE 0.000036 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000067 | held-out MSE 0.000024 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000065 | held-out MSE 0.000024 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000060 | held-out MSE 0.000023 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000063 | held-out MSE 0.000026 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000060 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000059 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000059 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000059 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000059 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000059 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000059 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000059 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000058 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000058 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000058 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  20/150 | train Spectral MSE 0.000106 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  21/150 | train Spectral MSE 0.000058 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  22/150 | train Spectral MSE 0.000058 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  23/150 | train Spectral MSE 0.000058 | held-out MSE 0.000022 | lr 1.00e-03
+    ep  24/150 | train Spectral MSE 0.000058 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  25/150 | train Spectral MSE 0.000058 | held-out MSE 0.000022 | lr 1.00e-03
+    ep  26/150 | train Spectral MSE 0.000058 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  27/150 | train Spectral MSE 0.000058 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  28/150 | train Spectral MSE 0.000058 | held-out MSE 0.000023 | lr 1.00e-03
+    ep  29/150 | train Spectral MSE 0.000058 | held-out MSE 0.000023 | lr 1.00e-03
+    --> Early stopping triggered at epoch 29. Best Val Spectral MSE: 0.000023
+Fold 2/7 | train rows 306986 | held-out rows 17139
+    ep   1/150 | train Spectral MSE 0.003642 | held-out MSE 0.000083 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000272 | held-out MSE 0.000079 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000166 | held-out MSE 0.000033 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000081 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000061 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000063 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000059 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000059 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000059 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 5.00e-04
+    ep  15/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 5.00e-04
+    ep  16/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 5.00e-04
+    ep  17/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 5.00e-04
+    ep  18/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 5.00e-04
+    ep  19/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 5.00e-04
+    --> Early stopping triggered at epoch 19. Best Val Spectral MSE: 0.000029
+Fold 3/7 | train rows 306056 | held-out rows 18069
+    ep   1/150 | train Spectral MSE 0.003771 | held-out MSE 0.000123 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000189 | held-out MSE 0.000063 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000240 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000065 | held-out MSE 0.000033 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000071 | held-out MSE 0.000031 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000061 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000059 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000059 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000059 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  20/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  21/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  22/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    ep  23/150 | train Spectral MSE 0.000058 | held-out MSE 0.000027 | lr 1.00e-03
+    --> Early stopping triggered at epoch 23. Best Val Spectral MSE: 0.000028
+Fold 4/7 | train rows 305742 | held-out rows 18383
+    ep   1/150 | train Spectral MSE 0.003676 | held-out MSE 0.000149 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000191 | held-out MSE 0.000046 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000240 | held-out MSE 0.000044 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000116 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000062 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000062 | held-out MSE 0.000031 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000060 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000059 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000059 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  20/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  21/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  22/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  23/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  24/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  25/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  26/150 | train Spectral MSE 0.000057 | held-out MSE 0.000029 | lr 1.00e-03
+    --> Early stopping triggered at epoch 26. Best Val Spectral MSE: 0.000029
+Fold 5/7 | train rows 306672 | held-out rows 17453
+    ep   1/150 | train Spectral MSE 0.003711 | held-out MSE 0.000109 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000149 | held-out MSE 0.000558 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000191 | held-out MSE 0.000035 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000092 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000074 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000060 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000059 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000059 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000059 | held-out MSE 0.000031 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000058 | held-out MSE 0.000031 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000058 | held-out MSE 0.000031 | lr 5.00e-04
+    ep  12/150 | train Spectral MSE 0.000058 | held-out MSE 0.000031 | lr 5.00e-04
+    ep  13/150 | train Spectral MSE 0.000058 | held-out MSE 0.000031 | lr 5.00e-04
+    ep  14/150 | train Spectral MSE 0.000058 | held-out MSE 0.000031 | lr 5.00e-04
+    ep  15/150 | train Spectral MSE 0.000058 | held-out MSE 0.000031 | lr 5.00e-04
+    ep  16/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 5.00e-04
+    ep  17/150 | train Spectral MSE 0.000058 | held-out MSE 0.000030 | lr 2.50e-04
+    ep  18/150 | train Spectral MSE 0.000058 | held-out MSE 0.000032 | lr 2.50e-04
+    ep  19/150 | train Spectral MSE 0.000058 | held-out MSE 0.000030 | lr 2.50e-04
+    --> Early stopping triggered at epoch 19. Best Val Spectral MSE: 0.000029
+Fold 6/7 | train rows 306689 | held-out rows 17436
+    ep   1/150 | train Spectral MSE 0.003644 | held-out MSE 0.000109 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000300 | held-out MSE 0.000181 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000115 | held-out MSE 0.000126 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000077 | held-out MSE 0.000032 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000086 | held-out MSE 0.000030 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000060 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000059 | held-out MSE 0.000029 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000059 | held-out MSE 0.000028 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000059 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000058 | held-out MSE 0.000029 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  20/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    ep  21/150 | train Spectral MSE 0.000058 | held-out MSE 0.000028 | lr 1.00e-03
+    --> Early stopping triggered at epoch 21. Best Val Spectral MSE: 0.000029
+Fold 7/7 | train rows 306443 | held-out rows 17682
+    ep   1/150 | train Spectral MSE 0.003829 | held-out MSE 0.000103 | lr 1.00e-03
+    ep   2/150 | train Spectral MSE 0.000158 | held-out MSE 0.000060 | lr 1.00e-03
+    ep   3/150 | train Spectral MSE 0.000217 | held-out MSE 0.000035 | lr 1.00e-03
+    ep   4/150 | train Spectral MSE 0.000086 | held-out MSE 0.000034 | lr 1.00e-03
+    ep   5/150 | train Spectral MSE 0.000065 | held-out MSE 0.000037 | lr 1.00e-03
+    ep   6/150 | train Spectral MSE 0.000061 | held-out MSE 0.000034 | lr 1.00e-03
+    ep   7/150 | train Spectral MSE 0.000060 | held-out MSE 0.000034 | lr 1.00e-03
+    ep   8/150 | train Spectral MSE 0.000059 | held-out MSE 0.000032 | lr 1.00e-03
+    ep   9/150 | train Spectral MSE 0.000059 | held-out MSE 0.000033 | lr 1.00e-03
+    ep  10/150 | train Spectral MSE 0.000060 | held-out MSE 0.000034 | lr 1.00e-03
+    ep  11/150 | train Spectral MSE 0.000062 | held-out MSE 0.000034 | lr 1.00e-03
+    ep  12/150 | train Spectral MSE 0.000059 | held-out MSE 0.000033 | lr 1.00e-03
+    ep  13/150 | train Spectral MSE 0.000058 | held-out MSE 0.000032 | lr 1.00e-03
+    ep  14/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 1.00e-03
+    ep  15/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 1.00e-03
+    ep  16/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 1.00e-03
+    ep  17/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 1.00e-03
+    ep  18/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 1.00e-03
+    ep  19/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 5.00e-04
+    ep  20/150 | train Spectral MSE 0.000089 | held-out MSE 0.000033 | lr 5.00e-04
+    ep  21/150 | train Spectral MSE 0.000058 | held-out MSE 0.000032 | lr 5.00e-04
+    ep  22/150 | train Spectral MSE 0.000058 | held-out MSE 0.000033 | lr 5.00e-04
+    ep  23/150 | train Spectral MSE 0.000058 | held-out MSE 0.000032 | lr 5.00e-04
+    --> Early stopping triggered at epoch 23. Best Val Spectral MSE: 0.000032
+
+✅ OOF Reverse MLP Performance | Spectral RMSE: 0.00532 | Overall R^2: 0.6914
+Saved Reverse Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/MLP/processed-data_20261110b/exp-syn/gpu_mlp_reverse_oof_spectra_20261110b_20261112_011232.png
+Cached reverse MLP predictions to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/MLP/processed-data_20261110b/exp-syn/mlp_reverse_prediction_20261110b.npz
+Reverse MLP Pipeline completed in 1420.02 seconds.
+✅ SUCCESS: h5_MLP_003.py finished cleanly.
+
+==========================================================================
+ 🚀 STARTING EXPERIMENT: h5_1DCNN_002.py
+==========================================================================
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting Fast 1D CNN Benchmark Pipeline [cuda] ===
+Dataset: exp-syn_processed-data_20261110b | K-Fold: 7 Folds x 1 Seeds
+Loaded 347985 total shots | Real: 147985 | Synthetic: 200000
+  [CV spectra] 6.48 GB (fp16) -> GPU
+
+--- Training 1D CNN across K Folds ---
+Fold 1/7 | train rows 106162 | held-out rows 17963 | baseline MSE 0.004138
+    ep   1/150 | train MSE 0.002365 | held-out MSE 0.001359 | lr 1.00e-03
+    ep   2/150 | train MSE 0.002052 | held-out MSE 0.001063 | lr 1.00e-03
+    ep   3/150 | train MSE 0.001998 | held-out MSE 0.000856 | lr 1.00e-03
+    ep   4/150 | train MSE 0.001968 | held-out MSE 0.000814 | lr 1.00e-03
+    ep   5/150 | train MSE 0.001942 | held-out MSE 0.000781 | lr 1.00e-03
+    ep   6/150 | train MSE 0.001927 | held-out MSE 0.000753 | lr 1.00e-03
+    ep   7/150 | train MSE 0.001908 | held-out MSE 0.000701 | lr 1.00e-03
+    ep   8/150 | train MSE 0.001897 | held-out MSE 0.000712 | lr 1.00e-03
+    ep   9/150 | train MSE 0.001885 | held-out MSE 0.000700 | lr 1.00e-03
+    ep  10/150 | train MSE 0.001874 | held-out MSE 0.000649 | lr 1.00e-03
+    ep  11/150 | train MSE 0.001866 | held-out MSE 0.000921 | lr 1.00e-03
+    ep  12/150 | train MSE 0.001850 | held-out MSE 0.000699 | lr 1.00e-03
+    ep  13/150 | train MSE 0.001837 | held-out MSE 0.000704 | lr 1.00e-03
+    ep  14/150 | train MSE 0.001824 | held-out MSE 0.000640 | lr 1.00e-03
+    ep  15/150 | train MSE 0.001809 | held-out MSE 0.000761 | lr 1.00e-03
+    ep  16/150 | train MSE 0.001789 | held-out MSE 0.000677 | lr 1.00e-03
+    ep  17/150 | train MSE 0.001765 | held-out MSE 0.000701 | lr 1.00e-03
+    ep  18/150 | train MSE 0.001747 | held-out MSE 0.000706 | lr 1.00e-03
+    ep  19/150 | train MSE 0.001722 | held-out MSE 0.000769 | lr 1.00e-03
+    ep  20/150 | train MSE 0.001695 | held-out MSE 0.000705 | lr 5.00e-04
+    ep  21/150 | train MSE 0.001600 | held-out MSE 0.000633 | lr 5.00e-04
+    ep  22/150 | train MSE 0.001562 | held-out MSE 0.000805 | lr 5.00e-04
+    ep  23/150 | train MSE 0.001539 | held-out MSE 0.000757 | lr 5.00e-04
+    ep  24/150 | train MSE 0.001512 | held-out MSE 0.000751 | lr 5.00e-04
+    ep  25/150 | train MSE 0.001465 | held-out MSE 0.000883 | lr 5.00e-04
+    ep  26/150 | train MSE 0.001431 | held-out MSE 0.000767 | lr 5.00e-04
+    ep  27/150 | train MSE 0.001399 | held-out MSE 0.000736 | lr 2.50e-04
+    ep  28/150 | train MSE 0.001320 | held-out MSE 0.000853 | lr 2.50e-04
+    ep  29/150 | train MSE 0.001289 | held-out MSE 0.000793 | lr 2.50e-04
+    ep  30/150 | train MSE 0.001264 | held-out MSE 0.000903 | lr 2.50e-04
+    ep  31/150 | train MSE 0.001230 | held-out MSE 0.000806 | lr 2.50e-04
+    ep  32/150 | train MSE 0.001218 | held-out MSE 0.000883 | lr 2.50e-04
+    ep  33/150 | train MSE 0.001186 | held-out MSE 0.000854 | lr 1.25e-04
+    ep  34/150 | train MSE 0.001125 | held-out MSE 0.000833 | lr 1.25e-04
+    ep  35/150 | train MSE 0.001109 | held-out MSE 0.000895 | lr 1.25e-04
+    ep  36/150 | train MSE 0.001092 | held-out MSE 0.000832 | lr 1.25e-04
+    --> Early stopping triggered at epoch 36. Best Val MSE: 0.000633
+Fold 2/7 | train rows 106986 | held-out rows 17139 | baseline MSE 0.007737
+    ep   1/150 | train MSE 0.001740 | held-out MSE 0.004933 | lr 1.00e-03
+    ep   2/150 | train MSE 0.001397 | held-out MSE 0.005165 | lr 1.00e-03
+    ep   3/150 | train MSE 0.001344 | held-out MSE 0.004952 | lr 1.00e-03
+    ep   4/150 | train MSE 0.001320 | held-out MSE 0.004790 | lr 1.00e-03
+    ep   5/150 | train MSE 0.001304 | held-out MSE 0.004826 | lr 1.00e-03
+    ep   6/150 | train MSE 0.001283 | held-out MSE 0.004781 | lr 1.00e-03
+    ep   7/150 | train MSE 0.001267 | held-out MSE 0.004795 | lr 1.00e-03
+    ep   8/150 | train MSE 0.001257 | held-out MSE 0.004816 | lr 1.00e-03
+    ep   9/150 | train MSE 0.001241 | held-out MSE 0.004824 | lr 1.00e-03
+    ep  10/150 | train MSE 0.001227 | held-out MSE 0.004763 | lr 1.00e-03
+    ep  11/150 | train MSE 0.001221 | held-out MSE 0.004827 | lr 1.00e-03
+    ep  12/150 | train MSE 0.001208 | held-out MSE 0.004734 | lr 1.00e-03
+    ep  13/150 | train MSE 0.001194 | held-out MSE 0.004757 | lr 1.00e-03
+    ep  14/150 | train MSE 0.001184 | held-out MSE 0.004762 | lr 1.00e-03
+    ep  15/150 | train MSE 0.001167 | held-out MSE 0.004931 | lr 1.00e-03
+    ep  16/150 | train MSE 0.001148 | held-out MSE 0.004881 | lr 1.00e-03
+    ep  17/150 | train MSE 0.001132 | held-out MSE 0.004749 | lr 1.00e-03
+    ep  18/150 | train MSE 0.001102 | held-out MSE 0.004774 | lr 5.00e-04
+    ep  19/150 | train MSE 0.001033 | held-out MSE 0.004747 | lr 5.00e-04
+    ep  20/150 | train MSE 0.001005 | held-out MSE 0.004805 | lr 5.00e-04
+    ep  21/150 | train MSE 0.000978 | held-out MSE 0.004840 | lr 5.00e-04
+    ep  22/150 | train MSE 0.000952 | held-out MSE 0.004811 | lr 5.00e-04
+    ep  23/150 | train MSE 0.000933 | held-out MSE 0.004840 | lr 5.00e-04
+    ep  24/150 | train MSE 0.000902 | held-out MSE 0.004847 | lr 2.50e-04
+    ep  25/150 | train MSE 0.000835 | held-out MSE 0.004942 | lr 2.50e-04
+    ep  26/150 | train MSE 0.000811 | held-out MSE 0.004862 | lr 2.50e-04
+    ep  27/150 | train MSE 0.000795 | held-out MSE 0.004912 | lr 2.50e-04
+    --> Early stopping triggered at epoch 27. Best Val MSE: 0.004734
+Fold 3/7 | train rows 106056 | held-out rows 18069 | baseline MSE 0.004155
+    ep   1/150 | train MSE 0.002329 | held-out MSE 0.000880 | lr 1.00e-03
+    ep   2/150 | train MSE 0.002018 | held-out MSE 0.001016 | lr 1.00e-03
+    ep   3/150 | train MSE 0.001977 | held-out MSE 0.001023 | lr 1.00e-03
+    ep   4/150 | train MSE 0.001939 | held-out MSE 0.001024 | lr 1.00e-03
+    ep   5/150 | train MSE 0.001927 | held-out MSE 0.000893 | lr 1.00e-03
+    ep   6/150 | train MSE 0.001901 | held-out MSE 0.000815 | lr 1.00e-03
+    ep   7/150 | train MSE 0.001885 | held-out MSE 0.000826 | lr 1.00e-03
+    ep   8/150 | train MSE 0.001877 | held-out MSE 0.000820 | lr 1.00e-03
+    ep   9/150 | train MSE 0.001857 | held-out MSE 0.000778 | lr 1.00e-03
+    ep  10/150 | train MSE 0.001842 | held-out MSE 0.000748 | lr 1.00e-03
+    ep  11/150 | train MSE 0.001830 | held-out MSE 0.000754 | lr 1.00e-03
+    ep  12/150 | train MSE 0.001818 | held-out MSE 0.000829 | lr 1.00e-03
+    ep  13/150 | train MSE 0.001800 | held-out MSE 0.000826 | lr 1.00e-03
+    ep  14/150 | train MSE 0.001782 | held-out MSE 0.000775 | lr 1.00e-03
+    ep  15/150 | train MSE 0.001767 | held-out MSE 0.000747 | lr 1.00e-03
+    ep  16/150 | train MSE 0.001746 | held-out MSE 0.000773 | lr 1.00e-03
+    ep  17/150 | train MSE 0.001720 | held-out MSE 0.000720 | lr 1.00e-03
+    ep  18/150 | train MSE 0.001701 | held-out MSE 0.000869 | lr 1.00e-03
+    ep  19/150 | train MSE 0.001668 | held-out MSE 0.000828 | lr 1.00e-03
+    ep  20/150 | train MSE 0.001631 | held-out MSE 0.000738 | lr 1.00e-03
+    ep  21/150 | train MSE 0.001593 | held-out MSE 0.000892 | lr 1.00e-03
+    ep  22/150 | train MSE 0.001556 | held-out MSE 0.000878 | lr 1.00e-03
+    ep  23/150 | train MSE 0.001522 | held-out MSE 0.000824 | lr 5.00e-04
+    ep  24/150 | train MSE 0.001382 | held-out MSE 0.000843 | lr 5.00e-04
+    ep  25/150 | train MSE 0.001342 | held-out MSE 0.000876 | lr 5.00e-04
+    ep  26/150 | train MSE 0.001309 | held-out MSE 0.000908 | lr 5.00e-04
+    ep  27/150 | train MSE 0.001269 | held-out MSE 0.000883 | lr 5.00e-04
+    ep  28/150 | train MSE 0.001224 | held-out MSE 0.000998 | lr 5.00e-04
+    ep  29/150 | train MSE 0.001187 | held-out MSE 0.000982 | lr 2.50e-04
+    ep  30/150 | train MSE 0.001094 | held-out MSE 0.000888 | lr 2.50e-04
+    ep  31/150 | train MSE 0.001059 | held-out MSE 0.000968 | lr 2.50e-04
+    ep  32/150 | train MSE 0.001039 | held-out MSE 0.001044 | lr 2.50e-04
+    --> Early stopping triggered at epoch 32. Best Val MSE: 0.000720
+Fold 4/7 | train rows 105742 | held-out rows 18383 | baseline MSE 0.003818
+    ep   1/150 | train MSE 0.002251 | held-out MSE 0.001367 | lr 1.00e-03
+    ep   2/150 | train MSE 0.001940 | held-out MSE 0.001339 | lr 1.00e-03
+    ep   3/150 | train MSE 0.001891 | held-out MSE 0.001451 | lr 1.00e-03
+    ep   4/150 | train MSE 0.001865 | held-out MSE 0.001306 | lr 1.00e-03
+    ep   5/150 | train MSE 0.001846 | held-out MSE 0.001526 | lr 1.00e-03
+    ep   6/150 | train MSE 0.001828 | held-out MSE 0.001344 | lr 1.00e-03
+    ep   7/150 | train MSE 0.001815 | held-out MSE 0.001725 | lr 1.00e-03
+    ep   8/150 | train MSE 0.001801 | held-out MSE 0.001368 | lr 1.00e-03
+    ep   9/150 | train MSE 0.001794 | held-out MSE 0.001324 | lr 1.00e-03
+    ep  10/150 | train MSE 0.001777 | held-out MSE 0.001507 | lr 5.00e-04
+    ep  11/150 | train MSE 0.001737 | held-out MSE 0.001182 | lr 5.00e-04
+    ep  12/150 | train MSE 0.001719 | held-out MSE 0.001364 | lr 5.00e-04
+    ep  13/150 | train MSE 0.001708 | held-out MSE 0.001252 | lr 5.00e-04
+    ep  14/150 | train MSE 0.001704 | held-out MSE 0.001363 | lr 5.00e-04
+    ep  15/150 | train MSE 0.001688 | held-out MSE 0.001321 | lr 5.00e-04
+    ep  16/150 | train MSE 0.001667 | held-out MSE 0.001319 | lr 5.00e-04
+    ep  17/150 | train MSE 0.001654 | held-out MSE 0.001247 | lr 2.50e-04
+    ep  18/150 | train MSE 0.001606 | held-out MSE 0.001211 | lr 2.50e-04
+    ep  19/150 | train MSE 0.001577 | held-out MSE 0.001230 | lr 2.50e-04
+    ep  20/150 | train MSE 0.001558 | held-out MSE 0.001300 | lr 2.50e-04
+    ep  21/150 | train MSE 0.001545 | held-out MSE 0.001230 | lr 2.50e-04
+    ep  22/150 | train MSE 0.001526 | held-out MSE 0.001293 | lr 2.50e-04
+    ep  23/150 | train MSE 0.001511 | held-out MSE 0.001252 | lr 1.25e-04
+    ep  24/150 | train MSE 0.001466 | held-out MSE 0.001443 | lr 1.25e-04
+    ep  25/150 | train MSE 0.001451 | held-out MSE 0.001274 | lr 1.25e-04
+    ep  26/150 | train MSE 0.001433 | held-out MSE 0.001380 | lr 1.25e-04
+    --> Early stopping triggered at epoch 26. Best Val MSE: 0.001182
+Fold 5/7 | train rows 106672 | held-out rows 17453 | baseline MSE 0.004713
+    ep   1/150 | train MSE 0.002325 | held-out MSE 0.001093 | lr 1.00e-03
+    ep   2/150 | train MSE 0.002006 | held-out MSE 0.001487 | lr 1.00e-03
+    ep   3/150 | train MSE 0.001948 | held-out MSE 0.000914 | lr 1.00e-03
+    ep   4/150 | train MSE 0.001918 | held-out MSE 0.000914 | lr 1.00e-03
+    ep   5/150 | train MSE 0.001893 | held-out MSE 0.001004 | lr 1.00e-03
+    ep   6/150 | train MSE 0.001883 | held-out MSE 0.000914 | lr 1.00e-03
+    ep   7/150 | train MSE 0.001867 | held-out MSE 0.000846 | lr 1.00e-03
+    ep   8/150 | train MSE 0.001848 | held-out MSE 0.001043 | lr 1.00e-03
+    ep   9/150 | train MSE 0.001833 | held-out MSE 0.000985 | lr 1.00e-03
+    ep  10/150 | train MSE 0.001824 | held-out MSE 0.000872 | lr 1.00e-03
+    ep  11/150 | train MSE 0.001805 | held-out MSE 0.000857 | lr 1.00e-03
+    ep  12/150 | train MSE 0.001787 | held-out MSE 0.000712 | lr 1.00e-03
+    ep  13/150 | train MSE 0.001775 | held-out MSE 0.000963 | lr 1.00e-03
+    ep  14/150 | train MSE 0.001756 | held-out MSE 0.000827 | lr 1.00e-03
+    ep  15/150 | train MSE 0.001734 | held-out MSE 0.000967 | lr 1.00e-03
+    ep  16/150 | train MSE 0.001713 | held-out MSE 0.001166 | lr 1.00e-03
+    ep  17/150 | train MSE 0.001689 | held-out MSE 0.000908 | lr 1.00e-03
+    ep  18/150 | train MSE 0.001663 | held-out MSE 0.000896 | lr 5.00e-04
+    ep  19/150 | train MSE 0.001558 | held-out MSE 0.001044 | lr 5.00e-04
+    ep  20/150 | train MSE 0.001521 | held-out MSE 0.000879 | lr 5.00e-04
+    ep  21/150 | train MSE 0.001469 | held-out MSE 0.000907 | lr 5.00e-04
+    ep  22/150 | train MSE 0.001428 | held-out MSE 0.001013 | lr 5.00e-04
+    ep  23/150 | train MSE 0.001378 | held-out MSE 0.000921 | lr 5.00e-04
+    ep  24/150 | train MSE 0.001346 | held-out MSE 0.000923 | lr 2.50e-04
+    ep  25/150 | train MSE 0.001221 | held-out MSE 0.001026 | lr 2.50e-04
+    ep  26/150 | train MSE 0.001180 | held-out MSE 0.000844 | lr 2.50e-04
+    ep  27/150 | train MSE 0.001139 | held-out MSE 0.001156 | lr 2.50e-04
+    --> Early stopping triggered at epoch 27. Best Val MSE: 0.000712
+Fold 6/7 | train rows 106689 | held-out rows 17436 | baseline MSE 0.004239
+    ep   1/150 | train MSE 0.002291 | held-out MSE 0.001255 | lr 1.00e-03
+    ep   2/150 | train MSE 0.001999 | held-out MSE 0.001793 | lr 1.00e-03
+    ep   3/150 | train MSE 0.001955 | held-out MSE 0.001208 | lr 1.00e-03
+    ep   4/150 | train MSE 0.001915 | held-out MSE 0.001173 | lr 1.00e-03
+    ep   5/150 | train MSE 0.001894 | held-out MSE 0.001100 | lr 1.00e-03
+    ep   6/150 | train MSE 0.001883 | held-out MSE 0.001141 | lr 1.00e-03
+    ep   7/150 | train MSE 0.001866 | held-out MSE 0.000975 | lr 1.00e-03
+    ep   8/150 | train MSE 0.001850 | held-out MSE 0.001023 | lr 1.00e-03
+    ep   9/150 | train MSE 0.001842 | held-out MSE 0.000966 | lr 1.00e-03
+    ep  10/150 | train MSE 0.001828 | held-out MSE 0.000970 | lr 1.00e-03
+    ep  11/150 | train MSE 0.001814 | held-out MSE 0.001024 | lr 1.00e-03
+    ep  12/150 | train MSE 0.001805 | held-out MSE 0.000855 | lr 1.00e-03
+    ep  13/150 | train MSE 0.001798 | held-out MSE 0.000913 | lr 1.00e-03
+    ep  14/150 | train MSE 0.001780 | held-out MSE 0.000963 | lr 1.00e-03
+    ep  15/150 | train MSE 0.001759 | held-out MSE 0.001075 | lr 1.00e-03
+    ep  16/150 | train MSE 0.001738 | held-out MSE 0.000929 | lr 1.00e-03
+    ep  17/150 | train MSE 0.001719 | held-out MSE 0.001163 | lr 1.00e-03
+    ep  18/150 | train MSE 0.001693 | held-out MSE 0.001001 | lr 5.00e-04
+    ep  19/150 | train MSE 0.001612 | held-out MSE 0.000988 | lr 5.00e-04
+    ep  20/150 | train MSE 0.001575 | held-out MSE 0.000949 | lr 5.00e-04
+    ep  21/150 | train MSE 0.001545 | held-out MSE 0.000889 | lr 5.00e-04
+    ep  22/150 | train MSE 0.001516 | held-out MSE 0.001119 | lr 5.00e-04
+    ep  23/150 | train MSE 0.001486 | held-out MSE 0.001128 | lr 5.00e-04
+    ep  24/150 | train MSE 0.001456 | held-out MSE 0.001157 | lr 2.50e-04
+    ep  25/150 | train MSE 0.001383 | held-out MSE 0.001108 | lr 2.50e-04
+    ep  26/150 | train MSE 0.001358 | held-out MSE 0.001112 | lr 2.50e-04
+    ep  27/150 | train MSE 0.001336 | held-out MSE 0.001259 | lr 2.50e-04
+    --> Early stopping triggered at epoch 27. Best Val MSE: 0.000855
+Fold 7/7 | train rows 106443 | held-out rows 17682 | baseline MSE 0.007160
+    ep   1/150 | train MSE 0.001988 | held-out MSE 0.003342 | lr 1.00e-03
+    ep   2/150 | train MSE 0.001677 | held-out MSE 0.003056 | lr 1.00e-03
+    ep   3/150 | train MSE 0.001621 | held-out MSE 0.003126 | lr 1.00e-03
+    ep   4/150 | train MSE 0.001595 | held-out MSE 0.003028 | lr 1.00e-03
+    ep   5/150 | train MSE 0.001573 | held-out MSE 0.003046 | lr 1.00e-03
+    ep   6/150 | train MSE 0.001544 | held-out MSE 0.002904 | lr 1.00e-03
+    ep   7/150 | train MSE 0.001533 | held-out MSE 0.003155 | lr 1.00e-03
+    ep   8/150 | train MSE 0.001516 | held-out MSE 0.002953 | lr 1.00e-03
+    ep   9/150 | train MSE 0.001513 | held-out MSE 0.003073 | lr 1.00e-03
+    ep  10/150 | train MSE 0.001488 | held-out MSE 0.003061 | lr 1.00e-03
+    ep  11/150 | train MSE 0.001483 | held-out MSE 0.002909 | lr 1.00e-03
+    ep  12/150 | train MSE 0.001465 | held-out MSE 0.003004 | lr 5.00e-04
+    ep  13/150 | train MSE 0.001410 | held-out MSE 0.002913 | lr 5.00e-04
+    ep  14/150 | train MSE 0.001390 | held-out MSE 0.002889 | lr 5.00e-04
+    ep  15/150 | train MSE 0.001381 | held-out MSE 0.002905 | lr 5.00e-04
+    ep  16/150 | train MSE 0.001357 | held-out MSE 0.002914 | lr 5.00e-04
+    ep  17/150 | train MSE 0.001338 | held-out MSE 0.002925 | lr 5.00e-04
+    ep  18/150 | train MSE 0.001312 | held-out MSE 0.002993 | lr 5.00e-04
+    ep  19/150 | train MSE 0.001289 | held-out MSE 0.002971 | lr 5.00e-04
+    ep  20/150 | train MSE 0.001270 | held-out MSE 0.002931 | lr 2.50e-04
+    ep  21/150 | train MSE 0.001202 | held-out MSE 0.002929 | lr 2.50e-04
+    ep  22/150 | train MSE 0.001180 | held-out MSE 0.002963 | lr 2.50e-04
+    ep  23/150 | train MSE 0.001160 | held-out MSE 0.002954 | lr 2.50e-04
+    ep  24/150 | train MSE 0.001145 | held-out MSE 0.002949 | lr 2.50e-04
+    ep  25/150 | train MSE 0.001125 | held-out MSE 0.002976 | lr 2.50e-04
+    ep  26/150 | train MSE 0.001114 | held-out MSE 0.002973 | lr 1.25e-04
+    ep  27/150 | train MSE 0.001065 | held-out MSE 0.002968 | lr 1.25e-04
+    ep  28/150 | train MSE 0.001054 | held-out MSE 0.003059 | lr 1.25e-04
+    ep  29/150 | train MSE 0.001040 | held-out MSE 0.003086 | lr 1.25e-04
+    --> Early stopping triggered at epoch 29. Best Val MSE: 0.002889
+
+===============================================================================================
+ 1D CNN OOF Benchmarks [Exp Only]
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.776 |     0.9871 |     1.4931 |      2.842
+Ce       | Predict Mean       |   -0.000 |     1.0185 |     1.1203 |      2.842
+Ce       | PLS Model          |    0.961 |     0.1375 |     0.2221 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.188 |     0.3554 |     0.8940 |      2.937
+Gd       | Predict Mean       |   -0.000 |     0.5860 |     0.8204 |      2.937
+Gd       | PLS Model          |    0.562 |     0.2720 |     0.5431 |      2.937
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.010 |     0.0544 |     0.5525 |      5.857
+Sm       | Predict Mean       |   -0.000 |     0.1076 |     0.5498 |      5.857
+Sm       | PLS Model          |    0.029 |     0.0984 |     0.5419 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.294 |     0.4538 |     0.9520 |      6.040
+U        | Predict Mean       |   -0.000 |     0.5870 |     0.8368 |      6.040
+U        | PLS Model          |    0.551 |     0.2130 |     0.5609 |      6.040
+-----------------------------------------------------------------------------------------------
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/CNN_1D/processed-data_20261110b/exp/gpu_cnn1d_oof_parity_exp-syn_processed-data_20261110b_20261112_013625.png
+Cached forward predictions to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/CNN_1D/processed-data_20261110b/exp/cnn1d_predictions_exp-syn_processed-data_20261110b.npz
+1D CNN Pipeline completed in 1594.03 seconds.
+=== Starting Fast 1D CNN Benchmark Pipeline [cuda] ===
+Dataset: exp-syn_processed-data_20261110b | K-Fold: 7 Folds x 1 Seeds
+Loaded 347985 total shots | Real: 147985 | Synthetic: 200000
+  [CV spectra] 6.48 GB (fp16) -> GPU
+
+--- Training 1D CNN across K Folds ---
+Fold 1/7 | train rows 306162 | held-out rows 17963 | baseline MSE 0.004650
+    ep   1/150 | train MSE 0.007807 | held-out MSE 0.001340 | lr 1.00e-03
+    ep   2/150 | train MSE 0.006102 | held-out MSE 0.001099 | lr 1.00e-03
+    ep   3/150 | train MSE 0.005780 | held-out MSE 0.001251 | lr 1.00e-03
+    ep   4/150 | train MSE 0.005437 | held-out MSE 0.001132 | lr 1.00e-03
+    ep   5/150 | train MSE 0.005190 | held-out MSE 0.000916 | lr 1.00e-03
+    ep   6/150 | train MSE 0.004938 | held-out MSE 0.000909 | lr 1.00e-03
+    ep   7/150 | train MSE 0.004860 | held-out MSE 0.000972 | lr 1.00e-03
+    ep   8/150 | train MSE 0.004769 | held-out MSE 0.000844 | lr 1.00e-03
+    ep   9/150 | train MSE 0.004741 | held-out MSE 0.000925 | lr 1.00e-03
+    ep  10/150 | train MSE 0.004681 | held-out MSE 0.000871 | lr 1.00e-03
+    ep  11/150 | train MSE 0.004696 | held-out MSE 0.000899 | lr 1.00e-03
+    ep  12/150 | train MSE 0.004658 | held-out MSE 0.000905 | lr 1.00e-03
+    ep  13/150 | train MSE 0.004656 | held-out MSE 0.000848 | lr 1.00e-03
+    ep  14/150 | train MSE 0.004588 | held-out MSE 0.000818 | lr 1.00e-03
+    ep  15/150 | train MSE 0.004547 | held-out MSE 0.000832 | lr 1.00e-03
+    ep  16/150 | train MSE 0.003945 | held-out MSE 0.000894 | lr 1.00e-03
+    ep  17/150 | train MSE 0.003783 | held-out MSE 0.000953 | lr 1.00e-03
+    ep  18/150 | train MSE 0.003556 | held-out MSE 0.000788 | lr 1.00e-03
+    ep  19/150 | train MSE 0.003516 | held-out MSE 0.000864 | lr 1.00e-03
+    ep  20/150 | train MSE 0.003440 | held-out MSE 0.000826 | lr 1.00e-03
+    ep  21/150 | train MSE 0.003403 | held-out MSE 0.000849 | lr 1.00e-03
+    ep  22/150 | train MSE 0.003524 | held-out MSE 0.000820 | lr 1.00e-03
+    ep  23/150 | train MSE 0.003342 | held-out MSE 0.000933 | lr 1.00e-03
+    ep  24/150 | train MSE 0.003557 | held-out MSE 0.000841 | lr 5.00e-04
+    ep  25/150 | train MSE 0.003185 | held-out MSE 0.000865 | lr 5.00e-04
+    ep  26/150 | train MSE 0.003152 | held-out MSE 0.000829 | lr 5.00e-04
+    ep  27/150 | train MSE 0.003103 | held-out MSE 0.000897 | lr 5.00e-04
+    ep  28/150 | train MSE 0.003054 | held-out MSE 0.000810 | lr 5.00e-04
+    ep  29/150 | train MSE 0.003065 | held-out MSE 0.000859 | lr 5.00e-04
+    ep  30/150 | train MSE 0.003004 | held-out MSE 0.000898 | lr 2.50e-04
+    ep  31/150 | train MSE 0.002892 | held-out MSE 0.000838 | lr 2.50e-04
+    ep  32/150 | train MSE 0.002882 | held-out MSE 0.000816 | lr 2.50e-04
+    ep  33/150 | train MSE 0.002855 | held-out MSE 0.000821 | lr 2.50e-04
+    --> Early stopping triggered at epoch 33. Best Val MSE: 0.000788
+Fold 2/7 | train rows 306986 | held-out rows 17139 | baseline MSE 0.007532
+    ep   1/150 | train MSE 0.007734 | held-out MSE 0.005581 | lr 1.00e-03
+    ep   2/150 | train MSE 0.005950 | held-out MSE 0.005024 | lr 1.00e-03
+    ep   3/150 | train MSE 0.005590 | held-out MSE 0.004998 | lr 1.00e-03
+    ep   4/150 | train MSE 0.005342 | held-out MSE 0.005009 | lr 1.00e-03
+    ep   5/150 | train MSE 0.005045 | held-out MSE 0.004925 | lr 1.00e-03
+    ep   6/150 | train MSE 0.004852 | held-out MSE 0.004950 | lr 1.00e-03
+    ep   7/150 | train MSE 0.004828 | held-out MSE 0.004950 | lr 1.00e-03
+    ep   8/150 | train MSE 0.004650 | held-out MSE 0.004872 | lr 1.00e-03
+    ep   9/150 | train MSE 0.004579 | held-out MSE 0.004879 | lr 1.00e-03
+    ep  10/150 | train MSE 0.004592 | held-out MSE 0.004967 | lr 1.00e-03
+    ep  11/150 | train MSE 0.004501 | held-out MSE 0.004954 | lr 1.00e-03
+    ep  12/150 | train MSE 0.004433 | held-out MSE 0.004884 | lr 1.00e-03
+    ep  13/150 | train MSE 0.004282 | held-out MSE 0.004874 | lr 1.00e-03
+    ep  14/150 | train MSE 0.004255 | held-out MSE 0.004986 | lr 5.00e-04
+    ep  15/150 | train MSE 0.004193 | held-out MSE 0.004863 | lr 5.00e-04
+    ep  16/150 | train MSE 0.003694 | held-out MSE 0.004817 | lr 5.00e-04
+    ep  17/150 | train MSE 0.003441 | held-out MSE 0.004899 | lr 5.00e-04
+    ep  18/150 | train MSE 0.003392 | held-out MSE 0.004857 | lr 5.00e-04
+    ep  19/150 | train MSE 0.003328 | held-out MSE 0.004893 | lr 5.00e-04
+    ep  20/150 | train MSE 0.003314 | held-out MSE 0.004832 | lr 5.00e-04
+    ep  21/150 | train MSE 0.003309 | held-out MSE 0.004831 | lr 5.00e-04
+    ep  22/150 | train MSE 0.003266 | held-out MSE 0.004860 | lr 2.50e-04
+    ep  23/150 | train MSE 0.003158 | held-out MSE 0.004836 | lr 2.50e-04
+    ep  24/150 | train MSE 0.003121 | held-out MSE 0.004846 | lr 2.50e-04
+    ep  25/150 | train MSE 0.003088 | held-out MSE 0.004810 | lr 2.50e-04
+    ep  26/150 | train MSE 0.003051 | held-out MSE 0.004862 | lr 2.50e-04
+    ep  27/150 | train MSE 0.003033 | held-out MSE 0.004841 | lr 2.50e-04
+    ep  28/150 | train MSE 0.003029 | held-out MSE 0.004828 | lr 2.50e-04
+    ep  29/150 | train MSE 0.002994 | held-out MSE 0.004821 | lr 2.50e-04
+    ep  30/150 | train MSE 0.002980 | held-out MSE 0.004846 | lr 2.50e-04
+    ep  31/150 | train MSE 0.002935 | held-out MSE 0.004813 | lr 1.25e-04
+    ep  32/150 | train MSE 0.002871 | held-out MSE 0.004834 | lr 1.25e-04
+    ep  33/150 | train MSE 0.002849 | held-out MSE 0.004847 | lr 1.25e-04
+    ep  34/150 | train MSE 0.002856 | held-out MSE 0.004820 | lr 1.25e-04
+    ep  35/150 | train MSE 0.002822 | held-out MSE 0.004812 | lr 1.25e-04
+    ep  36/150 | train MSE 0.002830 | held-out MSE 0.004814 | lr 1.25e-04
+    ep  37/150 | train MSE 0.002831 | held-out MSE 0.004830 | lr 6.25e-05
+    ep  38/150 | train MSE 0.002781 | held-out MSE 0.004821 | lr 6.25e-05
+    ep  39/150 | train MSE 0.002752 | held-out MSE 0.004828 | lr 6.25e-05
+    ep  40/150 | train MSE 0.002754 | held-out MSE 0.004829 | lr 6.25e-05
+    --> Early stopping triggered at epoch 40. Best Val MSE: 0.004810
+Fold 3/7 | train rows 306056 | held-out rows 18069 | baseline MSE 0.004520
+    ep   1/150 | train MSE 0.007741 | held-out MSE 0.001259 | lr 1.00e-03
+    ep   2/150 | train MSE 0.006094 | held-out MSE 0.001058 | lr 1.00e-03
+    ep   3/150 | train MSE 0.005649 | held-out MSE 0.001355 | lr 1.00e-03
+    ep   4/150 | train MSE 0.005392 | held-out MSE 0.001009 | lr 1.00e-03
+    ep   5/150 | train MSE 0.005096 | held-out MSE 0.001012 | lr 1.00e-03
+    ep   6/150 | train MSE 0.004940 | held-out MSE 0.000924 | lr 1.00e-03
+    ep   7/150 | train MSE 0.004854 | held-out MSE 0.000923 | lr 1.00e-03
+    ep   8/150 | train MSE 0.004763 | held-out MSE 0.000945 | lr 1.00e-03
+    ep   9/150 | train MSE 0.004715 | held-out MSE 0.000992 | lr 1.00e-03
+    ep  10/150 | train MSE 0.004653 | held-out MSE 0.000936 | lr 1.00e-03
+    ep  11/150 | train MSE 0.004585 | held-out MSE 0.000880 | lr 1.00e-03
+    ep  12/150 | train MSE 0.004503 | held-out MSE 0.000864 | lr 1.00e-03
+    ep  13/150 | train MSE 0.004492 | held-out MSE 0.000927 | lr 1.00e-03
+    ep  14/150 | train MSE 0.004492 | held-out MSE 0.000860 | lr 1.00e-03
+    ep  15/150 | train MSE 0.004572 | held-out MSE 0.000838 | lr 1.00e-03
+    ep  16/150 | train MSE 0.004533 | held-out MSE 0.000823 | lr 1.00e-03
+    ep  17/150 | train MSE 0.004380 | held-out MSE 0.000894 | lr 1.00e-03
+    ep  18/150 | train MSE 0.004046 | held-out MSE 0.000882 | lr 1.00e-03
+    ep  19/150 | train MSE 0.003549 | held-out MSE 0.000823 | lr 1.00e-03
+    ep  20/150 | train MSE 0.003491 | held-out MSE 0.000886 | lr 1.00e-03
+    ep  21/150 | train MSE 0.003431 | held-out MSE 0.000837 | lr 1.00e-03
+    ep  22/150 | train MSE 0.003773 | held-out MSE 0.000874 | lr 5.00e-04
+    ep  23/150 | train MSE 0.003621 | held-out MSE 0.000874 | lr 5.00e-04
+    ep  24/150 | train MSE 0.003247 | held-out MSE 0.000852 | lr 5.00e-04
+    ep  25/150 | train MSE 0.003180 | held-out MSE 0.000858 | lr 5.00e-04
+    ep  26/150 | train MSE 0.003133 | held-out MSE 0.000897 | lr 5.00e-04
+    ep  27/150 | train MSE 0.003107 | held-out MSE 0.000851 | lr 5.00e-04
+    ep  28/150 | train MSE 0.003057 | held-out MSE 0.000852 | lr 2.50e-04
+    ep  29/150 | train MSE 0.002950 | held-out MSE 0.000874 | lr 2.50e-04
+    ep  30/150 | train MSE 0.002910 | held-out MSE 0.000860 | lr 2.50e-04
+    ep  31/150 | train MSE 0.002876 | held-out MSE 0.000834 | lr 2.50e-04
+    --> Early stopping triggered at epoch 31. Best Val MSE: 0.000823
+Fold 4/7 | train rows 305742 | held-out rows 18383 | baseline MSE 0.003943
+    ep   1/150 | train MSE 0.007747 | held-out MSE 0.002518 | lr 1.00e-03
+    ep   2/150 | train MSE 0.006115 | held-out MSE 0.001618 | lr 1.00e-03
+    ep   3/150 | train MSE 0.005760 | held-out MSE 0.001830 | lr 1.00e-03
+    ep   4/150 | train MSE 0.005474 | held-out MSE 0.001453 | lr 1.00e-03
+    ep   5/150 | train MSE 0.005202 | held-out MSE 0.001328 | lr 1.00e-03
+    ep   6/150 | train MSE 0.004979 | held-out MSE 0.001496 | lr 1.00e-03
+    ep   7/150 | train MSE 0.004872 | held-out MSE 0.001304 | lr 1.00e-03
+    ep   8/150 | train MSE 0.004770 | held-out MSE 0.001349 | lr 1.00e-03
+    ep   9/150 | train MSE 0.004740 | held-out MSE 0.001318 | lr 1.00e-03
+    ep  10/150 | train MSE 0.004669 | held-out MSE 0.001419 | lr 1.00e-03
+    ep  11/150 | train MSE 0.004588 | held-out MSE 0.001398 | lr 1.00e-03
+    ep  12/150 | train MSE 0.004585 | held-out MSE 0.001262 | lr 1.00e-03
+    ep  13/150 | train MSE 0.004425 | held-out MSE 0.001413 | lr 1.00e-03
+    ep  14/150 | train MSE 0.004602 | held-out MSE 0.001335 | lr 1.00e-03
+    ep  15/150 | train MSE 0.004433 | held-out MSE 0.001225 | lr 1.00e-03
+    ep  16/150 | train MSE 0.004321 | held-out MSE 0.001313 | lr 1.00e-03
+    ep  17/150 | train MSE 0.004528 | held-out MSE 0.001161 | lr 1.00e-03
+    ep  18/150 | train MSE 0.004404 | held-out MSE 0.001295 | lr 1.00e-03
+    ep  19/150 | train MSE 0.004509 | held-out MSE 0.001306 | lr 1.00e-03
+    ep  20/150 | train MSE 0.004466 | held-out MSE 0.001166 | lr 1.00e-03
+    ep  21/150 | train MSE 0.004438 | held-out MSE 0.001273 | lr 1.00e-03
+    ep  22/150 | train MSE 0.004404 | held-out MSE 0.001322 | lr 1.00e-03
+    ep  23/150 | train MSE 0.003633 | held-out MSE 0.001380 | lr 5.00e-04
+    ep  24/150 | train MSE 0.003348 | held-out MSE 0.001215 | lr 5.00e-04
+    ep  25/150 | train MSE 0.003304 | held-out MSE 0.001210 | lr 5.00e-04
+    ep  26/150 | train MSE 0.003230 | held-out MSE 0.001287 | lr 5.00e-04
+    ep  27/150 | train MSE 0.003183 | held-out MSE 0.001306 | lr 5.00e-04
+    ep  28/150 | train MSE 0.003153 | held-out MSE 0.001282 | lr 5.00e-04
+    ep  29/150 | train MSE 0.003107 | held-out MSE 0.001255 | lr 2.50e-04
+    ep  30/150 | train MSE 0.002981 | held-out MSE 0.001290 | lr 2.50e-04
+    ep  31/150 | train MSE 0.002957 | held-out MSE 0.001261 | lr 2.50e-04
+    ep  32/150 | train MSE 0.002929 | held-out MSE 0.001225 | lr 2.50e-04
+    --> Early stopping triggered at epoch 32. Best Val MSE: 0.001161
+Fold 5/7 | train rows 306672 | held-out rows 17453 | baseline MSE 0.005130
+    ep   1/150 | train MSE 0.007720 | held-out MSE 0.001300 | lr 1.00e-03
+    ep   2/150 | train MSE 0.006093 | held-out MSE 0.001488 | lr 1.00e-03
+    ep   3/150 | train MSE 0.005692 | held-out MSE 0.001410 | lr 1.00e-03
+    ep   4/150 | train MSE 0.005385 | held-out MSE 0.001285 | lr 1.00e-03
+    ep   5/150 | train MSE 0.005133 | held-out MSE 0.001216 | lr 1.00e-03
+    ep   6/150 | train MSE 0.004954 | held-out MSE 0.001084 | lr 1.00e-03
+    ep   7/150 | train MSE 0.004851 | held-out MSE 0.001035 | lr 1.00e-03
+    ep   8/150 | train MSE 0.004775 | held-out MSE 0.001277 | lr 1.00e-03
+    ep   9/150 | train MSE 0.004732 | held-out MSE 0.001029 | lr 1.00e-03
+    ep  10/150 | train MSE 0.004648 | held-out MSE 0.000940 | lr 1.00e-03
+    ep  11/150 | train MSE 0.004583 | held-out MSE 0.001100 | lr 1.00e-03
+    ep  12/150 | train MSE 0.004540 | held-out MSE 0.001216 | lr 1.00e-03
+    ep  13/150 | train MSE 0.004572 | held-out MSE 0.001108 | lr 1.00e-03
+    ep  14/150 | train MSE 0.004506 | held-out MSE 0.001003 | lr 1.00e-03
+    ep  15/150 | train MSE 0.004355 | held-out MSE 0.001428 | lr 1.00e-03
+    ep  16/150 | train MSE 0.004482 | held-out MSE 0.001165 | lr 5.00e-04
+    ep  17/150 | train MSE 0.004337 | held-out MSE 0.001021 | lr 5.00e-04
+    ep  18/150 | train MSE 0.003783 | held-out MSE 0.000992 | lr 5.00e-04
+    ep  19/150 | train MSE 0.003434 | held-out MSE 0.001009 | lr 5.00e-04
+    ep  20/150 | train MSE 0.003377 | held-out MSE 0.001035 | lr 5.00e-04
+    ep  21/150 | train MSE 0.003337 | held-out MSE 0.001082 | lr 5.00e-04
+    ep  22/150 | train MSE 0.003302 | held-out MSE 0.001094 | lr 2.50e-04
+    ep  23/150 | train MSE 0.003198 | held-out MSE 0.001011 | lr 2.50e-04
+    ep  24/150 | train MSE 0.003147 | held-out MSE 0.001051 | lr 2.50e-04
+    ep  25/150 | train MSE 0.003130 | held-out MSE 0.000952 | lr 2.50e-04
+    --> Early stopping triggered at epoch 25. Best Val MSE: 0.000940
+Fold 6/7 | train rows 306689 | held-out rows 17436 | baseline MSE 0.004754
+    ep   1/150 | train MSE 0.007636 | held-out MSE 0.003149 | lr 1.00e-03
+    ep   2/150 | train MSE 0.006174 | held-out MSE 0.001231 | lr 1.00e-03
+    ep   3/150 | train MSE 0.005775 | held-out MSE 0.001249 | lr 1.00e-03
+    ep   4/150 | train MSE 0.005378 | held-out MSE 0.001406 | lr 1.00e-03
+    ep   5/150 | train MSE 0.005121 | held-out MSE 0.001261 | lr 1.00e-03
+    ep   6/150 | train MSE 0.004962 | held-out MSE 0.001115 | lr 1.00e-03
+    ep   7/150 | train MSE 0.004879 | held-out MSE 0.001148 | lr 1.00e-03
+    ep   8/150 | train MSE 0.004779 | held-out MSE 0.001303 | lr 1.00e-03
+    ep   9/150 | train MSE 0.004713 | held-out MSE 0.001029 | lr 1.00e-03
+    ep  10/150 | train MSE 0.004620 | held-out MSE 0.001115 | lr 1.00e-03
+    ep  11/150 | train MSE 0.004571 | held-out MSE 0.001060 | lr 1.00e-03
+    ep  12/150 | train MSE 0.004534 | held-out MSE 0.001111 | lr 1.00e-03
+    ep  13/150 | train MSE 0.004462 | held-out MSE 0.001108 | lr 1.00e-03
+    ep  14/150 | train MSE 0.004612 | held-out MSE 0.001112 | lr 1.00e-03
+    ep  15/150 | train MSE 0.004609 | held-out MSE 0.001118 | lr 5.00e-04
+    ep  16/150 | train MSE 0.004502 | held-out MSE 0.001002 | lr 5.00e-04
+    ep  17/150 | train MSE 0.004478 | held-out MSE 0.001050 | lr 5.00e-04
+    ep  18/150 | train MSE 0.004469 | held-out MSE 0.001155 | lr 5.00e-04
+    ep  19/150 | train MSE 0.004454 | held-out MSE 0.001027 | lr 5.00e-04
+    ep  20/150 | train MSE 0.004442 | held-out MSE 0.001103 | lr 5.00e-04
+    ep  21/150 | train MSE 0.004426 | held-out MSE 0.000911 | lr 5.00e-04
+    ep  22/150 | train MSE 0.003850 | held-out MSE 0.001017 | lr 5.00e-04
+    ep  23/150 | train MSE 0.003544 | held-out MSE 0.001016 | lr 5.00e-04
+    ep  24/150 | train MSE 0.003465 | held-out MSE 0.001032 | lr 5.00e-04
+    ep  25/150 | train MSE 0.003439 | held-out MSE 0.000983 | lr 5.00e-04
+    ep  26/150 | train MSE 0.003417 | held-out MSE 0.001039 | lr 5.00e-04
+    ep  27/150 | train MSE 0.003382 | held-out MSE 0.000977 | lr 2.50e-04
+    ep  28/150 | train MSE 0.003251 | held-out MSE 0.001064 | lr 2.50e-04
+    ep  29/150 | train MSE 0.003206 | held-out MSE 0.000984 | lr 2.50e-04
+    ep  30/150 | train MSE 0.003185 | held-out MSE 0.001003 | lr 2.50e-04
+    ep  31/150 | train MSE 0.003139 | held-out MSE 0.000962 | lr 2.50e-04
+    ep  32/150 | train MSE 0.003124 | held-out MSE 0.001034 | lr 2.50e-04
+    ep  33/150 | train MSE 0.003110 | held-out MSE 0.000976 | lr 1.25e-04
+    ep  34/150 | train MSE 0.003026 | held-out MSE 0.001004 | lr 1.25e-04
+    ep  35/150 | train MSE 0.003022 | held-out MSE 0.001019 | lr 1.25e-04
+    ep  36/150 | train MSE 0.003018 | held-out MSE 0.001005 | lr 1.25e-04
+    --> Early stopping triggered at epoch 36. Best Val MSE: 0.000911
+Fold 7/7 | train rows 306443 | held-out rows 17682 | baseline MSE 0.007646
+    ep   1/150 | train MSE 0.007627 | held-out MSE 0.003705 | lr 1.00e-03
+    ep   2/150 | train MSE 0.005994 | held-out MSE 0.004364 | lr 1.00e-03
+    ep   3/150 | train MSE 0.005645 | held-out MSE 0.003207 | lr 1.00e-03
+    ep   4/150 | train MSE 0.005281 | held-out MSE 0.003375 | lr 1.00e-03
+    ep   5/150 | train MSE 0.005000 | held-out MSE 0.003145 | lr 1.00e-03
+    ep   6/150 | train MSE 0.004811 | held-out MSE 0.003127 | lr 1.00e-03
+    ep   7/150 | train MSE 0.004695 | held-out MSE 0.003143 | lr 1.00e-03
+    ep   8/150 | train MSE 0.004682 | held-out MSE 0.003250 | lr 1.00e-03
+    ep   9/150 | train MSE 0.004594 | held-out MSE 0.003354 | lr 1.00e-03
+    ep  10/150 | train MSE 0.004629 | held-out MSE 0.003083 | lr 1.00e-03
+    ep  11/150 | train MSE 0.004601 | held-out MSE 0.003175 | lr 1.00e-03
+    ep  12/150 | train MSE 0.004571 | held-out MSE 0.003103 | lr 1.00e-03
+    ep  13/150 | train MSE 0.004553 | held-out MSE 0.002891 | lr 1.00e-03
+    ep  14/150 | train MSE 0.004442 | held-out MSE 0.003305 | lr 1.00e-03
+    ep  15/150 | train MSE 0.003927 | held-out MSE 0.003220 | lr 1.00e-03
+    ep  16/150 | train MSE 0.003599 | held-out MSE 0.003243 | lr 1.00e-03
+    ep  17/150 | train MSE 0.003560 | held-out MSE 0.003147 | lr 1.00e-03
+    ep  18/150 | train MSE 0.003507 | held-out MSE 0.003138 | lr 1.00e-03
+    ep  19/150 | train MSE 0.003484 | held-out MSE 0.003178 | lr 5.00e-04
+    ep  20/150 | train MSE 0.003332 | held-out MSE 0.003177 | lr 5.00e-04
+    ep  21/150 | train MSE 0.003292 | held-out MSE 0.003065 | lr 5.00e-04
+    ep  22/150 | train MSE 0.003261 | held-out MSE 0.003086 | lr 5.00e-04
+    ep  23/150 | train MSE 0.003238 | held-out MSE 0.003006 | lr 5.00e-04
+    ep  24/150 | train MSE 0.003210 | held-out MSE 0.003062 | lr 5.00e-04
+    ep  25/150 | train MSE 0.003187 | held-out MSE 0.003130 | lr 2.50e-04
+    ep  26/150 | train MSE 0.003073 | held-out MSE 0.003024 | lr 2.50e-04
+    ep  27/150 | train MSE 0.003044 | held-out MSE 0.003102 | lr 2.50e-04
+    ep  28/150 | train MSE 0.003006 | held-out MSE 0.003072 | lr 2.50e-04
+    --> Early stopping triggered at epoch 28. Best Val MSE: 0.002891
+
+===============================================================================================
+ 1D CNN OOF Benchmarks [Syn+Exp]
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.776 |     0.9871 |     1.4931 |      2.842
+Ce       | Predict Mean       |   -0.000 |     1.0185 |     1.1203 |      2.842
+Ce       | PLS Model          |    0.946 |     0.1574 |     0.2604 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.188 |     0.3554 |     0.8940 |      2.937
+Gd       | Predict Mean       |   -0.000 |     0.5860 |     0.8204 |      2.937
+Gd       | PLS Model          |    0.519 |     0.2992 |     0.5693 |      2.937
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.010 |     0.0544 |     0.5525 |      5.857
+Sm       | Predict Mean       |   -0.000 |     0.1076 |     0.5498 |      5.857
+Sm       | PLS Model          |    0.036 |     0.0948 |     0.5399 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.294 |     0.4538 |     0.9520 |      6.040
+U        | Predict Mean       |   -0.000 |     0.5870 |     0.8368 |      6.040
+U        | PLS Model          |    0.547 |     0.2482 |     0.5632 |      6.040
+-----------------------------------------------------------------------------------------------
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/CNN_1D/processed-data_20261110b/exp-syn/gpu_cnn1d_oof_parity_exp-syn_processed-data_20261110b_20261112_020259.png
+Cached forward predictions to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/CNN_1D/processed-data_20261110b/exp-syn/cnn1d_predictions_exp-syn_processed-data_20261110b.npz
+1D CNN Pipeline completed in 4590.18 seconds.
+✅ SUCCESS: h5_1DCNN_002.py finished cleanly.
+
+==========================================================================
+ 🚀 STARTING EXPERIMENT: p3vae_700.py
+==========================================================================
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting Memory-Safe P3VAE Encoder + Decoder Benchmark Pipeline [cuda] ===
+Dataset: 20261110b (exp) | Folds: 7 | Seeds: [42]
+Loaded 347985 total shots | Real: 147985 | Synthetic: 200000
+[Range Check] Fold 0: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 1: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 3.372 / train 6.040
+[Range Check] Fold 2: Ce: val 2.842 / train 2.842 | Gd: val 2.746 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 3: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 4: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 5: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 6: Ce: val 2.842 / train 2.842 | Gd: val 2.746 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+
+--- Training P3VAE across Folds [0, 1, 2, 3, 4, 5, 6] [Exp Only] ---
+[F1/7] spec_scaler scale_ = 0.61381
+=== Fold 1/7: train 106162 | val 17963 ===
+[F1] Epoch 001/200 [32.8s] | Train 3.4222 | Val 0.6821 | Dopant RMSE 0.3266 wt% | Recon 0.4201 | lr 1.00e-03
+[F1] Epoch 002/200 [16.9s] | Train 0.8319 | Val 0.6081 | Dopant RMSE 0.2940 wt% | Recon 0.3526 | lr 1.00e-03
+[F1] Epoch 003/200 [17.0s] | Train 0.7737 | Val 0.5764 | Dopant RMSE 0.2871 wt% | Recon 0.3217 | lr 1.00e-03
+[F1] Epoch 004/200 [17.1s] | Train 0.7463 | Val 0.5611 | Dopant RMSE 0.2819 wt% | Recon 0.3044 | lr 1.00e-03
+[F1] Epoch 005/200 [17.0s] | Train 0.7301 | Val 0.5508 | Dopant RMSE 0.2783 wt% | Recon 0.2971 | lr 1.00e-03
+[F1] Epoch 006/200 [17.0s] | Train 0.7193 | Val 0.5435 | Dopant RMSE 0.2660 wt% | Recon 0.2921 | lr 1.00e-03
+[F1] Epoch 007/200 [16.9s] | Train 0.7096 | Val 0.5471 | Dopant RMSE 0.2890 wt% | Recon 0.2879 | lr 1.00e-03
+[F1] Epoch 008/200 [16.9s] | Train 0.7018 | Val 0.5379 | Dopant RMSE 0.2743 wt% | Recon 0.2846 | lr 1.00e-03
+[F1] Epoch 009/200 [16.8s] | Train 0.6953 | Val 0.5369 | Dopant RMSE 0.2762 wt% | Recon 0.2822 | lr 1.00e-03
+[F1] Epoch 010/200 [16.8s] | Train 0.6866 | Val 0.5322 | Dopant RMSE 0.2695 wt% | Recon 0.2789 | lr 1.00e-03
+[F1] Epoch 011/200 [17.2s] | Train 0.6831 | Val 0.5364 | Dopant RMSE 0.2868 wt% | Recon 0.2771 | lr 1.00e-03
+[F1] Epoch 012/200 [16.7s] | Train 0.6674 | Val 0.5292 | Dopant RMSE 0.2769 wt% | Recon 0.2713 | lr 5.00e-04
+[F1] Epoch 013/200 [17.0s] | Train 0.6620 | Val 0.5325 | Dopant RMSE 0.2880 wt% | Recon 0.2717 | lr 5.00e-04
+[F1] Epoch 014/200 [16.7s] | Train 0.6568 | Val 0.5309 | Dopant RMSE 0.2854 wt% | Recon 0.2717 | lr 5.00e-04
+[F1] Epoch 015/200 [16.6s] | Train 0.6513 | Val 0.5251 | Dopant RMSE 0.2719 wt% | Recon 0.2695 | lr 5.00e-04
+[F1] Epoch 016/200 [16.7s] | Train 0.6462 | Val 0.5200 | Dopant RMSE 0.2601 wt% | Recon 0.2687 | lr 5.00e-04
+[F1] Epoch 017/200 [16.5s] | Train 0.6402 | Val 0.5233 | Dopant RMSE 0.2712 wt% | Recon 0.2674 | lr 5.00e-04
+[F1] Epoch 018/200 [16.4s] | Train 0.6332 | Val 0.5275 | Dopant RMSE 0.2827 wt% | Recon 0.2668 | lr 5.00e-04
+[F1] Epoch 019/200 [16.5s] | Train 0.6272 | Val 0.5324 | Dopant RMSE 0.2955 wt% | Recon 0.2653 | lr 5.00e-04
+[F1] Epoch 020/200 [16.4s] | Train 0.6206 | Val 0.5303 | Dopant RMSE 0.2924 wt% | Recon 0.2658 | lr 5.00e-04
+[F1] Epoch 021/200 [16.5s] | Train 0.6146 | Val 0.5261 | Dopant RMSE 0.2828 wt% | Recon 0.2655 | lr 5.00e-04
+[F1] Epoch 022/200 [16.4s] | Train 0.5971 | Val 0.5315 | Dopant RMSE 0.2998 wt% | Recon 0.2631 | lr 2.50e-04
+[F1] Epoch 023/200 [16.6s] | Train 0.5913 | Val 0.5235 | Dopant RMSE 0.2810 wt% | Recon 0.2635 | lr 2.50e-04
+[F1] Epoch 024/200 [16.5s] | Train 0.5862 | Val 0.5347 | Dopant RMSE 0.3082 wt% | Recon 0.2634 | lr 2.50e-04
+[F1] Epoch 025/200 [16.9s] | Train 0.5809 | Val 0.5300 | Dopant RMSE 0.2976 wt% | Recon 0.2626 | lr 2.50e-04
+[F1] Epoch 026/200 [16.6s] | Train 0.5773 | Val 0.5265 | Dopant RMSE 0.2903 wt% | Recon 0.2626 | lr 2.50e-04
+[F1] Epoch 027/200 [16.6s] | Train 0.5689 | Val 0.5346 | Dopant RMSE 0.3112 wt% | Recon 0.2613 | lr 1.25e-04
+[F1] Epoch 028/200 [16.7s] | Train 0.5664 | Val 0.5278 | Dopant RMSE 0.2956 wt% | Recon 0.2622 | lr 1.25e-04
+[F1] Epoch 029/200 [17.0s] | Train 0.5641 | Val 0.5322 | Dopant RMSE 0.3061 wt% | Recon 0.2611 | lr 1.25e-04
+[F1] Epoch 030/200 [16.6s] | Train 0.5630 | Val 0.5319 | Dopant RMSE 0.3055 wt% | Recon 0.2613 | lr 1.25e-04
+[F1] Epoch 031/200 [16.9s] | Train 0.5608 | Val 0.5316 | Dopant RMSE 0.3050 wt% | Recon 0.2606 | lr 1.25e-04
+[F1] Epoch 032/200 [17.0s] | Train 0.5577 | Val 0.5328 | Dopant RMSE 0.3089 wt% | Recon 0.2608 | lr 6.25e-05
+[F1] Epoch 033/200 [17.1s] | Train 0.5567 | Val 0.5323 | Dopant RMSE 0.3080 wt% | Recon 0.2603 | lr 6.25e-05
+[F1] Epoch 034/200 [16.9s] | Train 0.5556 | Val 0.5316 | Dopant RMSE 0.3062 wt% | Recon 0.2605 | lr 6.25e-05
+[F1] Epoch 035/200 [16.9s] | Train 0.5553 | Val 0.5304 | Dopant RMSE 0.3037 wt% | Recon 0.2610 | lr 6.25e-05
+[F1] Epoch 036/200 [17.1s] | Train 0.5544 | Val 0.5341 | Dopant RMSE 0.3126 wt% | Recon 0.2605 | lr 6.25e-05
+[F1] Early stop at epoch 36 (Best Dopant RMSE: 0.2601 wt%)
+[F2/7] spec_scaler scale_ = 0.61192
+=== Fold 2/7: train 106986 | val 17139 ===
+[F2] Epoch 001/200 [17.7s] | Train 2.9062 | Val 1.1712 | Dopant RMSE 0.8334 wt% | Recon 0.5113 | lr 1.00e-03
+[F2] Epoch 002/200 [17.1s] | Train 0.7629 | Val 1.0900 | Dopant RMSE 0.8174 wt% | Recon 0.4364 | lr 1.00e-03
+[F2] Epoch 003/200 [17.0s] | Train 0.7071 | Val 1.0578 | Dopant RMSE 0.8104 wt% | Recon 0.4076 | lr 1.00e-03
+[F2] Epoch 004/200 [17.1s] | Train 0.6827 | Val 1.0532 | Dopant RMSE 0.8176 wt% | Recon 0.3943 | lr 1.00e-03
+[F2] Epoch 005/200 [17.3s] | Train 0.6685 | Val 1.0367 | Dopant RMSE 0.8118 wt% | Recon 0.3862 | lr 1.00e-03
+[F2] Epoch 006/200 [16.9s] | Train 0.6578 | Val 1.0233 | Dopant RMSE 0.8067 wt% | Recon 0.3758 | lr 1.00e-03
+[F2] Epoch 007/200 [16.8s] | Train 0.6500 | Val 1.0170 | Dopant RMSE 0.8032 wt% | Recon 0.3737 | lr 1.00e-03
+[F2] Epoch 008/200 [17.0s] | Train 0.6424 | Val 1.0215 | Dopant RMSE 0.8098 wt% | Recon 0.3703 | lr 1.00e-03
+[F2] Epoch 009/200 [16.7s] | Train 0.6354 | Val 1.0067 | Dopant RMSE 0.7998 wt% | Recon 0.3630 | lr 1.00e-03
+[F2] Epoch 010/200 [17.1s] | Train 0.6297 | Val 1.0164 | Dopant RMSE 0.8088 wt% | Recon 0.3641 | lr 1.00e-03
+[F2] Epoch 011/200 [17.1s] | Train 0.6248 | Val 1.0075 | Dopant RMSE 0.8034 wt% | Recon 0.3610 | lr 1.00e-03
+[F2] Epoch 012/200 [16.9s] | Train 0.6197 | Val 1.0081 | Dopant RMSE 0.8057 wt% | Recon 0.3584 | lr 1.00e-03
+[F2] Epoch 013/200 [16.9s] | Train 0.6161 | Val 0.9987 | Dopant RMSE 0.7984 wt% | Recon 0.3576 | lr 1.00e-03
+[F2] Epoch 014/200 [17.1s] | Train 0.6126 | Val 1.0049 | Dopant RMSE 0.8051 wt% | Recon 0.3555 | lr 1.00e-03
+[F2] Epoch 015/200 [17.2s] | Train 0.6085 | Val 1.0155 | Dopant RMSE 0.8152 wt% | Recon 0.3552 | lr 1.00e-03
+[F2] Epoch 016/200 [17.2s] | Train 0.6039 | Val 1.0145 | Dopant RMSE 0.8159 wt% | Recon 0.3533 | lr 1.00e-03
+[F2] Epoch 017/200 [16.9s] | Train 0.5999 | Val 1.0026 | Dopant RMSE 0.8059 wt% | Recon 0.3519 | lr 1.00e-03
+[F2] Epoch 018/200 [17.1s] | Train 0.5968 | Val 1.0096 | Dopant RMSE 0.8128 wt% | Recon 0.3524 | lr 1.00e-03
+[F2] Epoch 019/200 [17.1s] | Train 0.5807 | Val 0.9960 | Dopant RMSE 0.8041 wt% | Recon 0.3485 | lr 5.00e-04
+[F2] Epoch 020/200 [17.0s] | Train 0.5740 | Val 1.0097 | Dopant RMSE 0.8166 wt% | Recon 0.3472 | lr 5.00e-04
+[F2] Epoch 021/200 [16.9s] | Train 0.5688 | Val 1.0037 | Dopant RMSE 0.8117 wt% | Recon 0.3463 | lr 5.00e-04
+[F2] Epoch 022/200 [16.8s] | Train 0.5651 | Val 1.0189 | Dopant RMSE 0.8253 wt% | Recon 0.3468 | lr 5.00e-04
+[F2] Epoch 023/200 [16.9s] | Train 0.5612 | Val 1.0052 | Dopant RMSE 0.8136 wt% | Recon 0.3452 | lr 5.00e-04
+[F2] Epoch 024/200 [16.9s] | Train 0.5518 | Val 1.0036 | Dopant RMSE 0.8133 wt% | Recon 0.3429 | lr 2.50e-04
+[F2] Epoch 025/200 [17.2s] | Train 0.5491 | Val 1.0085 | Dopant RMSE 0.8182 wt% | Recon 0.3431 | lr 2.50e-04
+[F2] Epoch 026/200 [17.2s] | Train 0.5469 | Val 1.0058 | Dopant RMSE 0.8158 wt% | Recon 0.3429 | lr 2.50e-04
+[F2] Epoch 027/200 [17.0s] | Train 0.5454 | Val 1.0024 | Dopant RMSE 0.8129 wt% | Recon 0.3424 | lr 2.50e-04
+[F2] Epoch 028/200 [17.0s] | Train 0.5438 | Val 1.0004 | Dopant RMSE 0.8113 wt% | Recon 0.3425 | lr 2.50e-04
+[F2] Epoch 029/200 [17.0s] | Train 0.5404 | Val 1.0004 | Dopant RMSE 0.8118 wt% | Recon 0.3413 | lr 1.25e-04
+[F2] Epoch 030/200 [17.1s] | Train 0.5396 | Val 1.0012 | Dopant RMSE 0.8129 wt% | Recon 0.3417 | lr 1.25e-04
+[F2] Epoch 031/200 [16.9s] | Train 0.5388 | Val 1.0007 | Dopant RMSE 0.8125 wt% | Recon 0.3420 | lr 1.25e-04
+[F2] Epoch 032/200 [17.0s] | Train 0.5379 | Val 1.0010 | Dopant RMSE 0.8129 wt% | Recon 0.3406 | lr 1.25e-04
+[F2] Epoch 033/200 [17.0s] | Train 0.5375 | Val 1.0012 | Dopant RMSE 0.8132 wt% | Recon 0.3411 | lr 1.25e-04
+[F2] Early stop at epoch 33 (Best Dopant RMSE: 0.7984 wt%)
+[F3/7] spec_scaler scale_ = 0.61166
+=== Fold 3/7: train 106056 | val 18069 ===
+[F3] Epoch 001/200 [18.2s] | Train 2.4660 | Val 0.7583 | Dopant RMSE 0.3483 wt% | Recon 0.4913 | lr 1.00e-03
+[F3] Epoch 002/200 [17.4s] | Train 0.8228 | Val 0.6805 | Dopant RMSE 0.3143 wt% | Recon 0.4192 | lr 1.00e-03
+[F3] Epoch 003/200 [17.4s] | Train 0.7684 | Val 0.6564 | Dopant RMSE 0.3144 wt% | Recon 0.3966 | lr 1.00e-03
+[F3] Epoch 004/200 [17.6s] | Train 0.7418 | Val 0.6375 | Dopant RMSE 0.3064 wt% | Recon 0.3742 | lr 1.00e-03
+[F3] Epoch 005/200 [17.3s] | Train 0.7254 | Val 0.6263 | Dopant RMSE 0.3047 wt% | Recon 0.3646 | lr 1.00e-03
+[F3] Epoch 006/200 [17.1s] | Train 0.7117 | Val 0.6187 | Dopant RMSE 0.3018 wt% | Recon 0.3581 | lr 1.00e-03
+[F3] Epoch 007/200 [17.3s] | Train 0.7029 | Val 0.6122 | Dopant RMSE 0.2941 wt% | Recon 0.3542 | lr 1.00e-03
+[F3] Epoch 008/200 [16.9s] | Train 0.6936 | Val 0.6177 | Dopant RMSE 0.3163 wt% | Recon 0.3474 | lr 1.00e-03
+[F3] Epoch 009/200 [16.6s] | Train 0.6854 | Val 0.6044 | Dopant RMSE 0.2942 wt% | Recon 0.3478 | lr 1.00e-03
+[F3] Epoch 010/200 [17.0s] | Train 0.6789 | Val 0.6012 | Dopant RMSE 0.2910 wt% | Recon 0.3418 | lr 1.00e-03
+[F3] Epoch 011/200 [16.8s] | Train 0.6722 | Val 0.6002 | Dopant RMSE 0.2923 wt% | Recon 0.3413 | lr 1.00e-03
+[F3] Epoch 012/200 [16.5s] | Train 0.6672 | Val 0.6011 | Dopant RMSE 0.2999 wt% | Recon 0.3393 | lr 1.00e-03
+[F3] Epoch 013/200 [16.9s] | Train 0.6625 | Val 0.6042 | Dopant RMSE 0.3116 wt% | Recon 0.3374 | lr 1.00e-03
+[F3] Epoch 014/200 [16.6s] | Train 0.6586 | Val 0.6064 | Dopant RMSE 0.3184 wt% | Recon 0.3354 | lr 1.00e-03
+[F3] Epoch 015/200 [16.6s] | Train 0.6514 | Val 0.6009 | Dopant RMSE 0.3096 wt% | Recon 0.3337 | lr 1.00e-03
+[F3] Epoch 016/200 [16.5s] | Train 0.6355 | Val 0.5948 | Dopant RMSE 0.3040 wt% | Recon 0.3299 | lr 5.00e-04
+[F3] Epoch 017/200 [16.6s] | Train 0.6298 | Val 0.5887 | Dopant RMSE 0.2897 wt% | Recon 0.3293 | lr 5.00e-04
+[F3] Epoch 018/200 [16.8s] | Train 0.6251 | Val 0.5924 | Dopant RMSE 0.3009 wt% | Recon 0.3286 | lr 5.00e-04
+[F3] Epoch 019/200 [16.6s] | Train 0.6178 | Val 0.6086 | Dopant RMSE 0.3377 wt% | Recon 0.3289 | lr 5.00e-04
+[F3] Epoch 020/200 [16.7s] | Train 0.6127 | Val 0.6009 | Dopant RMSE 0.3226 wt% | Recon 0.3277 | lr 5.00e-04
+[F3] Epoch 021/200 [16.3s] | Train 0.6083 | Val 0.5950 | Dopant RMSE 0.3093 wt% | Recon 0.3262 | lr 5.00e-04
+[F3] Epoch 022/200 [16.4s] | Train 0.6018 | Val 0.5927 | Dopant RMSE 0.3049 wt% | Recon 0.3271 | lr 5.00e-04
+[F3] Epoch 023/200 [16.5s] | Train 0.5883 | Val 0.6012 | Dopant RMSE 0.3278 wt% | Recon 0.3244 | lr 2.50e-04
+[F3] Epoch 024/200 [16.7s] | Train 0.5824 | Val 0.5957 | Dopant RMSE 0.3162 wt% | Recon 0.3242 | lr 2.50e-04
+[F3] Epoch 025/200 [16.6s] | Train 0.5774 | Val 0.5969 | Dopant RMSE 0.3193 wt% | Recon 0.3234 | lr 2.50e-04
+[F3] Epoch 026/200 [17.0s] | Train 0.5736 | Val 0.6001 | Dopant RMSE 0.3264 wt% | Recon 0.3238 | lr 2.50e-04
+[F3] Epoch 027/200 [17.0s] | Train 0.5706 | Val 0.5987 | Dopant RMSE 0.3240 wt% | Recon 0.3237 | lr 2.50e-04
+[F3] Epoch 028/200 [16.5s] | Train 0.5618 | Val 0.5997 | Dopant RMSE 0.3276 wt% | Recon 0.3222 | lr 1.25e-04
+[F3] Epoch 029/200 [16.8s] | Train 0.5589 | Val 0.6020 | Dopant RMSE 0.3329 wt% | Recon 0.3223 | lr 1.25e-04
+[F3] Epoch 030/200 [16.8s] | Train 0.5569 | Val 0.6015 | Dopant RMSE 0.3320 wt% | Recon 0.3226 | lr 1.25e-04
+[F3] Epoch 031/200 [16.7s] | Train 0.5550 | Val 0.6041 | Dopant RMSE 0.3378 wt% | Recon 0.3219 | lr 1.25e-04
+[F3] Epoch 032/200 [16.8s] | Train 0.5531 | Val 0.6016 | Dopant RMSE 0.3330 wt% | Recon 0.3218 | lr 1.25e-04
+[F3] Epoch 033/200 [16.8s] | Train 0.5502 | Val 0.6015 | Dopant RMSE 0.3335 wt% | Recon 0.3215 | lr 6.25e-05
+[F3] Epoch 034/200 [16.8s] | Train 0.5490 | Val 0.6020 | Dopant RMSE 0.3349 wt% | Recon 0.3219 | lr 6.25e-05
+[F3] Epoch 035/200 [16.8s] | Train 0.5479 | Val 0.6017 | Dopant RMSE 0.3338 wt% | Recon 0.3214 | lr 6.25e-05
+[F3] Epoch 036/200 [16.7s] | Train 0.5474 | Val 0.6036 | Dopant RMSE 0.3380 wt% | Recon 0.3217 | lr 6.25e-05
+[F3] Epoch 037/200 [16.8s] | Train 0.5467 | Val 0.6058 | Dopant RMSE 0.3427 wt% | Recon 0.3213 | lr 6.25e-05
+[F3] Early stop at epoch 37 (Best Dopant RMSE: 0.2897 wt%)
+[F4/7] spec_scaler scale_ = 0.61212
+=== Fold 4/7: train 105742 | val 18383 ===
+[F4] Epoch 001/200 [17.4s] | Train 2.6782 | Val 0.8006 | Dopant RMSE 0.4479 wt% | Recon 0.4767 | lr 1.00e-03
+[F4] Epoch 002/200 [17.2s] | Train 0.8179 | Val 0.7613 | Dopant RMSE 0.4634 wt% | Recon 0.4239 | lr 1.00e-03
+[F4] Epoch 003/200 [17.6s] | Train 0.7604 | Val 0.7230 | Dopant RMSE 0.4340 wt% | Recon 0.3956 | lr 1.00e-03
+[F4] Epoch 004/200 [17.4s] | Train 0.7301 | Val 0.7537 | Dopant RMSE 0.4955 wt% | Recon 0.3899 | lr 1.00e-03
+[F4] Epoch 005/200 [18.0s] | Train 0.7118 | Val 0.7476 | Dopant RMSE 0.4979 wt% | Recon 0.3817 | lr 1.00e-03
+[F4] Epoch 006/200 [17.6s] | Train 0.7001 | Val 0.7177 | Dopant RMSE 0.4590 wt% | Recon 0.3746 | lr 1.00e-03
+[F4] Epoch 007/200 [17.4s] | Train 0.6920 | Val 0.7058 | Dopant RMSE 0.4466 wt% | Recon 0.3707 | lr 1.00e-03
+[F4] Epoch 008/200 [16.6s] | Train 0.6856 | Val 0.7131 | Dopant RMSE 0.4612 wt% | Recon 0.3706 | lr 1.00e-03
+[F4] Epoch 009/200 [17.6s] | Train 0.6705 | Val 0.7121 | Dopant RMSE 0.4674 wt% | Recon 0.3641 | lr 5.00e-04
+[F4] Epoch 010/200 [17.7s] | Train 0.6649 | Val 0.7112 | Dopant RMSE 0.4677 wt% | Recon 0.3614 | lr 5.00e-04
+[F4] Epoch 011/200 [17.3s] | Train 0.6597 | Val 0.7014 | Dopant RMSE 0.4543 wt% | Recon 0.3610 | lr 5.00e-04
+[F4] Epoch 012/200 [17.2s] | Train 0.6553 | Val 0.7233 | Dopant RMSE 0.4886 wt% | Recon 0.3600 | lr 5.00e-04
+[F4] Epoch 013/200 [16.7s] | Train 0.6513 | Val 0.7138 | Dopant RMSE 0.4754 wt% | Recon 0.3588 | lr 5.00e-04
+[F4] Epoch 014/200 [16.8s] | Train 0.6384 | Val 0.7109 | Dopant RMSE 0.4735 wt% | Recon 0.3571 | lr 2.50e-04
+[F4] Epoch 015/200 [16.7s] | Train 0.6327 | Val 0.7170 | Dopant RMSE 0.4842 wt% | Recon 0.3566 | lr 2.50e-04
+[F4] Epoch 016/200 [16.8s] | Train 0.6264 | Val 0.7209 | Dopant RMSE 0.4897 wt% | Recon 0.3560 | lr 2.50e-04
+[F4] Epoch 017/200 [16.5s] | Train 0.6190 | Val 0.7237 | Dopant RMSE 0.4955 wt% | Recon 0.3553 | lr 2.50e-04
+[F4] Epoch 018/200 [16.6s] | Train 0.6108 | Val 0.7233 | Dopant RMSE 0.4948 wt% | Recon 0.3557 | lr 2.50e-04
+[F4] Epoch 019/200 [16.9s] | Train 0.5963 | Val 0.7249 | Dopant RMSE 0.4979 wt% | Recon 0.3544 | lr 1.25e-04
+[F4] Epoch 020/200 [16.8s] | Train 0.5882 | Val 0.7293 | Dopant RMSE 0.5046 wt% | Recon 0.3538 | lr 1.25e-04
+[F4] Epoch 021/200 [16.8s] | Train 0.5818 | Val 0.7400 | Dopant RMSE 0.5198 wt% | Recon 0.3533 | lr 1.25e-04
+[F4] Epoch 022/200 [16.7s] | Train 0.5756 | Val 0.7282 | Dopant RMSE 0.5028 wt% | Recon 0.3535 | lr 1.25e-04
+[F4] Epoch 023/200 [16.8s] | Train 0.5717 | Val 0.7110 | Dopant RMSE 0.4776 wt% | Recon 0.3531 | lr 1.25e-04
+[F4] Early stop at epoch 23 (Best Dopant RMSE: 0.4340 wt%)
+[F5/7] spec_scaler scale_ = 0.61161
+=== Fold 5/7: train 106672 | val 17453 ===
+[F5] Epoch 001/200 [17.8s] | Train 2.9794 | Val 0.7247 | Dopant RMSE 0.3779 wt% | Recon 0.4332 | lr 1.00e-03
+[F5] Epoch 002/200 [15.6s] | Train 0.8304 | Val 0.6430 | Dopant RMSE 0.3323 wt% | Recon 0.3668 | lr 1.00e-03
+[F5] Epoch 003/200 [18.1s] | Train 0.7755 | Val 0.6185 | Dopant RMSE 0.3362 wt% | Recon 0.3367 | lr 1.00e-03
+[F5] Epoch 004/200 [17.7s] | Train 0.7495 | Val 0.6014 | Dopant RMSE 0.3317 wt% | Recon 0.3232 | lr 1.00e-03
+[F5] Epoch 005/200 [17.1s] | Train 0.7325 | Val 0.5917 | Dopant RMSE 0.3295 wt% | Recon 0.3142 | lr 1.00e-03
+[F5] Epoch 006/200 [17.4s] | Train 0.7196 | Val 0.5870 | Dopant RMSE 0.3362 wt% | Recon 0.3055 | lr 1.00e-03
+[F5] Epoch 007/200 [17.0s] | Train 0.7097 | Val 0.5899 | Dopant RMSE 0.3470 wt% | Recon 0.3021 | lr 1.00e-03
+[F5] Epoch 008/200 [17.2s] | Train 0.6995 | Val 0.5804 | Dopant RMSE 0.3363 wt% | Recon 0.2980 | lr 1.00e-03
+[F5] Epoch 009/200 [17.2s] | Train 0.6930 | Val 0.5785 | Dopant RMSE 0.3394 wt% | Recon 0.2953 | lr 1.00e-03
+[F5] Epoch 010/200 [17.1s] | Train 0.6859 | Val 0.5695 | Dopant RMSE 0.3268 wt% | Recon 0.2909 | lr 1.00e-03
+[F5] Epoch 011/200 [17.1s] | Train 0.6792 | Val 0.5845 | Dopant RMSE 0.3602 wt% | Recon 0.2894 | lr 1.00e-03
+[F5] Epoch 012/200 [17.1s] | Train 0.6747 | Val 0.5789 | Dopant RMSE 0.3522 wt% | Recon 0.2889 | lr 1.00e-03
+[F5] Epoch 013/200 [16.8s] | Train 0.6726 | Val 0.5658 | Dopant RMSE 0.3296 wt% | Recon 0.2853 | lr 1.00e-03
+[F5] Epoch 014/200 [17.2s] | Train 0.6661 | Val 0.5746 | Dopant RMSE 0.3491 wt% | Recon 0.2871 | lr 1.00e-03
+[F5] Epoch 015/200 [16.9s] | Train 0.6634 | Val 0.5576 | Dopant RMSE 0.3115 wt% | Recon 0.2835 | lr 1.00e-03
+[F5] Epoch 016/200 [17.2s] | Train 0.6583 | Val 0.5654 | Dopant RMSE 0.3325 wt% | Recon 0.2846 | lr 1.00e-03
+[F5] Epoch 017/200 [17.6s] | Train 0.6539 | Val 0.5565 | Dopant RMSE 0.3176 wt% | Recon 0.2802 | lr 1.00e-03
+[F5] Epoch 018/200 [17.1s] | Train 0.6490 | Val 0.5562 | Dopant RMSE 0.3197 wt% | Recon 0.2807 | lr 1.00e-03
+[F5] Epoch 019/200 [17.1s] | Train 0.6441 | Val 0.5674 | Dopant RMSE 0.3458 wt% | Recon 0.2785 | lr 1.00e-03
+[F5] Epoch 020/200 [16.9s] | Train 0.6413 | Val 0.5569 | Dopant RMSE 0.3241 wt% | Recon 0.2774 | lr 1.00e-03
+[F5] Epoch 021/200 [17.1s] | Train 0.6223 | Val 0.5568 | Dopant RMSE 0.3304 wt% | Recon 0.2752 | lr 5.00e-04
+[F5] Epoch 022/200 [17.1s] | Train 0.6146 | Val 0.5721 | Dopant RMSE 0.3633 wt% | Recon 0.2752 | lr 5.00e-04
+[F5] Epoch 023/200 [17.2s] | Train 0.6107 | Val 0.5623 | Dopant RMSE 0.3439 wt% | Recon 0.2745 | lr 5.00e-04
+[F5] Epoch 024/200 [17.2s] | Train 0.6049 | Val 0.5657 | Dopant RMSE 0.3519 wt% | Recon 0.2731 | lr 5.00e-04
+[F5] Epoch 025/200 [17.1s] | Train 0.5996 | Val 0.5645 | Dopant RMSE 0.3493 wt% | Recon 0.2742 | lr 5.00e-04
+[F5] Epoch 026/200 [17.2s] | Train 0.5858 | Val 0.5748 | Dopant RMSE 0.3727 wt% | Recon 0.2721 | lr 2.50e-04
+[F5] Epoch 027/200 [16.9s] | Train 0.5810 | Val 0.5654 | Dopant RMSE 0.3544 wt% | Recon 0.2712 | lr 2.50e-04
+[F5] Epoch 028/200 [17.2s] | Train 0.5770 | Val 0.5649 | Dopant RMSE 0.3542 wt% | Recon 0.2707 | lr 2.50e-04
+[F5] Epoch 029/200 [17.3s] | Train 0.5739 | Val 0.5658 | Dopant RMSE 0.3564 wt% | Recon 0.2713 | lr 2.50e-04
+[F5] Epoch 030/200 [17.1s] | Train 0.5721 | Val 0.5711 | Dopant RMSE 0.3667 wt% | Recon 0.2704 | lr 2.50e-04
+[F5] Epoch 031/200 [17.4s] | Train 0.5656 | Val 0.5675 | Dopant RMSE 0.3610 wt% | Recon 0.2698 | lr 1.25e-04
+[F5] Epoch 032/200 [17.1s] | Train 0.5629 | Val 0.5616 | Dopant RMSE 0.3494 wt% | Recon 0.2692 | lr 1.25e-04
+[F5] Epoch 033/200 [16.8s] | Train 0.5615 | Val 0.5606 | Dopant RMSE 0.3479 wt% | Recon 0.2697 | lr 1.25e-04
+[F5] Epoch 034/200 [17.2s] | Train 0.5595 | Val 0.5658 | Dopant RMSE 0.3584 wt% | Recon 0.2690 | lr 1.25e-04
+[F5] Epoch 035/200 [17.0s] | Train 0.5585 | Val 0.5666 | Dopant RMSE 0.3603 wt% | Recon 0.2689 | lr 1.25e-04
+[F5] Early stop at epoch 35 (Best Dopant RMSE: 0.3115 wt%)
+[F6/7] spec_scaler scale_ = 0.61388
+=== Fold 6/7: train 106689 | val 17436 ===
+[F6] Epoch 001/200 [18.2s] | Train 3.1909 | Val 0.8650 | Dopant RMSE 0.4144 wt% | Recon 0.5741 | lr 1.00e-03
+[F6] Epoch 002/200 [16.7s] | Train 0.8026 | Val 0.7722 | Dopant RMSE 0.3710 wt% | Recon 0.4926 | lr 1.00e-03
+[F6] Epoch 003/200 [17.6s] | Train 0.7497 | Val 0.7444 | Dopant RMSE 0.3664 wt% | Recon 0.4633 | lr 1.00e-03
+[F6] Epoch 004/200 [17.4s] | Train 0.7233 | Val 0.7260 | Dopant RMSE 0.3630 wt% | Recon 0.4467 | lr 1.00e-03
+[F6] Epoch 005/200 [17.5s] | Train 0.7073 | Val 0.7112 | Dopant RMSE 0.3479 wt% | Recon 0.4396 | lr 1.00e-03
+[F6] Epoch 006/200 [17.7s] | Train 0.6965 | Val 0.6984 | Dopant RMSE 0.3286 wt% | Recon 0.4351 | lr 1.00e-03
+[F6] Epoch 007/200 [17.8s] | Train 0.6873 | Val 0.7087 | Dopant RMSE 0.3578 wt% | Recon 0.4310 | lr 1.00e-03
+[F6] Epoch 008/200 [17.4s] | Train 0.6771 | Val 0.6918 | Dopant RMSE 0.3327 wt% | Recon 0.4260 | lr 1.00e-03
+[F6] Epoch 009/200 [17.6s] | Train 0.6695 | Val 0.7234 | Dopant RMSE 0.3942 wt% | Recon 0.4281 | lr 1.00e-03
+[F6] Epoch 010/200 [17.7s] | Train 0.6636 | Val 0.6874 | Dopant RMSE 0.3302 wt% | Recon 0.4209 | lr 1.00e-03
+[F6] Epoch 011/200 [17.4s] | Train 0.6570 | Val 0.6941 | Dopant RMSE 0.3477 wt% | Recon 0.4185 | lr 1.00e-03
+[F6] Epoch 012/200 [17.5s] | Train 0.6424 | Val 0.6833 | Dopant RMSE 0.3337 wt% | Recon 0.4150 | lr 5.00e-04
+[F6] Epoch 013/200 [17.6s] | Train 0.6367 | Val 0.6870 | Dopant RMSE 0.3439 wt% | Recon 0.4134 | lr 5.00e-04
+[F6] Epoch 014/200 [17.2s] | Train 0.6324 | Val 0.6972 | Dopant RMSE 0.3670 wt% | Recon 0.4123 | lr 5.00e-04
+[F6] Epoch 015/200 [17.4s] | Train 0.6273 | Val 0.6966 | Dopant RMSE 0.3660 wt% | Recon 0.4121 | lr 5.00e-04
+[F6] Epoch 016/200 [17.1s] | Train 0.6228 | Val 0.6912 | Dopant RMSE 0.3570 wt% | Recon 0.4116 | lr 5.00e-04
+[F6] Epoch 017/200 [17.2s] | Train 0.6093 | Val 0.6933 | Dopant RMSE 0.3663 wt% | Recon 0.4078 | lr 2.50e-04
+[F6] Epoch 018/200 [17.4s] | Train 0.6019 | Val 0.7036 | Dopant RMSE 0.3873 wt% | Recon 0.4083 | lr 2.50e-04
+[F6] Epoch 019/200 [17.0s] | Train 0.5947 | Val 0.6920 | Dopant RMSE 0.3642 wt% | Recon 0.4074 | lr 2.50e-04
+[F6] Epoch 020/200 [17.0s] | Train 0.5885 | Val 0.7067 | Dopant RMSE 0.3920 wt% | Recon 0.4071 | lr 2.50e-04
+[F6] Epoch 021/200 [17.6s] | Train 0.5818 | Val 0.7133 | Dopant RMSE 0.4050 wt% | Recon 0.4068 | lr 2.50e-04
+[F6] Epoch 022/200 [17.4s] | Train 0.5691 | Val 0.7007 | Dopant RMSE 0.3837 wt% | Recon 0.4061 | lr 1.25e-04
+[F6] Epoch 023/200 [17.2s] | Train 0.5637 | Val 0.7049 | Dopant RMSE 0.3918 wt% | Recon 0.4054 | lr 1.25e-04
+[F6] Epoch 024/200 [17.4s] | Train 0.5597 | Val 0.7088 | Dopant RMSE 0.3995 wt% | Recon 0.4046 | lr 1.25e-04
+[F6] Epoch 025/200 [16.8s] | Train 0.5564 | Val 0.6946 | Dopant RMSE 0.3729 wt% | Recon 0.4045 | lr 1.25e-04
+[F6] Epoch 026/200 [17.0s] | Train 0.5531 | Val 0.7111 | Dopant RMSE 0.4045 wt% | Recon 0.4047 | lr 1.25e-04
+[F6] Early stop at epoch 26 (Best Dopant RMSE: 0.3286 wt%)
+[F7/7] spec_scaler scale_ = 0.61363
+=== Fold 7/7: train 106443 | val 17682 ===
+[F7] Epoch 001/200 [16.4s] | Train 2.9299 | Val 0.9243 | Dopant RMSE 0.6513 wt% | Recon 0.4389 | lr 1.00e-03
+[F7] Epoch 002/200 [17.7s] | Train 0.7924 | Val 0.8499 | Dopant RMSE 0.6357 wt% | Recon 0.3665 | lr 1.00e-03
+[F7] Epoch 003/200 [17.8s] | Train 0.7368 | Val 0.8203 | Dopant RMSE 0.6326 wt% | Recon 0.3438 | lr 1.00e-03
+[F7] Epoch 004/200 [17.8s] | Train 0.7096 | Val 0.8047 | Dopant RMSE 0.6291 wt% | Recon 0.3296 | lr 1.00e-03
+[F7] Epoch 005/200 [17.6s] | Train 0.6946 | Val 0.7985 | Dopant RMSE 0.6325 wt% | Recon 0.3205 | lr 1.00e-03
+[F7] Epoch 006/200 [18.0s] | Train 0.6828 | Val 0.7915 | Dopant RMSE 0.6302 wt% | Recon 0.3122 | lr 1.00e-03
+[F7] Epoch 007/200 [17.7s] | Train 0.6746 | Val 0.7858 | Dopant RMSE 0.6286 wt% | Recon 0.3100 | lr 1.00e-03
+[F7] Epoch 008/200 [18.0s] | Train 0.6669 | Val 0.7867 | Dopant RMSE 0.6322 wt% | Recon 0.3073 | lr 1.00e-03
+[F7] Epoch 009/200 [17.6s] | Train 0.6618 | Val 0.7820 | Dopant RMSE 0.6305 wt% | Recon 0.3036 | lr 1.00e-03
+[F7] Epoch 010/200 [17.4s] | Train 0.6573 | Val 0.7679 | Dopant RMSE 0.6164 wt% | Recon 0.3027 | lr 1.00e-03
+[F7] Epoch 011/200 [17.6s] | Train 0.6531 | Val 0.7981 | Dopant RMSE 0.6509 wt% | Recon 0.3032 | lr 1.00e-03
+[F7] Epoch 012/200 [17.3s] | Train 0.6485 | Val 0.7742 | Dopant RMSE 0.6264 wt% | Recon 0.2984 | lr 1.00e-03
+[F7] Epoch 013/200 [17.3s] | Train 0.6448 | Val 0.7830 | Dopant RMSE 0.6386 wt% | Recon 0.2968 | lr 1.00e-03
+[F7] Epoch 014/200 [17.6s] | Train 0.6414 | Val 0.7777 | Dopant RMSE 0.6348 wt% | Recon 0.2947 | lr 1.00e-03
+[F7] Epoch 015/200 [17.0s] | Train 0.6373 | Val 0.7723 | Dopant RMSE 0.6289 wt% | Recon 0.2947 | lr 1.00e-03
+[F7] Epoch 016/200 [17.3s] | Train 0.6233 | Val 0.7775 | Dopant RMSE 0.6387 wt% | Recon 0.2922 | lr 5.00e-04
+[F7] Epoch 017/200 [17.2s] | Train 0.6190 | Val 0.7710 | Dopant RMSE 0.6315 wt% | Recon 0.2918 | lr 5.00e-04
+[F7] Epoch 018/200 [17.3s] | Train 0.6141 | Val 0.7722 | Dopant RMSE 0.6340 wt% | Recon 0.2905 | lr 5.00e-04
+[F7] Epoch 019/200 [17.6s] | Train 0.6098 | Val 0.7703 | Dopant RMSE 0.6322 wt% | Recon 0.2908 | lr 5.00e-04
+[F7] Epoch 020/200 [17.6s] | Train 0.6039 | Val 0.7726 | Dopant RMSE 0.6354 wt% | Recon 0.2885 | lr 5.00e-04
+[F7] Epoch 021/200 [17.3s] | Train 0.5922 | Val 0.7804 | Dopant RMSE 0.6459 wt% | Recon 0.2875 | lr 2.50e-04
+[F7] Epoch 022/200 [17.5s] | Train 0.5859 | Val 0.7715 | Dopant RMSE 0.6363 wt% | Recon 0.2867 | lr 2.50e-04
+[F7] Epoch 023/200 [17.5s] | Train 0.5812 | Val 0.7736 | Dopant RMSE 0.6387 wt% | Recon 0.2869 | lr 2.50e-04
+[F7] Epoch 024/200 [17.4s] | Train 0.5791 | Val 0.7762 | Dopant RMSE 0.6419 wt% | Recon 0.2855 | lr 2.50e-04
+[F7] Epoch 025/200 [17.2s] | Train 0.5751 | Val 0.7761 | Dopant RMSE 0.6421 wt% | Recon 0.2855 | lr 2.50e-04
+[F7] Epoch 026/200 [17.6s] | Train 0.5672 | Val 0.7718 | Dopant RMSE 0.6380 wt% | Recon 0.2850 | lr 1.25e-04
+[F7] Epoch 027/200 [17.8s] | Train 0.5640 | Val 0.7816 | Dopant RMSE 0.6491 wt% | Recon 0.2851 | lr 1.25e-04
+[F7] Epoch 028/200 [17.1s] | Train 0.5623 | Val 0.7729 | Dopant RMSE 0.6394 wt% | Recon 0.2852 | lr 1.25e-04
+[F7] Epoch 029/200 [17.7s] | Train 0.5607 | Val 0.7745 | Dopant RMSE 0.6417 wt% | Recon 0.2845 | lr 1.25e-04
+[F7] Epoch 030/200 [17.0s] | Train 0.5588 | Val 0.7766 | Dopant RMSE 0.6439 wt% | Recon 0.2841 | lr 1.25e-04
+[F7] Early stop at epoch 30 (Best Dopant RMSE: 0.6164 wt%)
+
+✅ P3VAE Encoder OOF Summary | Mean Dopant RMSE: 0.4297 wt% | Mean R^2: 0.5377
+
+===============================================================================================
+ P3VAE Encoder OOF Benchmarks [Exp Only]
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.776 |     0.9871 |     1.4931 |      2.842
+Ce       | Predict Mean       |   -0.000 |     1.0185 |     1.1203 |      2.842
+Ce       | P3VAE Encoder      |    0.992 |     0.0514 |     0.1008 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.188 |     0.3554 |     0.8940 |      2.937
+Gd       | Predict Mean       |   -0.000 |     0.5860 |     0.8204 |      2.937
+Gd       | P3VAE Encoder      |    0.602 |     0.2501 |     0.5178 |      2.937
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.010 |     0.0544 |     0.5525 |      5.857
+Sm       | Predict Mean       |   -0.000 |     0.1076 |     0.5498 |      5.857
+Sm       | P3VAE Encoder      |   -0.018 |     0.1037 |     0.5547 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.294 |     0.4538 |     0.9520 |      6.040
+U        | Predict Mean       |   -0.000 |     0.5870 |     0.8368 |      6.040
+U        | P3VAE Encoder      |    0.575 |     0.2079 |     0.5454 |      6.040
+-----------------------------------------------------------------------------------------------
+=== Top 5 Worst Performing Composition Groups (wt%) ===
+Group 118  | Shots: 1023 | Log-MSE: 1.1452 | True: [0.    0.    5.857 0.   ] | Pred Mean: [0.037 0.8   0.033 1.119]
+Group 1297 | Shots: 1    | Log-MSE: 0.7117 | True: [0. 0. 0. 0.] | Pred Mean: [0.088 0.151 4.36  0.028]
+Group 1301 | Shots: 1    | Log-MSE: 0.6585 | True: [0. 0. 0. 0.] | Pred Mean: [0.153 0.133 4.011 0.026]
+Group 1298 | Shots: 1    | Log-MSE: 0.6486 | True: [0. 0. 0. 0.] | Pred Mean: [0.089 0.147 3.965 0.027]
+Group 91   | Shots: 1    | Log-MSE: 0.5189 | True: [0.    0.    5.268 0.   ] | Pred Mean: [0.138 0.032 0.494 0.031]
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp/p3vae_oof_parity_20261110b_20261112_032627.png
+
+=========================================================================================================
+ P3VAE Decoder OOF Spectral Reconstruction Benchmarks [Exp Only]
+ Note: Full Decoder uses spectrum-encoded matrix residual (autoencoder upper bound);
+       True-Conc Physics uses 7 modeled elements + spectrum-inferred broadening.
+=========================================================================================================
+Decoder Pathway                                      | Spectral RMSE   | Overall R^2 
+---------------------------------------------------------------------------------------------------------
+Mean-Spectrum Baseline                               |         0.00679 |       0.4957
+Physics-Only Decoder (Pred Conc -> NIST)             |         0.00990 |      -0.0713
+Physics Decoder (True 7-Elem Conc + Pred Gamma)      |         0.00992 |      -0.0745
+Full P3VAE Decoder (Physics + Matrix Residual)       |         0.00357 |       0.8611
+=========================================================================================================
+Saved Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp/p3vae_oof_spectra_full_20261110b_20261112_032627.png
+Saved Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp/p3vae_oof_spectra_physics_20261110b_20261112_032627.png
+Saved Physics vs. Residual Breakdown Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp/p3vae_oof_physics_vs_residual_20261110b_20261112_032627.png
+Cached compact P3VAE encoder + decoder results to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp/p3vae_predictions_20261110b.npz
+P3VAE Pipeline completed in 67.61 minutes.
+=== Starting Memory-Safe P3VAE Encoder + Decoder Benchmark Pipeline [cuda] ===
+Dataset: 20261110b (exp-syn) | Folds: 7 | Seeds: [42]
+Loaded 347985 total shots | Real: 147985 | Synthetic: 200000
+[Range Check] Fold 0: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 1: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 3.372 / train 6.040
+[Range Check] Fold 2: Ce: val 2.842 / train 2.842 | Gd: val 2.746 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 3: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 4: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 5: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 6: Ce: val 2.842 / train 2.842 | Gd: val 2.746 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+
+--- Training P3VAE across Folds [0, 1, 2, 3, 4, 5, 6] [Syn+Exp] ---
+[F1/7] spec_scaler scale_ = 0.59355
+=== Fold 1/7: train 306162 | val 17963 ===
+[F1] Epoch 001/200 [54.7s] | Train 2.2952 | Val 0.7048 | Dopant RMSE 0.3492 wt% | Recon 0.4069 | lr 1.00e-03
+[F1] Epoch 002/200 [49.2s] | Train 1.0563 | Val 0.6443 | Dopant RMSE 0.3114 wt% | Recon 0.3661 | lr 1.00e-03
+[F1] Epoch 003/200 [47.7s] | Train 1.0084 | Val 0.6243 | Dopant RMSE 0.2957 wt% | Recon 0.3461 | lr 1.00e-03
+[F1] Epoch 004/200 [48.5s] | Train 0.9791 | Val 0.6184 | Dopant RMSE 0.3135 wt% | Recon 0.3295 | lr 1.00e-03
+[F1] Epoch 005/200 [48.7s] | Train 0.9610 | Val 0.6010 | Dopant RMSE 0.2851 wt% | Recon 0.3323 | lr 1.00e-03
+[F1] Epoch 006/200 [49.1s] | Train 0.9461 | Val 0.5976 | Dopant RMSE 0.2890 wt% | Recon 0.3281 | lr 1.00e-03
+[F1] Epoch 007/200 [48.1s] | Train 0.9287 | Val 0.5926 | Dopant RMSE 0.2855 wt% | Recon 0.3191 | lr 1.00e-03
+[F1] Epoch 008/200 [49.1s] | Train 0.8786 | Val 0.5983 | Dopant RMSE 0.3062 wt% | Recon 0.3160 | lr 1.00e-03
+[F1] Epoch 009/200 [49.0s] | Train 0.8308 | Val 0.5894 | Dopant RMSE 0.2831 wt% | Recon 0.3150 | lr 1.00e-03
+[F1] Epoch 010/200 [49.0s] | Train 0.8085 | Val 0.5817 | Dopant RMSE 0.2703 wt% | Recon 0.3128 | lr 1.00e-03
+[F1] Epoch 011/200 [49.2s] | Train 0.7954 | Val 0.5900 | Dopant RMSE 0.2957 wt% | Recon 0.3095 | lr 1.00e-03
+[F1] Epoch 012/200 [50.0s] | Train 0.7921 | Val 0.5824 | Dopant RMSE 0.2833 wt% | Recon 0.3091 | lr 1.00e-03
+[F1] Epoch 013/200 [49.0s] | Train 0.7792 | Val 0.5870 | Dopant RMSE 0.2959 wt% | Recon 0.3063 | lr 1.00e-03
+[F1] Epoch 014/200 [49.3s] | Train 0.7723 | Val 0.5851 | Dopant RMSE 0.2948 wt% | Recon 0.3058 | lr 1.00e-03
+[F1] Epoch 015/200 [49.1s] | Train 0.7635 | Val 0.5733 | Dopant RMSE 0.2716 wt% | Recon 0.3014 | lr 1.00e-03
+[F1] Epoch 016/200 [48.9s] | Train 0.7052 | Val 0.5747 | Dopant RMSE 0.2840 wt% | Recon 0.2981 | lr 5.00e-04
+[F1] Epoch 017/200 [48.7s] | Train 0.6882 | Val 0.5680 | Dopant RMSE 0.2675 wt% | Recon 0.2974 | lr 5.00e-04
+[F1] Epoch 018/200 [48.9s] | Train 0.6836 | Val 0.5663 | Dopant RMSE 0.2651 wt% | Recon 0.2985 | lr 5.00e-04
+[F1] Epoch 019/200 [49.4s] | Train 0.6765 | Val 0.5823 | Dopant RMSE 0.3045 wt% | Recon 0.2970 | lr 5.00e-04
+[F1] Epoch 020/200 [49.1s] | Train 0.6742 | Val 0.5713 | Dopant RMSE 0.2810 wt% | Recon 0.2977 | lr 5.00e-04
+[F1] Epoch 021/200 [48.4s] | Train 0.6690 | Val 0.5753 | Dopant RMSE 0.2919 wt% | Recon 0.2963 | lr 5.00e-04
+[F1] Epoch 022/200 [48.5s] | Train 0.6625 | Val 0.5798 | Dopant RMSE 0.3018 wt% | Recon 0.2951 | lr 5.00e-04
+[F1] Epoch 023/200 [48.6s] | Train 0.6619 | Val 0.5681 | Dopant RMSE 0.2743 wt% | Recon 0.2960 | lr 5.00e-04
+[F1] Epoch 024/200 [48.5s] | Train 0.6306 | Val 0.5692 | Dopant RMSE 0.2829 wt% | Recon 0.2910 | lr 2.50e-04
+[F1] Epoch 025/200 [48.6s] | Train 0.6241 | Val 0.5730 | Dopant RMSE 0.2948 wt% | Recon 0.2904 | lr 2.50e-04
+[F1] Epoch 026/200 [48.5s] | Train 0.6209 | Val 0.5756 | Dopant RMSE 0.3008 wt% | Recon 0.2922 | lr 2.50e-04
+[F1] Epoch 027/200 [48.6s] | Train 0.6178 | Val 0.5742 | Dopant RMSE 0.2978 wt% | Recon 0.2913 | lr 2.50e-04
+[F1] Epoch 028/200 [48.5s] | Train 0.6147 | Val 0.5740 | Dopant RMSE 0.2983 wt% | Recon 0.2915 | lr 2.50e-04
+[F1] Epoch 029/200 [48.5s] | Train 0.5988 | Val 0.5777 | Dopant RMSE 0.3090 wt% | Recon 0.2900 | lr 1.25e-04
+[F1] Epoch 030/200 [48.5s] | Train 0.5937 | Val 0.5775 | Dopant RMSE 0.3091 wt% | Recon 0.2889 | lr 1.25e-04
+[F1] Epoch 031/200 [48.7s] | Train 0.5908 | Val 0.5751 | Dopant RMSE 0.3035 wt% | Recon 0.2901 | lr 1.25e-04
+[F1] Epoch 032/200 [48.6s] | Train 0.5873 | Val 0.5768 | Dopant RMSE 0.3079 wt% | Recon 0.2892 | lr 1.25e-04
+[F1] Epoch 033/200 [48.5s] | Train 0.5855 | Val 0.5760 | Dopant RMSE 0.3063 wt% | Recon 0.2893 | lr 1.25e-04
+[F1] Epoch 034/200 [48.5s] | Train 0.5751 | Val 0.5792 | Dopant RMSE 0.3150 wt% | Recon 0.2880 | lr 6.25e-05
+[F1] Epoch 035/200 [48.8s] | Train 0.5716 | Val 0.5734 | Dopant RMSE 0.3013 wt% | Recon 0.2897 | lr 6.25e-05
+[F1] Epoch 036/200 [48.3s] | Train 0.5697 | Val 0.5755 | Dopant RMSE 0.3065 wt% | Recon 0.2885 | lr 6.25e-05
+[F1] Epoch 037/200 [48.4s] | Train 0.5681 | Val 0.5773 | Dopant RMSE 0.3106 wt% | Recon 0.2889 | lr 6.25e-05
+[F1] Epoch 038/200 [48.4s] | Train 0.5656 | Val 0.5774 | Dopant RMSE 0.3111 wt% | Recon 0.2890 | lr 6.25e-05
+[F1] Early stop at epoch 38 (Best Dopant RMSE: 0.2651 wt%)
+[F2/7] spec_scaler scale_ = 0.59018
+=== Fold 2/7: train 306986 | val 17139 ===
+[F2] Epoch 001/200 [49.1s] | Train 2.2029 | Val 1.2097 | Dopant RMSE 0.8469 wt% | Recon 0.5086 | lr 1.00e-03
+[F2] Epoch 002/200 [47.9s] | Train 1.0401 | Val 1.1463 | Dopant RMSE 0.8244 wt% | Recon 0.4718 | lr 1.00e-03
+[F2] Epoch 003/200 [46.4s] | Train 0.9880 | Val 1.1161 | Dopant RMSE 0.8145 wt% | Recon 0.4465 | lr 1.00e-03
+[F2] Epoch 004/200 [46.9s] | Train 0.9577 | Val 1.1030 | Dopant RMSE 0.8135 wt% | Recon 0.4298 | lr 1.00e-03
+[F2] Epoch 005/200 [47.4s] | Train 0.9405 | Val 1.0905 | Dopant RMSE 0.8109 wt% | Recon 0.4255 | lr 1.00e-03
+[F2] Epoch 006/200 [48.5s] | Train 0.9256 | Val 1.0911 | Dopant RMSE 0.8151 wt% | Recon 0.4208 | lr 1.00e-03
+[F2] Epoch 007/200 [48.8s] | Train 0.9111 | Val 1.0863 | Dopant RMSE 0.8125 wt% | Recon 0.4175 | lr 1.00e-03
+[F2] Epoch 008/200 [48.9s] | Train 0.8671 | Val 1.0805 | Dopant RMSE 0.8078 wt% | Recon 0.4131 | lr 1.00e-03
+[F2] Epoch 009/200 [48.9s] | Train 0.8025 | Val 1.0862 | Dopant RMSE 0.8165 wt% | Recon 0.4124 | lr 1.00e-03
+[F2] Epoch 010/200 [48.6s] | Train 0.7927 | Val 1.0803 | Dopant RMSE 0.8154 wt% | Recon 0.4054 | lr 1.00e-03
+[F2] Epoch 011/200 [48.6s] | Train 0.7766 | Val 1.0752 | Dopant RMSE 0.8119 wt% | Recon 0.4044 | lr 1.00e-03
+[F2] Epoch 012/200 [49.0s] | Train 0.7678 | Val 1.0717 | Dopant RMSE 0.8092 wt% | Recon 0.4017 | lr 1.00e-03
+[F2] Epoch 013/200 [49.0s] | Train 0.7571 | Val 1.0753 | Dopant RMSE 0.8135 wt% | Recon 0.3986 | lr 1.00e-03
+[F2] Epoch 014/200 [49.0s] | Train 0.6999 | Val 1.0588 | Dopant RMSE 0.8043 wt% | Recon 0.3948 | lr 5.00e-04
+[F2] Epoch 015/200 [48.9s] | Train 0.6806 | Val 1.0607 | Dopant RMSE 0.8069 wt% | Recon 0.3927 | lr 5.00e-04
+[F2] Epoch 016/200 [48.9s] | Train 0.6727 | Val 1.0780 | Dopant RMSE 0.8232 wt% | Recon 0.3924 | lr 5.00e-04
+[F2] Epoch 017/200 [49.1s] | Train 0.6698 | Val 1.0666 | Dopant RMSE 0.8138 wt% | Recon 0.3916 | lr 5.00e-04
+[F2] Epoch 018/200 [48.7s] | Train 0.6665 | Val 1.0621 | Dopant RMSE 0.8112 wt% | Recon 0.3899 | lr 5.00e-04
+[F2] Epoch 019/200 [48.8s] | Train 0.6608 | Val 1.0633 | Dopant RMSE 0.8119 wt% | Recon 0.3863 | lr 5.00e-04
+[F2] Epoch 020/200 [48.9s] | Train 0.6319 | Val 1.0668 | Dopant RMSE 0.8176 wt% | Recon 0.3846 | lr 2.50e-04
+[F2] Epoch 021/200 [49.0s] | Train 0.6267 | Val 1.0631 | Dopant RMSE 0.8147 wt% | Recon 0.3862 | lr 2.50e-04
+[F2] Epoch 022/200 [48.8s] | Train 0.6216 | Val 1.0722 | Dopant RMSE 0.8233 wt% | Recon 0.3833 | lr 2.50e-04
+[F2] Epoch 023/200 [48.8s] | Train 0.6195 | Val 1.0621 | Dopant RMSE 0.8147 wt% | Recon 0.3857 | lr 2.50e-04
+[F2] Epoch 024/200 [49.0s] | Train 0.6159 | Val 1.0660 | Dopant RMSE 0.8184 wt% | Recon 0.3826 | lr 2.50e-04
+[F2] Epoch 025/200 [49.1s] | Train 0.6002 | Val 1.0663 | Dopant RMSE 0.8195 wt% | Recon 0.3832 | lr 1.25e-04
+[F2] Epoch 026/200 [49.1s] | Train 0.5963 | Val 1.0670 | Dopant RMSE 0.8203 wt% | Recon 0.3824 | lr 1.25e-04
+[F2] Epoch 027/200 [48.6s] | Train 0.5932 | Val 1.0621 | Dopant RMSE 0.8162 wt% | Recon 0.3827 | lr 1.25e-04
+[F2] Epoch 028/200 [48.6s] | Train 0.5912 | Val 1.0642 | Dopant RMSE 0.8182 wt% | Recon 0.3827 | lr 1.25e-04
+[F2] Epoch 029/200 [49.0s] | Train 0.5887 | Val 1.0664 | Dopant RMSE 0.8198 wt% | Recon 0.3816 | lr 1.25e-04
+[F2] Epoch 030/200 [49.0s] | Train 0.5784 | Val 1.0641 | Dopant RMSE 0.8187 wt% | Recon 0.3819 | lr 6.25e-05
+[F2] Epoch 031/200 [49.1s] | Train 0.5751 | Val 1.0680 | Dopant RMSE 0.8223 wt% | Recon 0.3812 | lr 6.25e-05
+[F2] Epoch 032/200 [49.0s] | Train 0.5734 | Val 1.0678 | Dopant RMSE 0.8221 wt% | Recon 0.3816 | lr 6.25e-05
+[F2] Epoch 033/200 [49.0s] | Train 0.5706 | Val 1.0657 | Dopant RMSE 0.8204 wt% | Recon 0.3815 | lr 6.25e-05
+[F2] Epoch 034/200 [48.8s] | Train 0.5700 | Val 1.0640 | Dopant RMSE 0.8190 wt% | Recon 0.3818 | lr 6.25e-05
+[F2] Early stop at epoch 34 (Best Dopant RMSE: 0.8043 wt%)
+[F3/7] spec_scaler scale_ = 0.59019
+=== Fold 3/7: train 306056 | val 18069 ===
+[F3] Epoch 001/200 [48.6s] | Train 2.0170 | Val 0.7844 | Dopant RMSE 0.3662 wt% | Recon 0.4920 | lr 1.00e-03
+[F3] Epoch 002/200 [46.5s] | Train 1.0576 | Val 0.7326 | Dopant RMSE 0.3476 wt% | Recon 0.4381 | lr 1.00e-03
+[F3] Epoch 003/200 [46.1s] | Train 1.0046 | Val 0.7048 | Dopant RMSE 0.3260 wt% | Recon 0.4181 | lr 1.00e-03
+[F3] Epoch 004/200 [46.3s] | Train 0.9769 | Val 0.6913 | Dopant RMSE 0.3140 wt% | Recon 0.4117 | lr 1.00e-03
+[F3] Epoch 005/200 [46.7s] | Train 0.9631 | Val 0.6797 | Dopant RMSE 0.3080 wt% | Recon 0.4030 | lr 1.00e-03
+[F3] Epoch 006/200 [47.0s] | Train 0.9451 | Val 0.6765 | Dopant RMSE 0.3069 wt% | Recon 0.3997 | lr 1.00e-03
+[F3] Epoch 007/200 [48.2s] | Train 0.9113 | Val 0.6746 | Dopant RMSE 0.3096 wt% | Recon 0.3911 | lr 1.00e-03
+[F3] Epoch 008/200 [51.6s] | Train 0.8713 | Val 0.6713 | Dopant RMSE 0.3099 wt% | Recon 0.3899 | lr 1.00e-03
+[F3] Epoch 009/200 [48.6s] | Train 0.8281 | Val 0.6651 | Dopant RMSE 0.2992 wt% | Recon 0.3917 | lr 1.00e-03
+[F3] Epoch 010/200 [48.5s] | Train 0.8097 | Val 0.6644 | Dopant RMSE 0.3032 wt% | Recon 0.3871 | lr 1.00e-03
+[F3] Epoch 011/200 [48.6s] | Train 0.7944 | Val 0.6598 | Dopant RMSE 0.2982 wt% | Recon 0.3811 | lr 1.00e-03
+[F3] Epoch 012/200 [48.7s] | Train 0.7892 | Val 0.6616 | Dopant RMSE 0.3047 wt% | Recon 0.3823 | lr 1.00e-03
+[F3] Epoch 013/200 [48.4s] | Train 0.7778 | Val 0.6665 | Dopant RMSE 0.3230 wt% | Recon 0.3777 | lr 1.00e-03
+[F3] Epoch 014/200 [48.3s] | Train 0.7678 | Val 0.6530 | Dopant RMSE 0.2937 wt% | Recon 0.3752 | lr 1.00e-03
+[F3] Epoch 015/200 [48.1s] | Train 0.7610 | Val 0.6529 | Dopant RMSE 0.2952 wt% | Recon 0.3747 | lr 1.00e-03
+[F3] Epoch 016/200 [48.5s] | Train 0.7573 | Val 0.6540 | Dopant RMSE 0.2997 wt% | Recon 0.3730 | lr 1.00e-03
+[F3] Epoch 017/200 [48.4s] | Train 0.7458 | Val 0.6555 | Dopant RMSE 0.3086 wt% | Recon 0.3734 | lr 1.00e-03
+[F3] Epoch 018/200 [48.1s] | Train 0.7426 | Val 0.6597 | Dopant RMSE 0.3159 wt% | Recon 0.3736 | lr 1.00e-03
+[F3] Epoch 019/200 [48.9s] | Train 0.7349 | Val 0.6534 | Dopant RMSE 0.3064 wt% | Recon 0.3709 | lr 1.00e-03
+[F3] Epoch 020/200 [48.8s] | Train 0.6762 | Val 0.6548 | Dopant RMSE 0.3207 wt% | Recon 0.3640 | lr 5.00e-04
+[F3] Epoch 021/200 [48.3s] | Train 0.6677 | Val 0.6554 | Dopant RMSE 0.3232 wt% | Recon 0.3647 | lr 5.00e-04
+[F3] Epoch 022/200 [48.5s] | Train 0.6636 | Val 0.6519 | Dopant RMSE 0.3160 wt% | Recon 0.3655 | lr 5.00e-04
+[F3] Epoch 023/200 [48.6s] | Train 0.6589 | Val 0.6530 | Dopant RMSE 0.3193 wt% | Recon 0.3641 | lr 5.00e-04
+[F3] Epoch 024/200 [48.5s] | Train 0.6551 | Val 0.6785 | Dopant RMSE 0.3736 wt% | Recon 0.3645 | lr 5.00e-04
+[F3] Epoch 025/200 [48.8s] | Train 0.6280 | Val 0.6558 | Dopant RMSE 0.3316 wt% | Recon 0.3604 | lr 2.50e-04
+[F3] Epoch 026/200 [48.6s] | Train 0.6223 | Val 0.6565 | Dopant RMSE 0.3340 wt% | Recon 0.3609 | lr 2.50e-04
+[F3] Epoch 027/200 [48.8s] | Train 0.6184 | Val 0.6608 | Dopant RMSE 0.3439 wt% | Recon 0.3607 | lr 2.50e-04
+[F3] Epoch 028/200 [48.5s] | Train 0.6163 | Val 0.6550 | Dopant RMSE 0.3314 wt% | Recon 0.3606 | lr 2.50e-04
+[F3] Epoch 029/200 [48.1s] | Train 0.6138 | Val 0.6554 | Dopant RMSE 0.3330 wt% | Recon 0.3587 | lr 2.50e-04
+[F3] Epoch 030/200 [48.3s] | Train 0.5983 | Val 0.6550 | Dopant RMSE 0.3342 wt% | Recon 0.3580 | lr 1.25e-04
+[F3] Epoch 031/200 [49.0s] | Train 0.5930 | Val 0.6542 | Dopant RMSE 0.3333 wt% | Recon 0.3589 | lr 1.25e-04
+[F3] Epoch 032/200 [49.1s] | Train 0.5908 | Val 0.6578 | Dopant RMSE 0.3412 wt% | Recon 0.3583 | lr 1.25e-04
+[F3] Epoch 033/200 [48.0s] | Train 0.5881 | Val 0.6542 | Dopant RMSE 0.3340 wt% | Recon 0.3582 | lr 1.25e-04
+[F3] Epoch 034/200 [49.1s] | Train 0.5862 | Val 0.6625 | Dopant RMSE 0.3511 wt% | Recon 0.3579 | lr 1.25e-04
+[F3] Early stop at epoch 34 (Best Dopant RMSE: 0.2937 wt%)
+[F4/7] spec_scaler scale_ = 0.59125
+=== Fold 4/7: train 305742 | val 18383 ===
+[F4] Epoch 001/200 [49.1s] | Train 2.0757 | Val 0.8320 | Dopant RMSE 0.4591 wt% | Recon 0.4761 | lr 1.00e-03
+[F4] Epoch 002/200 [48.3s] | Train 1.0587 | Val 0.7934 | Dopant RMSE 0.4446 wt% | Recon 0.4476 | lr 1.00e-03
+[F4] Epoch 003/200 [46.4s] | Train 1.0038 | Val 0.7861 | Dopant RMSE 0.4636 wt% | Recon 0.4288 | lr 1.00e-03
+[F4] Epoch 004/200 [46.6s] | Train 0.9695 | Val 0.7845 | Dopant RMSE 0.4702 wt% | Recon 0.4233 | lr 1.00e-03
+[F4] Epoch 005/200 [47.3s] | Train 0.9556 | Val 0.8219 | Dopant RMSE 0.5266 wt% | Recon 0.4199 | lr 1.00e-03
+[F4] Epoch 006/200 [47.1s] | Train 0.9358 | Val 0.7755 | Dopant RMSE 0.4629 wt% | Recon 0.4164 | lr 1.00e-03
+[F4] Epoch 007/200 [47.2s] | Train 0.9153 | Val 0.7689 | Dopant RMSE 0.4606 wt% | Recon 0.4100 | lr 1.00e-03
+[F4] Epoch 008/200 [47.9s] | Train 0.8025 | Val 0.7796 | Dopant RMSE 0.4816 wt% | Recon 0.4047 | lr 5.00e-04
+[F4] Epoch 009/200 [48.3s] | Train 0.7609 | Val 0.7654 | Dopant RMSE 0.4639 wt% | Recon 0.4037 | lr 5.00e-04
+[F4] Epoch 010/200 [48.4s] | Train 0.7420 | Val 0.7655 | Dopant RMSE 0.4657 wt% | Recon 0.4019 | lr 5.00e-04
+[F4] Epoch 011/200 [48.5s] | Train 0.7337 | Val 0.7704 | Dopant RMSE 0.4744 wt% | Recon 0.4003 | lr 5.00e-04
+[F4] Epoch 012/200 [50.9s] | Train 0.7252 | Val 0.7664 | Dopant RMSE 0.4678 wt% | Recon 0.4026 | lr 5.00e-04
+[F4] Epoch 013/200 [49.0s] | Train 0.6835 | Val 0.7665 | Dopant RMSE 0.4723 wt% | Recon 0.3971 | lr 2.50e-04
+[F4] Epoch 014/200 [48.6s] | Train 0.6745 | Val 0.7699 | Dopant RMSE 0.4784 wt% | Recon 0.3976 | lr 2.50e-04
+[F4] Epoch 015/200 [48.7s] | Train 0.6677 | Val 0.7772 | Dopant RMSE 0.4905 wt% | Recon 0.3945 | lr 2.50e-04
+[F4] Epoch 016/200 [48.6s] | Train 0.6669 | Val 0.7751 | Dopant RMSE 0.4884 wt% | Recon 0.3942 | lr 2.50e-04
+[F4] Epoch 017/200 [48.6s] | Train 0.6626 | Val 0.7830 | Dopant RMSE 0.4996 wt% | Recon 0.3954 | lr 2.50e-04
+[F4] Epoch 018/200 [48.6s] | Train 0.6395 | Val 0.7762 | Dopant RMSE 0.4916 wt% | Recon 0.3931 | lr 1.25e-04
+[F4] Epoch 019/200 [48.3s] | Train 0.6340 | Val 0.7719 | Dopant RMSE 0.4858 wt% | Recon 0.3924 | lr 1.25e-04
+[F4] Epoch 020/200 [48.5s] | Train 0.6292 | Val 0.7817 | Dopant RMSE 0.5005 wt% | Recon 0.3929 | lr 1.25e-04
+[F4] Epoch 021/200 [48.5s] | Train 0.6259 | Val 0.7811 | Dopant RMSE 0.4998 wt% | Recon 0.3934 | lr 1.25e-04
+[F4] Epoch 022/200 [49.0s] | Train 0.6234 | Val 0.7814 | Dopant RMSE 0.5002 wt% | Recon 0.3915 | lr 1.25e-04
+[F4] Early stop at epoch 22 (Best Dopant RMSE: 0.4446 wt%)
+[F5/7] spec_scaler scale_ = 0.59174
+=== Fold 5/7: train 306672 | val 17453 ===
+[F5] Epoch 001/200 [48.5s] | Train 2.0361 | Val 0.7487 | Dopant RMSE 0.3688 wt% | Recon 0.4452 | lr 1.00e-03
+[F5] Epoch 002/200 [49.5s] | Train 1.0627 | Val 0.7001 | Dopant RMSE 0.3713 wt% | Recon 0.3905 | lr 1.00e-03
+[F5] Epoch 003/200 [47.9s] | Train 1.0134 | Val 0.6643 | Dopant RMSE 0.3322 wt% | Recon 0.3749 | lr 1.00e-03
+[F5] Epoch 004/200 [46.9s] | Train 0.9861 | Val 0.6523 | Dopant RMSE 0.3400 wt% | Recon 0.3544 | lr 1.00e-03
+[F5] Epoch 005/200 [47.3s] | Train 0.9649 | Val 0.6406 | Dopant RMSE 0.3261 wt% | Recon 0.3487 | lr 1.00e-03
+[F5] Epoch 006/200 [47.7s] | Train 0.9451 | Val 0.6497 | Dopant RMSE 0.3553 wt% | Recon 0.3452 | lr 1.00e-03
+[F5] Epoch 007/200 [48.0s] | Train 0.9155 | Val 0.6396 | Dopant RMSE 0.3465 wt% | Recon 0.3398 | lr 1.00e-03
+[F5] Epoch 008/200 [48.4s] | Train 0.8661 | Val 0.6388 | Dopant RMSE 0.3467 wt% | Recon 0.3391 | lr 1.00e-03
+[F5] Epoch 009/200 [48.3s] | Train 0.8283 | Val 0.6238 | Dopant RMSE 0.3235 wt% | Recon 0.3334 | lr 1.00e-03
+[F5] Epoch 010/200 [48.8s] | Train 0.8081 | Val 0.6362 | Dopant RMSE 0.3518 wt% | Recon 0.3314 | lr 1.00e-03
+[F5] Epoch 011/200 [48.5s] | Train 0.7944 | Val 0.6242 | Dopant RMSE 0.3323 wt% | Recon 0.3287 | lr 1.00e-03
+[F5] Epoch 012/200 [48.1s] | Train 0.7888 | Val 0.6367 | Dopant RMSE 0.3635 wt% | Recon 0.3280 | lr 1.00e-03
+[F5] Epoch 013/200 [48.5s] | Train 0.7786 | Val 0.6204 | Dopant RMSE 0.3339 wt% | Recon 0.3225 | lr 1.00e-03
+[F5] Epoch 014/200 [48.0s] | Train 0.7712 | Val 0.6243 | Dopant RMSE 0.3471 wt% | Recon 0.3201 | lr 1.00e-03
+[F5] Epoch 015/200 [48.0s] | Train 0.7087 | Val 0.6179 | Dopant RMSE 0.3422 wt% | Recon 0.3165 | lr 5.00e-04
+[F5] Epoch 016/200 [48.8s] | Train 0.6944 | Val 0.6466 | Dopant RMSE 0.3992 wt% | Recon 0.3147 | lr 5.00e-04
+[F5] Epoch 017/200 [48.7s] | Train 0.6880 | Val 0.6167 | Dopant RMSE 0.3446 wt% | Recon 0.3132 | lr 5.00e-04
+[F5] Epoch 018/200 [49.4s] | Train 0.6848 | Val 0.6114 | Dopant RMSE 0.3340 wt% | Recon 0.3140 | lr 5.00e-04
+[F5] Epoch 019/200 [49.0s] | Train 0.6813 | Val 0.6154 | Dopant RMSE 0.3443 wt% | Recon 0.3123 | lr 5.00e-04
+[F5] Epoch 020/200 [48.1s] | Train 0.6499 | Val 0.6047 | Dopant RMSE 0.3260 wt% | Recon 0.3098 | lr 2.50e-04
+[F5] Epoch 021/200 [48.1s] | Train 0.6421 | Val 0.6105 | Dopant RMSE 0.3392 wt% | Recon 0.3085 | lr 2.50e-04
+[F5] Epoch 022/200 [48.6s] | Train 0.6381 | Val 0.6183 | Dopant RMSE 0.3570 wt% | Recon 0.3092 | lr 2.50e-04
+[F5] Epoch 023/200 [48.2s] | Train 0.6343 | Val 0.6215 | Dopant RMSE 0.3637 wt% | Recon 0.3074 | lr 2.50e-04
+[F5] Epoch 024/200 [48.4s] | Train 0.6316 | Val 0.6215 | Dopant RMSE 0.3640 wt% | Recon 0.3071 | lr 2.50e-04
+[F5] Epoch 025/200 [49.1s] | Train 0.6155 | Val 0.6166 | Dopant RMSE 0.3564 wt% | Recon 0.3065 | lr 1.25e-04
+[F5] Epoch 026/200 [48.2s] | Train 0.6089 | Val 0.6213 | Dopant RMSE 0.3659 wt% | Recon 0.3052 | lr 1.25e-04
+[F5] Epoch 027/200 [49.1s] | Train 0.6051 | Val 0.6184 | Dopant RMSE 0.3611 wt% | Recon 0.3062 | lr 1.25e-04
+[F5] Epoch 028/200 [51.4s] | Train 0.6034 | Val 0.6259 | Dopant RMSE 0.3764 wt% | Recon 0.3053 | lr 1.25e-04
+[F5] Epoch 029/200 [49.8s] | Train 0.6002 | Val 0.6071 | Dopant RMSE 0.3385 wt% | Recon 0.3051 | lr 1.25e-04
+[F5] Early stop at epoch 29 (Best Dopant RMSE: 0.3235 wt%)
+[F6/7] spec_scaler scale_ = 0.59328
+=== Fold 6/7: train 306689 | val 17436 ===
+[F6] Epoch 001/200 [47.2s] | Train 2.1303 | Val 0.9139 | Dopant RMSE 0.4550 wt% | Recon 0.5829 | lr 1.00e-03
+[F6] Epoch 002/200 [47.1s] | Train 1.0637 | Val 0.8138 | Dopant RMSE 0.3692 wt% | Recon 0.5205 | lr 1.00e-03
+[F6] Epoch 003/200 [46.1s] | Train 0.9975 | Val 0.7922 | Dopant RMSE 0.3596 wt% | Recon 0.5046 | lr 1.00e-03
+[F6] Epoch 004/200 [47.3s] | Train 0.9722 | Val 0.7957 | Dopant RMSE 0.3794 wt% | Recon 0.4932 | lr 1.00e-03
+[F6] Epoch 005/200 [48.2s] | Train 0.9523 | Val 0.7761 | Dopant RMSE 0.3567 wt% | Recon 0.4847 | lr 1.00e-03
+[F6] Epoch 006/200 [47.6s] | Train 0.9348 | Val 0.7606 | Dopant RMSE 0.3335 wt% | Recon 0.4828 | lr 1.00e-03
+[F6] Epoch 007/200 [48.2s] | Train 0.9025 | Val 0.7641 | Dopant RMSE 0.3436 wt% | Recon 0.4770 | lr 1.00e-03
+[F6] Epoch 008/200 [47.5s] | Train 0.8561 | Val 0.7542 | Dopant RMSE 0.3319 wt% | Recon 0.4714 | lr 1.00e-03
+[F6] Epoch 009/200 [48.9s] | Train 0.8153 | Val 0.7598 | Dopant RMSE 0.3463 wt% | Recon 0.4736 | lr 1.00e-03
+[F6] Epoch 010/200 [48.4s] | Train 0.7993 | Val 0.7522 | Dopant RMSE 0.3305 wt% | Recon 0.4685 | lr 1.00e-03
+[F6] Epoch 011/200 [48.5s] | Train 0.7822 | Val 0.7540 | Dopant RMSE 0.3439 wt% | Recon 0.4679 | lr 1.00e-03
+[F6] Epoch 012/200 [48.9s] | Train 0.7783 | Val 0.7432 | Dopant RMSE 0.3203 wt% | Recon 0.4646 | lr 1.00e-03
+[F6] Epoch 013/200 [48.4s] | Train 0.7691 | Val 0.7617 | Dopant RMSE 0.3628 wt% | Recon 0.4643 | lr 1.00e-03
+[F6] Epoch 014/200 [47.8s] | Train 0.7598 | Val 0.7434 | Dopant RMSE 0.3317 wt% | Recon 0.4590 | lr 1.00e-03
+[F6] Epoch 015/200 [48.9s] | Train 0.7529 | Val 0.7456 | Dopant RMSE 0.3349 wt% | Recon 0.4591 | lr 1.00e-03
+[F6] Epoch 016/200 [47.8s] | Train 0.7476 | Val 0.7468 | Dopant RMSE 0.3454 wt% | Recon 0.4587 | lr 1.00e-03
+[F6] Epoch 017/200 [48.7s] | Train 0.7329 | Val 0.7550 | Dopant RMSE 0.3632 wt% | Recon 0.4572 | lr 1.00e-03
+[F6] Epoch 018/200 [48.2s] | Train 0.6815 | Val 0.7315 | Dopant RMSE 0.3251 wt% | Recon 0.4509 | lr 5.00e-04
+[F6] Epoch 019/200 [47.6s] | Train 0.6713 | Val 0.7349 | Dopant RMSE 0.3340 wt% | Recon 0.4483 | lr 5.00e-04
+[F6] Epoch 020/200 [48.5s] | Train 0.6641 | Val 0.7398 | Dopant RMSE 0.3458 wt% | Recon 0.4481 | lr 5.00e-04
+[F6] Epoch 021/200 [48.3s] | Train 0.6583 | Val 0.7477 | Dopant RMSE 0.3627 wt% | Recon 0.4489 | lr 5.00e-04
+[F6] Epoch 022/200 [48.5s] | Train 0.6555 | Val 0.7469 | Dopant RMSE 0.3639 wt% | Recon 0.4450 | lr 5.00e-04
+[F6] Epoch 023/200 [48.1s] | Train 0.6267 | Val 0.7566 | Dopant RMSE 0.3867 wt% | Recon 0.4444 | lr 2.50e-04
+[F6] Epoch 024/200 [48.0s] | Train 0.6188 | Val 0.7563 | Dopant RMSE 0.3869 wt% | Recon 0.4439 | lr 2.50e-04
+[F6] Epoch 025/200 [48.6s] | Train 0.6162 | Val 0.7646 | Dopant RMSE 0.4028 wt% | Recon 0.4434 | lr 2.50e-04
+[F6] Epoch 026/200 [48.7s] | Train 0.6129 | Val 0.7564 | Dopant RMSE 0.3880 wt% | Recon 0.4429 | lr 2.50e-04
+[F6] Epoch 027/200 [49.4s] | Train 0.6092 | Val 0.7488 | Dopant RMSE 0.3737 wt% | Recon 0.4428 | lr 2.50e-04
+[F6] Epoch 028/200 [48.8s] | Train 0.5930 | Val 0.7528 | Dopant RMSE 0.3841 wt% | Recon 0.4410 | lr 1.25e-04
+[F6] Epoch 029/200 [49.0s] | Train 0.5888 | Val 0.7545 | Dopant RMSE 0.3873 wt% | Recon 0.4416 | lr 1.25e-04
+[F6] Epoch 030/200 [48.7s] | Train 0.5860 | Val 0.7584 | Dopant RMSE 0.3951 wt% | Recon 0.4416 | lr 1.25e-04
+[F6] Epoch 031/200 [49.5s] | Train 0.5831 | Val 0.7587 | Dopant RMSE 0.3956 wt% | Recon 0.4412 | lr 1.25e-04
+[F6] Epoch 032/200 [48.0s] | Train 0.5823 | Val 0.7492 | Dopant RMSE 0.3783 wt% | Recon 0.4412 | lr 1.25e-04
+[F6] Early stop at epoch 32 (Best Dopant RMSE: 0.3203 wt%)
+[F7/7] spec_scaler scale_ = 0.59313
+=== Fold 7/7: train 306443 | val 17682 ===
+[F7] Epoch 001/200 [49.9s] | Train 2.0669 | Val 0.9292 | Dopant RMSE 0.6569 wt% | Recon 0.4227 | lr 1.00e-03
+[F7] Epoch 002/200 [50.4s] | Train 1.0459 | Val 0.8748 | Dopant RMSE 0.6284 wt% | Recon 0.3829 | lr 1.00e-03
+[F7] Epoch 003/200 [50.1s] | Train 0.9945 | Val 0.8700 | Dopant RMSE 0.6394 wt% | Recon 0.3726 | lr 1.00e-03
+[F7] Epoch 004/200 [47.0s] | Train 0.9674 | Val 0.8551 | Dopant RMSE 0.6331 wt% | Recon 0.3608 | lr 1.00e-03
+[F7] Epoch 005/200 [47.1s] | Train 0.9456 | Val 0.8458 | Dopant RMSE 0.6328 wt% | Recon 0.3480 | lr 1.00e-03
+[F7] Epoch 006/200 [49.2s] | Train 0.9325 | Val 0.8535 | Dopant RMSE 0.6457 wt% | Recon 0.3470 | lr 1.00e-03
+[F7] Epoch 007/200 [48.6s] | Train 0.9196 | Val 0.8484 | Dopant RMSE 0.6425 wt% | Recon 0.3447 | lr 1.00e-03
+[F7] Epoch 008/200 [48.4s] | Train 0.8038 | Val 0.8389 | Dopant RMSE 0.6375 wt% | Recon 0.3403 | lr 5.00e-04
+[F7] Epoch 009/200 [47.9s] | Train 0.7531 | Val 0.8349 | Dopant RMSE 0.6355 wt% | Recon 0.3348 | lr 5.00e-04
+[F7] Epoch 010/200 [48.5s] | Train 0.7399 | Val 0.8330 | Dopant RMSE 0.6347 wt% | Recon 0.3333 | lr 5.00e-04
+[F7] Epoch 011/200 [49.0s] | Train 0.7284 | Val 0.8257 | Dopant RMSE 0.6275 wt% | Recon 0.3331 | lr 5.00e-04
+[F7] Epoch 012/200 [48.4s] | Train 0.7199 | Val 0.8326 | Dopant RMSE 0.6371 wt% | Recon 0.3333 | lr 5.00e-04
+[F7] Epoch 013/200 [48.6s] | Train 0.7173 | Val 0.8258 | Dopant RMSE 0.6305 wt% | Recon 0.3270 | lr 5.00e-04
+[F7] Epoch 014/200 [49.3s] | Train 0.7076 | Val 0.8310 | Dopant RMSE 0.6382 wt% | Recon 0.3300 | lr 5.00e-04
+[F7] Epoch 015/200 [49.1s] | Train 0.7014 | Val 0.8325 | Dopant RMSE 0.6404 wt% | Recon 0.3288 | lr 5.00e-04
+[F7] Epoch 016/200 [48.9s] | Train 0.6987 | Val 0.8336 | Dopant RMSE 0.6431 wt% | Recon 0.3273 | lr 5.00e-04
+[F7] Epoch 017/200 [49.3s] | Train 0.6587 | Val 0.8291 | Dopant RMSE 0.6413 wt% | Recon 0.3254 | lr 2.50e-04
+[F7] Epoch 018/200 [48.7s] | Train 0.6526 | Val 0.8228 | Dopant RMSE 0.6345 wt% | Recon 0.3239 | lr 2.50e-04
+[F7] Epoch 019/200 [47.5s] | Train 0.6474 | Val 0.8175 | Dopant RMSE 0.6289 wt% | Recon 0.3240 | lr 2.50e-04
+[F7] Epoch 020/200 [48.4s] | Train 0.6447 | Val 0.8240 | Dopant RMSE 0.6368 wt% | Recon 0.3252 | lr 2.50e-04
+[F7] Epoch 021/200 [48.4s] | Train 0.6407 | Val 0.8170 | Dopant RMSE 0.6290 wt% | Recon 0.3238 | lr 2.50e-04
+[F7] Epoch 022/200 [48.3s] | Train 0.6210 | Val 0.8176 | Dopant RMSE 0.6316 wt% | Recon 0.3210 | lr 1.25e-04
+[F7] Epoch 023/200 [48.9s] | Train 0.6168 | Val 0.8310 | Dopant RMSE 0.6468 wt% | Recon 0.3201 | lr 1.25e-04
+[F7] Epoch 024/200 [48.6s] | Train 0.6134 | Val 0.8250 | Dopant RMSE 0.6402 wt% | Recon 0.3193 | lr 1.25e-04
+[F7] Epoch 025/200 [48.8s] | Train 0.6101 | Val 0.8226 | Dopant RMSE 0.6376 wt% | Recon 0.3197 | lr 1.25e-04
+[F7] Epoch 026/200 [48.2s] | Train 0.6073 | Val 0.8236 | Dopant RMSE 0.6391 wt% | Recon 0.3191 | lr 1.25e-04
+[F7] Epoch 027/200 [48.3s] | Train 0.5954 | Val 0.8236 | Dopant RMSE 0.6398 wt% | Recon 0.3193 | lr 6.25e-05
+[F7] Epoch 028/200 [48.3s] | Train 0.5919 | Val 0.8217 | Dopant RMSE 0.6376 wt% | Recon 0.3189 | lr 6.25e-05
+[F7] Epoch 029/200 [48.8s] | Train 0.5896 | Val 0.8253 | Dopant RMSE 0.6418 wt% | Recon 0.3192 | lr 6.25e-05
+[F7] Epoch 030/200 [48.1s] | Train 0.5883 | Val 0.8236 | Dopant RMSE 0.6402 wt% | Recon 0.3188 | lr 6.25e-05
+[F7] Epoch 031/200 [48.5s] | Train 0.5854 | Val 0.8220 | Dopant RMSE 0.6383 wt% | Recon 0.3189 | lr 6.25e-05
+[F7] Early stop at epoch 31 (Best Dopant RMSE: 0.6275 wt%)
+
+✅ P3VAE Encoder OOF Summary | Mean Dopant RMSE: 0.4391 wt% | Mean R^2: 0.5259
+
+===============================================================================================
+ P3VAE Encoder OOF Benchmarks [Syn+Exp]
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.776 |     0.9871 |     1.4931 |      2.842
+Ce       | Predict Mean       |   -0.000 |     1.0185 |     1.1203 |      2.842
+Ce       | P3VAE Encoder      |    0.988 |     0.0682 |     0.1223 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.188 |     0.3554 |     0.8940 |      2.937
+Gd       | Predict Mean       |   -0.000 |     0.5860 |     0.8204 |      2.937
+Gd       | P3VAE Encoder      |    0.602 |     0.2513 |     0.5176 |      2.937
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.010 |     0.0544 |     0.5525 |      5.857
+Sm       | Predict Mean       |   -0.000 |     0.1076 |     0.5498 |      5.857
+Sm       | P3VAE Encoder      |   -0.050 |     0.1011 |     0.5633 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.294 |     0.4538 |     0.9520 |      6.040
+U        | Predict Mean       |   -0.000 |     0.5870 |     0.8368 |      6.040
+U        | P3VAE Encoder      |    0.563 |     0.2142 |     0.5532 |      6.040
+-----------------------------------------------------------------------------------------------
+=== Top 5 Worst Performing Composition Groups (wt%) ===
+Group 118  | Shots: 1023 | Log-MSE: 1.1672 | True: [0.    0.    5.857 0.   ] | Pred Mean: [0.028 0.835 0.024 1.207]
+Group 1103 | Shots: 1    | Log-MSE: 0.8420 | True: [0.    1.769 0.    6.04 ] | Pred Mean: [0.13  1.316 0.158 0.145]
+Group 1105 | Shots: 1    | Log-MSE: 0.8353 | True: [0.    1.769 0.    6.04 ] | Pred Mean: [0.12  1.937 0.164 0.144]
+Group 91   | Shots: 1    | Log-MSE: 0.7583 | True: [0.    0.    5.268 0.   ] | Pred Mean: [0.131 0.047 0.104 0.029]
+Group 630  | Shots: 1    | Log-MSE: 0.5139 | True: [0.    0.    4.577 0.   ] | Pred Mean: [0.034 0.105 0.337 0.065]
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/p3vae_oof_parity_20261110b_20261112_043404.png
+
+=========================================================================================================
+ P3VAE Decoder OOF Spectral Reconstruction Benchmarks [Syn+Exp]
+ Note: Full Decoder uses spectrum-encoded matrix residual (autoencoder upper bound);
+       True-Conc Physics uses 7 modeled elements + spectrum-inferred broadening.
+=========================================================================================================
+Decoder Pathway                                      | Spectral RMSE   | Overall R^2 
+---------------------------------------------------------------------------------------------------------
+Mean-Spectrum Baseline                               |         0.00810 |       0.2830
+Physics-Only Decoder (Pred Conc -> NIST)             |         0.00997 |      -0.0859
+Physics Decoder (True 7-Elem Conc + Pred Gamma)      |         0.00997 |      -0.0865
+Full P3VAE Decoder (Physics + Matrix Residual)       |         0.00364 |       0.8553
+=========================================================================================================
+Saved Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/p3vae_oof_spectra_full_20261110b_20261112_043404.png
+Saved Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/p3vae_oof_spectra_physics_20261110b_20261112_043404.png
+Saved Physics vs. Residual Breakdown Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/p3vae_oof_physics_vs_residual_20261110b_20261112_043404.png
+Cached compact P3VAE encoder + decoder results to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/p3vae_predictions_20261110b.npz
+P3VAE Pipeline completed in 181.45 minutes.
+✅ SUCCESS: p3vae_700.py finished cleanly.
+
+==========================================================================
+ ALL EXPERIMENT RUNS COMPLETED
+==========================================================================

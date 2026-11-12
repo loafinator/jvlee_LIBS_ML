@@ -5,6 +5,7 @@ import time
 import h5py
 import torch
 import hashlib
+import gc
 
 import numpy as np
 import pandas as pd
@@ -40,7 +41,7 @@ DOPANT_NAMES = {'Ce', 'Gd', 'Sm', 'U'}
 
 # Candidate range for PLS components
 # Component number capped by number of target input elements (e.g. 4 dopants)
-N_COMPONENTS_GRID = [1,2,3,4,5,6,7]
+N_COMPONENTS_GRID = [1,2,3,4]
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -58,21 +59,38 @@ class PyTorchPLS:
         self.mean_Y: torch.Tensor | None = None
         self.B: torch.Tensor | None = None
 
-    def fit(self, X: torch.Tensor, Y: torch.Tensor):
+    def fit(
+            self, 
+            X: torch.Tensor, 
+            Y: torch.Tensor,
+            train_mask: torch.Tensor | None = None
+        ):
         N, P = X.shape
         M = Y.shape[1]
 
-        # Standardize X and center Y
-        self.mean_X = X.mean(dim=0, keepdim=True)
-        self.std_X = X.std(dim=0, keepdim=True).clamp(min=1e-6)
-        self.mean_Y = Y.mean(dim=0, keepdim=True)
+        if train_mask is None:
+            w_1d = torch.ones(N, dtype=X.dtype, device=X.device)
+        else:
+            w_1d = train_mask.to(dtype=X.dtype)
 
-        # In-place standardization on GPU tensor to save VRAM
-        X.sub_(self.mean_X).div_(self.std_X)
-        Y0 = Y - self.mean_Y
+        w = w_1d.unsqueeze(1)  # [N x 1]
+        n_tr = w_1d.sum()
+        if n_tr < 2:
+            raise ValueError(f"Need at least 2 training samples, got {n_tr.item()}.")
 
-        # Initial Cross-Covariance Matrix S [P x M]
-        S = torch.matmul(X.T, Y0)
+        # Masked column statistics for tiny X [N x 4] and large Y [N x P]
+        self.mean_X = (X * w).sum(dim=0, keepdim=True) / n_tr
+        var_X = (((X - self.mean_X) ** 2) * w).sum(dim=0, keepdim=True) / (n_tr - 1)
+        self.std_X = var_X.sqrt().clamp(min=1e-6)
+
+        # Single BLAS gemv/gemm for mean_Y with zero [N x P] intermediate allocation
+        self.mean_Y = torch.matmul(w.T, Y) / n_tr
+
+        # Standardize X and zero out non-training rows so they contribute nothing
+        Xs = ((X - self.mean_X) / self.std_X) * w
+
+        # Because Xs sums to 0 over training rows, Xs.T @ (Y - mean_Y) == Xs.T @ Y
+        S = torch.matmul(Xs.T, Y)
 
         R = torch.zeros((P, self.n_components), dtype=X.dtype, device=X.device)
         Q = torch.zeros((M, self.n_components), dtype=X.dtype, device=X.device)
@@ -83,17 +101,21 @@ class PyTorchPLS:
             U, _, _ = torch.linalg.svd(S, full_matrices=False)
             r_a = U[:, 0]
 
-            # Compute score t_a and normalize
-            t_a = torch.matmul(X, r_a)
-            t_a = t_a - t_a.mean()
+            # Compute score t_a; non-training rows stay strictly 0.0
+            t_a = torch.matmul(Xs, r_a)
+            t_mean = t_a.sum() / n_tr
+            t_a = (t_a - t_mean) * w_1d
+
             norm_t = torch.linalg.norm(t_a)
-            if norm_t < 1e-08: break
+            if norm_t < 1e-08:
+                break
             t_a = t_a / norm_t
             r_a = r_a / norm_t
 
-            # Compute loadings
-            p_a = torch.matmul(X.T, t_a)
-            q_a = torch.matmul(Y0.T, t_a)
+            # Because t_a sums to 0 over training rows and is 0 elsewhere,
+            # Y.T @ t_a == (Y - mean_Y).T @ t_a
+            p_a = torch.matmul(Xs.T, t_a)
+            q_a = torch.matmul(Y.T, t_a)
 
             R[:, a] = r_a
             Q[:, a] = q_a
@@ -217,6 +239,19 @@ def build_splits_for_seed(data, split_dir, num_folds, seed):
     )
     return test_idx, cv_idx, cv_fold_id
 
+def compute_chunked_sse(
+    pred_buf: torch.Tensor,
+    X_cv_gpu: torch.Tensor,
+    exp_rows_gpu: torch.Tensor,
+    chunk_size: int = 4096,
+) -> torch.Tensor:
+    """Computes sum of squared errors against X_cv_gpu[exp_rows_gpu] in small chunks."""
+    sse = torch.zeros((), dtype=torch.float64, device=pred_buf.device)
+    dst_rows = torch.arange(exp_rows_gpu.numel(), device=pred_buf.device)
+    for dst_c, src_c in zip(torch.split(dst_rows, chunk_size), torch.split(exp_rows_gpu, chunk_size)):
+        sse += (X_cv_gpu[src_c] - pred_buf[dst_c]).pow_(2).sum(dtype=torch.float64)
+    return sse
+
 def compute_dataset_fingerprint(data: dict) -> str:
     """Computes a fast cryptographic hash of targets, groups, and lockbox flags."""
     h = hashlib.blake2b(digest_size=16)
@@ -280,31 +315,48 @@ def plot_spectral_reconstruction(
     wavelengths: np.ndarray,
     y_concentrations: np.ndarray,
     elem_names: list[str],
-    save_path: Path | None = None
+    save_path: Path | None = None,
+    model_name: str = "Reverse PLS"
 ):
-    """Plots True vs Predicted spectra across wavelength grid for sample spectra.
-    
-    Selects representative samples: one dominant sample per dopant, one complex multi-dopant mixture,
-    and one trace concentration sample.
-    """
+    """Plots True vs Predicted spectra across wavelength grid for sample spectra."""
     sample_indices = []
     sample_tags = []
 
-    # in plot_spectral_reconstruction, replacing the selection block
     dop_cols = [j for j, n in enumerate(elem_names) if n in DOPANT_NAMES]
     Yd = y_concentrations[:, dop_cols]
 
-    # 1. One sample per dopant
+    # 1. One MAX sample per dopant (RESTRICTED TO PURE SINGLE-DOPANT SAMPLES)
     for j in dop_cols:
-        if y_concentrations[:, j].max() <= 0:      # dopant absent in this set (e.g. lockbox)
+        if y_concentrations[:, j].max() <= 0:
             continue
-        sample_indices.append(int(np.argmax(y_concentrations[:, j])))
-        sample_tags.append(f"Max {elem_names[j]}")
+        
+        # Identify columns of ALL OTHER dopants
+        other_dop_cols = [c for c in dop_cols if c != j]
+        
+        if other_dop_cols:
+            # Check where all other dopants are zero/absent
+            other_sums = y_concentrations[:, other_dop_cols].sum(axis=1)
+            pure_mask = (other_sums <= 1e-5) & (y_concentrations[:, j] > 0)
+        else:
+            pure_mask = y_concentrations[:, j] > 0
 
-    # 2. Complex mixture, entropy over dopants only
+        pure_indices = np.where(pure_mask)[0]
+
+        if len(pure_indices) > 0:
+            # Pick maximum concentration among PURE single-dopant samples
+            best_local_idx = np.argmax(y_concentrations[pure_indices, j])
+            best_idx = int(pure_indices[best_local_idx])
+            sample_tags.append(f"Max Pure {elem_names[j]}")
+        else:
+            # Fallback to global max if no pure sample exists in the split
+            best_idx = int(np.argmax(y_concentrations[:, j]))
+            sample_tags.append(f"Max {elem_names[j]} (Mixed)")
+
+        sample_indices.append(best_idx)
+
+    # 2. Complex mixture (highest entropy across dopants)
     row_sums = Yd.sum(axis=1, keepdims=True)
     conc_norm = np.divide(Yd, row_sums, out=np.zeros_like(Yd, dtype=float), where=row_sums > 0)
-    # Avoids calculating log(0) in masked slots
     log_conc = np.zeros_like(conc_norm)
     mask = conc_norm > 0
     log_conc[mask] = np.log(conc_norm[mask])
@@ -312,7 +364,7 @@ def plot_spectral_reconstruction(
     sample_indices.append(int(np.argmax(entropy)))
     sample_tags.append("Complex Mixture")
 
-    # 3. Trace: lowest positive total *dopant* concentration
+    # 3. Trace concentration (lowest positive total dopant concentration)
     total_conc = Yd.sum(axis=1)
     pos = np.where(total_conc > 0)[0]
     trace_idx = int(pos[np.argmin(total_conc[pos])]) if len(pos) else int(np.argmin(total_conc))
@@ -327,7 +379,7 @@ def plot_spectral_reconstruction(
         ax = axes_flat[plot_idx]
         xt = x_true[sample_idx]
         xp = x_pred[sample_idx]
-        # Build concentration string for trace dopants ONLY (omits Li, K, Cl)
+
         conc_str = ", ".join(
             f"{elem_names[j]}: {y_concentrations[sample_idx, j]:.2f}%"
             for j in dop_cols if y_concentrations[sample_idx, j] > 0
@@ -339,7 +391,7 @@ def plot_spectral_reconstruction(
         rmse = np.sqrt(mean_squared_error(xt, xp))
 
         ax.plot(wavelengths, xt, label="True Spectrum", color="black", alpha=0.7, lw=1.0)
-        ax.plot(wavelengths, xp, label="PLS Reverse Pred", color="crimson", alpha=0.8, lw=0.9, linestyle="--")
+        ax.plot(wavelengths, xp, label=f"{model_name} Pred", color="crimson", alpha=0.8, lw=0.9, linestyle="--")
         ax.set_title(f"[{tag}] Sample {sample_idx} ({conc_str}) | $R^2$: {r2:.4f} | RMSE: {rmse:.5f}", fontsize=9, fontweight="bold")
         ax.set_ylabel("Norm Intensity", fontsize=8)
         ax.grid(True, linestyle=":", alpha=0.5)
@@ -347,7 +399,7 @@ def plot_spectral_reconstruction(
             ax.legend(loc="upper right", fontsize=8)
 
     axes_flat[-1].set_xlabel("Wavelength (nm)", fontsize=9)
-    plt.suptitle("Reverse PLS Spectral Reconstruction ($Y \\rightarrow X$)", fontsize=11, fontweight="bold", y=1.01)
+    plt.suptitle(f"{model_name} Spectral Reconstruction ($Y \\rightarrow X$)", fontsize=11, fontweight="bold", y=1.01)
     plt.tight_layout()
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches="tight")
@@ -471,12 +523,17 @@ def main(
     pos_in_exp[exp_rows] = np.arange(n_exp)
 
     exp_rows_gpu = torch.from_numpy(exp_rows).to(DEVICE)
-    X_true_exp = X_cv_gpu[exp_rows_gpu]                 # (n_exp, P), stays on GPU
-    Y_exp = Y_cv_gpu[exp_rows_gpu]
+    n_elem = n_exp * P
 
-    x_mean = X_true_exp.mean(dtype=torch.float64).item()
-    sst = ((X_true_exp - x_mean) ** 2).sum(dtype=torch.float64)   # constant across grid
-    n_elem = X_true_exp.numel()
+    # Compute x_mean and sst in chunks so we never keep a 9.25 GiB X_true_exp copy on GPU
+    x_sum = torch.zeros((), dtype=torch.float64, device=DEVICE)
+    for chunk in torch.split(exp_rows_gpu, 4096):
+        x_sum += X_cv_gpu[chunk].sum(dtype=torch.float64)
+    x_mean = (x_sum / n_elem).item()
+
+    sst = torch.zeros((), dtype=torch.float64, device=DEVICE)
+    for chunk in torch.split(exp_rows_gpu, 4096):
+        sst += (X_cv_gpu[chunk] - x_mean).pow_(2).sum(dtype=torch.float64)
 
     is_synth_cv = data['is_synth'][cv_idx]
     # after is_synth_cv is defined, before data['X'] = None isn't needed since X is on GPU
@@ -486,6 +543,8 @@ def main(
         mu_syn = X_cv_gpu[syn_rows].mean(dim=0)
         mu_exp = X_cv_gpu[exp_rows_t].mean(dim=0)
         diff = (mu_syn - mu_exp).cpu().numpy()
+        del syn_rows, exp_rows_t, mu_syn, mu_exp
+        torch.cuda.empty_cache()
 
         wl = data['wavelengths']
         for lo, hi in [(250, 400), (400, 600), (600, 700), (700, 850), (850, 1000)]:
@@ -502,14 +561,18 @@ def main(
         for k in range(NUM_FOLDS):
             train_np = (cv_fold_id != k) if include_synthetic else ((cv_fold_id != k) & (is_synth_cv == 0))
             val_np = cv_fold_id == k
-            mu = X_cv_gpu[torch.from_numpy(train_np).to(DEVICE)].mean(dim=0, keepdim=True)
+            w_tr = torch.from_numpy(train_np).to(device=DEVICE, dtype=X_cv_gpu.dtype).unsqueeze(1)
+            mu = torch.matmul(w_tr.T, X_cv_gpu) / w_tr.sum()
             base_sum[torch.from_numpy(pos_in_exp[val_np]).to(DEVICE)] += mu
-    base = base_sum / len(seeds)
-    sse_base = ((X_true_exp - base) ** 2).sum(dtype=torch.float64)
+
+    base_sum.div_(len(seeds))
+    sse_base = compute_chunked_sse(base_sum, X_cv_gpu, exp_rows_gpu)
+    del base_sum
+    torch.cuda.empty_cache()
     print(f"Mean-spectrum baseline | RMSE: {torch.sqrt(sse_base / n_elem).item():.5f} | R^2: {(1 - sse_base / sst).item():.4f}")
-    
+
     print("\n--- Tuning Reverse PLS Components via Multi-Seed GPU Cross-Validation ---")
-    best_oof_gpu = None
+    best_oof_cpu: torch.Tensor | None = None
     best_overall_rmse = float('inf')
     n_comp_grid = [c for c in N_COMPONENTS_GRID if c <= Y_cv_gpu.shape[1]]
     best_n_comp = n_comp_grid[0]
@@ -528,29 +591,30 @@ def main(
                 val_np = cv_fold_id == k
 
                 train_mask = torch.from_numpy(train_np).to(DEVICE)
-                val_dst = torch.from_numpy(pos_in_exp[val_np]).to(DEVICE)   # rows in exp-only buffer
+                val_dst = torch.from_numpy(pos_in_exp[val_np]).to(DEVICE)
                 val_mask = torch.from_numpy(val_np).to(DEVICE)
 
                 pls = PyTorchPLS(n_components=n_comp)
-                pls.fit(Y_cv_gpu[train_mask].clone(), X_cv_gpu[train_mask])
+                # Zero-copy masked fit: never subsets X_cv_gpu or centers Y
+                pls.fit(Y_cv_gpu, X_cv_gpu, train_mask=train_mask)
                 oof_sum[val_dst] += pls.predict(Y_cv_gpu[val_mask])
                 del pls
 
-        oof = torch.clamp(oof_sum / len(seeds), min=0.0)
-        del oof_sum
+        oof_sum.div_(len(seeds)).clamp_(min=0.0)
 
-        sse = ((X_true_exp - oof) ** 2).sum(dtype=torch.float64)
+        sse = compute_chunked_sse(oof_sum, X_cv_gpu, exp_rows_gpu)
         mean_rmse = torch.sqrt(sse / n_elem).item()
         mean_r2 = (1.0 - sse / sst).item()
         dt = time.perf_counter() - t_grid_start
         skill = (1.0 - sse / sse_base).item()
         print(f"n_components = {n_comp:2d} | PLS Addition: {skill:7.4f} | Spectral OOF RMSE: {mean_rmse:7.5f} | Overall R^2: {mean_r2:7.4f} | Elapsed: {dt:.2f}s")
 
-        if best_oof_gpu is None or mean_rmse < best_overall_rmse:
+        if best_oof_cpu is None or mean_rmse < best_overall_rmse:
             best_overall_rmse, best_n_comp = mean_rmse, n_comp
-            best_oof_gpu = oof          # keep on GPU, no host copy
-        else:
-            del oof
+            best_oof_cpu = oof_sum.cpu()  # Offload to host RAM immediately
+
+        del oof_sum
+        torch.cuda.empty_cache()
 
     # 3. Lockbox Reverse Prediction Ensemble
     total_models = len(seeds) * NUM_FOLDS
@@ -565,18 +629,14 @@ def main(
             else:
                 train_mask = torch.from_numpy((cv_fold_id != k) & (is_synth_cv == 0)).to(DEVICE)
 
-            X_tr_gpu = X_cv_gpu[train_mask]
-            Y_tr_gpu = Y_cv_gpu[train_mask]
-
             pls = PyTorchPLS(n_components=best_n_comp)
-            pls.fit(Y_tr_gpu.clone(), X_tr_gpu)
-
+            pls.fit(Y_cv_gpu, X_cv_gpu, train_mask=train_mask)
             lockbox_sum_gpu += pls.predict(Y_test_gpu)
-
-            del X_tr_gpu, Y_tr_gpu, pls
-            torch.cuda.empty_cache()
+            del pls
 
     lockbox_pred_avg = torch.clamp(lockbox_sum_gpu / total_models, min=0.0).cpu().numpy()
+    del lockbox_sum_gpu
+    torch.cuda.empty_cache()
 
     # Calculate & print lockbox metrics to terminal
     x_test_true = X_test_gpu.cpu().numpy()
@@ -584,15 +644,20 @@ def main(
     lockbox_r2 = r2_score(x_test_true.ravel(), lockbox_pred_avg.ravel())
     print(f"\n✅ Lockbox Reverse PLS Performance | Spectral RMSE: {lockbox_rmse:.5f} | Overall R^2: {lockbox_r2:.4f}")
 
+    # Move ground-truth experimental CV spectra & concentrations to host RAM once for plots/cache
+    x_true_exp_np = X_cv_gpu[exp_rows_gpu].cpu().numpy()
+    y_exp_np = Y_cv_gpu[exp_rows_gpu].cpu().numpy()
+    best_oof_np = best_oof_cpu.numpy()  # type: ignore
+
     # 4. Save Reverse Spectral Overlay Plots
     oof_plot_path = output_dir / f"reverse_pls_oof_spectra_{dataset_tag}_{TIMESTAMP}.png"
     lockbox_plot_path = output_dir / f"reverse_pls_lockbox_spectra_{dataset_tag}_{TIMESTAMP}.png"
 
     plot_spectral_reconstruction(
-        x_true=X_true_exp.cpu().numpy(),
-        x_pred=best_oof_gpu.cpu().numpy(), # type: ignore
+        x_true=x_true_exp_np,
+        x_pred=best_oof_np,
         wavelengths=data['wavelengths'],
-        y_concentrations=Y_exp.cpu().numpy(),
+        y_concentrations=y_exp_np,
         elem_names=actual_target_names,
         save_path=oof_plot_path,
     )
@@ -608,7 +673,22 @@ def main(
 
     print(f"Reverse PLS Pipeline completed in {(time.perf_counter() - t0_start):.2f} seconds.")
 
-    del X_cv_gpu, Y_cv_gpu, X_test_gpu, Y_test_gpu, X_true_exp, best_oof_gpu
+    cache_path = output_dir / f"pls_reverse_prediction_{dataset_tag}.npz"
+    np.savez(
+        cache_path,
+        x_true_cv=x_true_exp_np,
+        x_pred_cv=best_oof_np,
+        y_conc_cv=y_exp_np,
+        x_true_test=x_test_true,
+        x_pred_test=lockbox_pred_avg,
+        y_conc_test=Y_test_gpu.cpu().numpy(),
+        wavelengths=data['wavelengths'],
+        target_names=np.array(actual_target_names)
+    )
+    print(f"Cached predictions to: {cache_path}")
+
+    del X_cv_gpu, Y_cv_gpu, X_test_gpu, Y_test_gpu, exp_rows_gpu, best_oof_cpu
+    gc.collect()
     torch.cuda.empty_cache()
 
 
@@ -617,20 +697,20 @@ if __name__ == "__main__":
     Did you run the final combo in NIST_data.py to get the synthetic data set already?
     """
     
-    main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
-        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_reverse_benchmark/processed-data_20261110b/exp"),
-        include_synthetic=False,
-        seeds=SEEDS,
-        dataset_tag='20261110b',
-        target_names=['Ce', 'Gd', 'Sm', 'U']
-    )
+    # main(
+    #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
+    #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
+    #     output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/PLS_reverse/processed-data_20261110b/exp"),
+    #     include_synthetic=False,
+    #     seeds=SEEDS,
+    #     dataset_tag='20261110b',
+    #     target_names=['Ce', 'Gd', 'Sm', 'U']
+    # )
     
     main(
         h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
         split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/plots/pls_reverse_benchmark/processed-data_20261110b/exp-syn"),
+        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/PLS_reverse/processed-data_20261110b/exp-syn"),
         include_synthetic=True,
         seeds=SEEDS,
         dataset_tag='20261110b',

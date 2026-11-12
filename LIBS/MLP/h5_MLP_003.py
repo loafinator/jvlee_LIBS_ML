@@ -258,37 +258,72 @@ def plot_spectral_reconstruction(
     wavelengths: np.ndarray,
     y_concentrations: np.ndarray,
     elem_names: list[str],
-    save_path: Path | None = None
+    save_path: Path | None = None,
+    sample_nums: list[int] | None = None,
+    model_name: str = "Reverse MLP"
 ):
     """Plots True vs Predicted spectra across wavelength grid for sample spectra."""
-    sample_indices = []
-    sample_tags = []
+    sample_indices: list[int] = []
+    sample_tags: list[str] = []
 
-    dop_cols = [j for j, n in enumerate(elem_names) if n in DOPANT_NAMES]
+    # Identify dopant columns (fallback to non-host elements if DOPANT_NAMES isn't in scope)
+    if 'DOPANT_NAMES' in globals():
+        dop_cols = [j for j, n in enumerate(elem_names) if n in globals()['DOPANT_NAMES']]
+    else:
+        dop_cols = [j for j, n in enumerate(elem_names) if n not in {'Li', 'K', 'Cl'}]
+
+    if not dop_cols:
+        dop_cols = list(range(y_concentrations.shape[1]))
+
     Yd = y_concentrations[:, dop_cols]
 
-    for j in dop_cols:
-        if y_concentrations[:, j].max() <= 0:
-            continue
-        sample_indices.append(int(np.argmax(y_concentrations[:, j])))
-        sample_tags.append(f"Max {elem_names[j]}")
+    if sample_nums is not None and len(sample_nums) > 0:
+        # Explicit sample numbers supplied
+        sample_indices = [int(idx) for idx in sample_nums if 0 <= idx < len(x_true)]
+        sample_tags = [f"Sample {idx}" for idx in sample_indices]
+    else:
+        # Auto-select representative samples (RESTRICTED TO PURE SINGLE-DOPANT SAMPLES)
+        for j in dop_cols:
+            if y_concentrations[:, j].max() <= 0:
+                continue
+            other_dop_cols = [c for c in dop_cols if c != j]
+            if other_dop_cols:
+                other_sums = y_concentrations[:, other_dop_cols].sum(axis=1)
+                pure_mask = (other_sums <= 1e-5) & (y_concentrations[:, j] > 0)
+            else:
+                pure_mask = y_concentrations[:, j] > 0
 
-    row_sums = Yd.sum(axis=1, keepdims=True)
-    conc_norm = np.divide(Yd, row_sums, out=np.zeros_like(Yd, dtype=float), where=row_sums > 0)
-    log_conc = np.zeros_like(conc_norm)
-    mask = conc_norm > 0
-    log_conc[mask] = np.log(conc_norm[mask])
-    entropy = -np.sum(conc_norm * log_conc, axis=1)
-    sample_indices.append(int(np.argmax(entropy)))
-    sample_tags.append("Complex Mixture")
+            pure_indices = np.where(pure_mask)[0]
+            if len(pure_indices) > 0:
+                best_idx = int(pure_indices[np.argmax(y_concentrations[pure_indices, j])])
+                sample_tags.append(f"Max Pure {elem_names[j]}")
+            else:
+                best_idx = int(np.argmax(y_concentrations[:, j]))
+                sample_tags.append(f"Max {elem_names[j]} (Mixed)")
+            sample_indices.append(best_idx)
 
-    total_conc = Yd.sum(axis=1)
-    pos = np.where(total_conc > 0)[0]
-    trace_idx = int(pos[np.argmin(total_conc[pos])]) if len(pos) else int(np.argmin(total_conc))
-    sample_indices.append(trace_idx)
-    sample_tags.append("Trace Concentration")
+        # Complex mixture sample (highest normalized concentration entropy)
+        row_sums = Yd.sum(axis=1, keepdims=True)
+        conc_norm = np.divide(Yd, row_sums, out=np.zeros_like(Yd, dtype=float), where=row_sums > 0)
+        log_conc = np.zeros_like(conc_norm)
+        mask = conc_norm > 0
+        log_conc[mask] = np.log(conc_norm[mask])
+        entropy = -np.sum(conc_norm * log_conc, axis=1)
+        sample_indices.append(int(np.argmax(entropy)))
+        sample_tags.append("Complex Mixture")
+
+        # Trace concentration sample
+        total_conc = Yd.sum(axis=1)
+        pos = np.where(total_conc > 0)[0]
+        trace_idx = int(pos[np.argmin(total_conc[pos])]) if len(pos) else int(np.argmin(total_conc))
+        sample_indices.append(trace_idx)
+        sample_tags.append("Trace Concentration")
 
     n_plots = len(sample_indices)
+    if n_plots == 0:
+        print("⚠️ No valid sample indices available to plot.")
+        return
+
     fig, axes = plt.subplots(n_plots, 1, figsize=(12, 2.5 * n_plots), sharex=True)
     axes_flat = np.atleast_1d(axes)
 
@@ -307,7 +342,7 @@ def plot_spectral_reconstruction(
         rmse = np.sqrt(mean_squared_error(xt, xp))
 
         ax.plot(wavelengths, xt, label="True Spectrum", color="black", alpha=0.7, lw=1.0)
-        ax.plot(wavelengths, xp, label="Reverse MLP Pred", color="crimson", alpha=0.8, lw=0.9, linestyle="--")
+        ax.plot(wavelengths, xp, label=f"{model_name} Pred", color="crimson", alpha=0.8, lw=0.9, linestyle="--")
         ax.set_title(f"[{tag}] Sample {sample_idx} ({conc_str}) | $R^2$: {r2:.4f} | RMSE: {rmse:.5f}", fontsize=9, fontweight="bold")
         ax.set_ylabel("Norm Intensity", fontsize=8)
         ax.grid(True, linestyle=":", alpha=0.5)
@@ -315,7 +350,7 @@ def plot_spectral_reconstruction(
             ax.legend(loc="upper right", fontsize=8)
 
     axes_flat[-1].set_xlabel("Wavelength (nm)", fontsize=9)
-    plt.suptitle("Reverse MLP Spectral Reconstruction ($Y \\rightarrow X$)", fontsize=11, fontweight="bold", y=1.01)
+    plt.suptitle(f"{model_name} Spectral Reconstruction ($Y \\rightarrow X$)", fontsize=11, fontweight="bold", y=1.01)
     plt.tight_layout()
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches="tight")
@@ -472,7 +507,9 @@ def main(
         include_synthetic: bool = False,
         seeds: list[int] = SEEDS,
         dataset_tag: str = '20261110b',
-        target_names: list[str] | None = None
+        target_names: list[str] | None = None,
+        include_lbx: bool = False,
+        sample_nums: list[int] | None = [352,43999,21552,19216,0,57626]
 ):
     TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
     print(f"=== Starting Fast Reverse MLP Pipeline (Concentrations -> Spectra) [{DEVICE}] ===")
@@ -496,7 +533,6 @@ def main(
 
     test_idx = seed_splits[seeds[0]][0]
     cv_idx = seed_splits[seeds[0]][1]
-    has_test = len(test_idx) > 0
 
     if target_names is None:
         target_names = TARGET_NAMES
@@ -510,8 +546,8 @@ def main(
     Y_cv_cpu = data['y'][cv_idx][:, target_indices] / MAX_WT_PERCENT
     X_cv_cpu = data['X'][cv_idx]
     
-    Y_test_cpu = data['y'][test_idx][:, target_indices] / MAX_WT_PERCENT if has_test else None
-    X_test_cpu = data['X'][test_idx] if has_test else None
+    Y_test_cpu = data['y'][test_idx][:, target_indices] / MAX_WT_PERCENT if include_lbx else None
+    X_test_cpu = data['X'][test_idx] if include_lbx else None
     del data['X']
 
     # 2. Stage Data to GPU
@@ -520,7 +556,7 @@ def main(
     fold_t = torch.from_numpy(seed_splits[seeds[0]][2].astype(np.int64)).to(Ys_cv.device)
 
     Ys_test, Xs_test, te_idx = None, None, None
-    if has_test:
+    if include_lbx:
         Ys_test = stash(Y_test_cpu, "Lockbox Concentrations")  # type: ignore
         Xs_test = stash(X_test_cpu, "Lockbox Spectra")          # type: ignore
         te_idx = torch.arange(len(test_idx), device=Ys_test.device)
@@ -549,7 +585,7 @@ def main(
 
         oof = predict(model, Ys_cv, va_idx).clamp(min=0).cpu().numpy()
         oof_preds_np[va_idx.cpu().numpy()] = oof
-        if has_test:
+        if include_lbx:
             lockbox_preds[k] = predict(model, Ys_test, te_idx).clamp(min=0).cpu()  # type: ignore
 
         torch.save({
@@ -569,13 +605,13 @@ def main(
     exp_mask = seed_splits[seeds[0]][2] >= 0
     x_true_cv = gather_x(Xs_cv, torch.from_numpy(np.where(exp_mask)[0]).to(Xs_cv.device)).cpu().numpy()
     x_pred_cv = oof_preds_np[exp_mask]
-    y_conc_cv = (Ys_cv[exp_mask].cpu().numpy()) * MAX_WT_PERCENT
+    y_conc_cv = data['y'][cv_idx][exp_mask][:, target_indices].numpy()
 
     oof_rmse = np.sqrt(mean_squared_error(x_true_cv, x_pred_cv))
     oof_r2 = r2_score(x_true_cv.ravel(), x_pred_cv.ravel())
     print(f"\n✅ OOF Reverse MLP Performance | Spectral RMSE: {oof_rmse:.5f} | Overall R^2: {oof_r2:.4f}")
 
-    if has_test:
+    if include_lbx:
         lockbox_pred_avg = lockbox_preds.mean(dim=0).clamp(min=0).cpu().numpy()
         x_true_test = gather_x(Xs_test, te_idx).cpu().numpy()  # type: ignore
         y_conc_test = (Ys_test.cpu().numpy()) * MAX_WT_PERCENT  # type: ignore
@@ -595,9 +631,10 @@ def main(
         y_concentrations=y_conc_cv,
         elem_names=actual_target_names,
         save_path=oof_plot_path,
+        sample_nums=sample_nums
     )
 
-    if has_test:
+    if include_lbx:
         plot_spectral_reconstruction(
             x_true=x_true_test,  # type: ignore
             x_pred=lockbox_pred_avg,  # type: ignore
@@ -605,28 +642,49 @@ def main(
             y_concentrations=y_conc_test,  # type: ignore
             elem_names=actual_target_names,
             save_path=lockbox_plot_path,
+            sample_nums=sample_nums
         )
+
+    cache_path = output_dir / f"mlp_reverse_prediction_{dataset_tag}.npz"
+    save_dict = dict(
+        x_true_cv=x_true_cv,
+        x_pred_cv=x_pred_cv,
+        y_conc_cv=y_conc_cv,
+        wavelengths=data['wavelengths'],
+        target_names=np.array(actual_target_names)
+    )
+    if include_lbx:
+        save_dict["x_true_test"] = x_true_test        # type: ignore
+        save_dict["x_pred_test"] = lockbox_pred_avg   # type: ignore
+        save_dict["y_conc_test"] = y_conc_test        # type: ignore
+
+    np.savez(cache_path, **save_dict)
+    print(f"Cached reverse MLP predictions to: {cache_path}")
 
     print(f"Reverse MLP Pipeline completed in {(time.perf_counter() - t0_start):.2f} seconds.")
 
 
 if __name__ == "__main__":
     main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261110b.h5",
+        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
         split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/spec_to_conc/MLP_reverse/plots/processed-data_20261110b/exp"),
+        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/MLP/processed-data_20261110b/exp"),
         include_synthetic=False,
         seeds=SEEDS,
         dataset_tag='20261110b',
-        target_names=['Ce', 'Gd', 'Sm', 'U']
+        target_names=['Ce', 'Gd', 'Sm', 'U'],
+        include_lbx=False,
+        sample_nums=None
     )
 
     main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_processed-data_20261110b.h5",
+        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
         split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/spec_to_conc/MLP_reverse/plots/processed-data_20261110b/exp-syn"),
+        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/MLP/processed-data_20261110b/exp-syn"),
         include_synthetic=True,
         seeds=SEEDS,
         dataset_tag='20261110b',
-        target_names=['Ce', 'Gd', 'Sm', 'U']
+        target_names=['Ce', 'Gd', 'Sm', 'U'],
+        include_lbx=False,
+        sample_nums=None
     )

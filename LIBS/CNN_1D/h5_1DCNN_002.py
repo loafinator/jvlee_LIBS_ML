@@ -669,23 +669,36 @@ def main(
     if include_lbx:
         plot_parity_grid(true_test_wt, pred_test_wt, actual_target_names, title_tag=f"1D CNN LOCKBOX ({dataset_tag})", save_path=lockbox_parity_path) # type: ignore
 
+    cache_path = output_dir / f"cnn1d_predictions_{dataset_tag}.npz"
+    save_dict = dict(
+        y_true_cv=true_cv_wt,          # True wt% (OOF)
+        y_pred_cv=pred_cv_wt,          # Predicted wt% (OOF)
+        target_names=np.array(actual_target_names)
+    )
+    if include_lbx:
+        save_dict["y_true_test"] = true_test_wt  # type: ignore
+        save_dict["y_pred_test"] = pred_test_wt  # type: ignore
+
+    np.savez(cache_path, **save_dict)
+    print(f"Cached forward predictions to: {cache_path}")
+
     print(f"1D CNN Pipeline completed in {(time.perf_counter() - t0_start):.2f} seconds.")
 
 
 if __name__ == "__main__":
     main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/processed-data_20261110b.h5",
+        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
         split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/CNN_1D/h5_plots/processed-data_20261110b/exp"),
+        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/CNN_1D/processed-data_20261110b/exp"),
         include_synthetic=False,
         seeds=SEEDS,
         include_lbx=False
     )
 
     main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_processed-data_20261110b.h5",
+        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
         split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/CNN_1D/h5_plots/processed-data_20261110b/exp-syn"),
+        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/CNN_1D/processed-data_20261110b/exp-syn"),
         include_synthetic=True,
         seeds=SEEDS,
         include_lbx=False

@@ -1,0 +1,53 @@
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting GPU Reverse PLS Pipeline (Concentrations -> Spectra) [cuda] ===
+
+--- Input Column Variation (Y_cv) ---
+Y input std [Ce]: 1.56620765
+Y input std [Gd]: 1.45682728
+Y input std [Sm]: 1.40899479
+Y input std [U ]: 1.46852529
+
+--- Baseline prediction for PLS function comparison ---
+Mean-spectrum baseline | RMSE: 0.00679 | R^2: 0.4957
+
+--- Tuning Reverse PLS Components via Multi-Seed GPU Cross-Validation ---
+n_components =  1 | PLS Addition:  0.2991 | Spectral OOF RMSE: 0.00569 | Overall R^2:  0.6466 | Elapsed: 9.66s
+n_components =  2 | PLS Addition:  0.2861 | Spectral OOF RMSE: 0.00574 | Overall R^2:  0.6400 | Elapsed: 1.03s
+n_components =  3 | PLS Addition:  0.2877 | Spectral OOF RMSE: 0.00573 | Overall R^2:  0.6408 | Elapsed: 1.53s
+n_components =  4 | PLS Addition:  0.2757 | Spectral OOF RMSE: 0.00578 | Overall R^2:  0.6347 | Elapsed: 1.44s
+
+--- Running Lockbox Reverse Evaluation on GPU (7 models, n_components=1) ---
+
+✅ Lockbox Reverse PLS Performance | Spectral RMSE: 0.00563 | Overall R^2: 0.6459
+Saved Reverse Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/PLS_reverse/processed-data_20261110b/exp/reverse_pls_oof_spectra_20261110b_20261111_223418.png
+Saved Reverse Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/PLS_reverse/processed-data_20261110b/exp/reverse_pls_lockbox_spectra_20261110b_20261111_223418.png
+Reverse PLS Pipeline completed in 135.85 seconds.
+Cached predictions to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/PLS_reverse/processed-data_20261110b/exp/pls_reverse_prediction_20261110b.npz
+=== Starting GPU Reverse PLS Pipeline (Concentrations -> Spectra) [cuda] ===
+
+--- Input Column Variation (Y_cv) ---
+Y input std [Ce]: 1.56620765
+Y input std [Gd]: 1.45682728
+Y input std [Sm]: 1.40899479
+Y input std [U ]: 1.46852529
+250-400 nm | mean(syn-exp): +1.62e-04 | mean|diff|: 2.18e-03
+400-600 nm | mean(syn-exp): -2.10e-03 | mean|diff|: 2.70e-03
+600-700 nm | mean(syn-exp): -4.18e-03 | mean|diff|: 4.21e-03
+700-850 nm | mean(syn-exp): -1.59e-03 | mean|diff|: 3.35e-03
+850-1000 nm | mean(syn-exp): -1.65e-03 | mean|diff|: 1.65e-03
+
+--- Baseline prediction for PLS function comparison ---
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/pls_reverse_benchmark.py", line 661, in <module>
+    main(
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/PLS_checks/pls_reverse_benchmark.py", line 525, in main
+    sse_base = ((X_true_exp - base) ** 2).sum(dtype=torch.float64)
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 9.25 GiB. GPU 
