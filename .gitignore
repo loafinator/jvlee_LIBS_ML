@@ -3,6 +3,8 @@ __pycache__/
 .vscode/
 *.pyc
 LIBS/trn_val_split_LIBS.h5
+LIBS/archive/
+**/old/
 
 # Log Files
 *.log
