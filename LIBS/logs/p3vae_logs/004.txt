@@ -1,0 +1,190 @@
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting Memory-Safe P3VAE Encoder + Decoder Benchmark Pipeline [cuda] ===
+Dataset: 20261110b (exp) | Folds: 7 | Seeds: [42]
+Loaded 347985 total shots | Real: 147985 | Synthetic: 200000
+[Range Check] Fold 0: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 1: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 3.372 / train 6.040
+[Range Check] Fold 2: Ce: val 2.842 / train 2.842 | Gd: val 2.746 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 3: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 4: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 5: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 6: Ce: val 2.842 / train 2.842 | Gd: val 2.746 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+
+--- Training P3VAE across Folds [0, 1, 2, 3, 4, 5, 6] [Exp Only] ---
+[F1/7] spec_scaler scale_ = 0.61381
+=== Fold 1/7: train 106162 | val 17963 ===
+[F1] Epoch 001/200 [43.7s] | Train 3.4222 | Val 0.6821 | Dopant RMSE 0.3266 wt% | Recon 0.4201 | lr 1.00e-03
+[F1] Epoch 002/200 [16.2s] | Train 0.8319 | Val 0.6081 | Dopant RMSE 0.2940 wt% | Recon 0.3526 | lr 1.00e-03
+[F1] Epoch 003/200 [16.2s] | Train 0.7737 | Val 0.5764 | Dopant RMSE 0.2871 wt% | Recon 0.3217 | lr 1.00e-03
+[F1] Epoch 004/200 [16.4s] | Train 0.7463 | Val 0.5611 | Dopant RMSE 0.2819 wt% | Recon 0.3044 | lr 1.00e-03
+[F1] Epoch 005/200 [16.3s] | Train 0.7301 | Val 0.5508 | Dopant RMSE 0.2783 wt% | Recon 0.2971 | lr 1.00e-03
+[F1] Epoch 006/200 [15.8s] | Train 0.7193 | Val 0.5435 | Dopant RMSE 0.2660 wt% | Recon 0.2921 | lr 1.00e-03
+[F1] Epoch 007/200 [15.8s] | Train 0.7096 | Val 0.5471 | Dopant RMSE 0.2890 wt% | Recon 0.2879 | lr 1.00e-03
+[F1] Epoch 008/200 [16.4s] | Train 0.7018 | Val 0.5379 | Dopant RMSE 0.2743 wt% | Recon 0.2846 | lr 1.00e-03
+[F1] Epoch 009/200 [16.5s] | Train 0.6953 | Val 0.5369 | Dopant RMSE 0.2762 wt% | Recon 0.2822 | lr 1.00e-03
+[F1] Epoch 010/200 [16.6s] | Train 0.6866 | Val 0.5322 | Dopant RMSE 0.2695 wt% | Recon 0.2789 | lr 1.00e-03
+[F1] Epoch 011/200 [16.5s] | Train 0.6831 | Val 0.5364 | Dopant RMSE 0.2868 wt% | Recon 0.2771 | lr 1.00e-03
+[F1] Epoch 012/200 [16.7s] | Train 0.6674 | Val 0.5292 | Dopant RMSE 0.2769 wt% | Recon 0.2713 | lr 5.00e-04
+[F1] Epoch 013/200 [15.5s] | Train 0.6620 | Val 0.5325 | Dopant RMSE 0.2880 wt% | Recon 0.2717 | lr 5.00e-04
+[F1] Epoch 014/200 [15.5s] | Train 0.6568 | Val 0.5309 | Dopant RMSE 0.2854 wt% | Recon 0.2717 | lr 5.00e-04
+[F1] Epoch 015/200 [15.5s] | Train 0.6513 | Val 0.5251 | Dopant RMSE 0.2719 wt% | Recon 0.2695 | lr 5.00e-04
+[F1] Epoch 016/200 [16.3s] | Train 0.6462 | Val 0.5200 | Dopant RMSE 0.2601 wt% | Recon 0.2687 | lr 5.00e-04
+[F1] Epoch 017/200 [16.2s] | Train 0.6402 | Val 0.5233 | Dopant RMSE 0.2712 wt% | Recon 0.2674 | lr 5.00e-04
+[F1] Epoch 018/200 [16.2s] | Train 0.6332 | Val 0.5275 | Dopant RMSE 0.2827 wt% | Recon 0.2668 | lr 5.00e-04
+[F1] Epoch 019/200 [16.4s] | Train 0.6272 | Val 0.5324 | Dopant RMSE 0.2955 wt% | Recon 0.2653 | lr 5.00e-04
+[F1] Epoch 020/200 [16.1s] | Train 0.6206 | Val 0.5303 | Dopant RMSE 0.2924 wt% | Recon 0.2658 | lr 5.00e-04
+[F1] Epoch 021/200 [16.2s] | Train 0.6146 | Val 0.5261 | Dopant RMSE 0.2828 wt% | Recon 0.2655 | lr 5.00e-04
+[F1] Epoch 022/200 [15.9s] | Train 0.5971 | Val 0.5315 | Dopant RMSE 0.2998 wt% | Recon 0.2631 | lr 2.50e-04
+[F1] Epoch 023/200 [16.2s] | Train 0.5913 | Val 0.5235 | Dopant RMSE 0.2810 wt% | Recon 0.2635 | lr 2.50e-04
+[F1] Epoch 024/200 [16.2s] | Train 0.5862 | Val 0.5347 | Dopant RMSE 0.3082 wt% | Recon 0.2634 | lr 2.50e-04
+[F1] Epoch 025/200 [16.3s] | Train 0.5809 | Val 0.5300 | Dopant RMSE 0.2976 wt% | Recon 0.2626 | lr 2.50e-04
+[F1] Epoch 026/200 [16.4s] | Train 0.5773 | Val 0.5265 | Dopant RMSE 0.2903 wt% | Recon 0.2626 | lr 2.50e-04
+[F1] Epoch 027/200 [16.0s] | Train 0.5689 | Val 0.5346 | Dopant RMSE 0.3112 wt% | Recon 0.2613 | lr 1.25e-04
+[F1] Epoch 028/200 [16.2s] | Train 0.5664 | Val 0.5278 | Dopant RMSE 0.2956 wt% | Recon 0.2622 | lr 1.25e-04
+[F1] Epoch 029/200 [16.1s] | Train 0.5641 | Val 0.5322 | Dopant RMSE 0.3061 wt% | Recon 0.2611 | lr 1.25e-04
+[F1] Epoch 030/200 [16.6s] | Train 0.5630 | Val 0.5319 | Dopant RMSE 0.3055 wt% | Recon 0.2613 | lr 1.25e-04
+[F1] Epoch 031/200 [16.6s] | Train 0.5608 | Val 0.5316 | Dopant RMSE 0.3050 wt% | Recon 0.2606 | lr 1.25e-04
+[F1] Epoch 032/200 [16.0s] | Train 0.5577 | Val 0.5328 | Dopant RMSE 0.3089 wt% | Recon 0.2608 | lr 6.25e-05
+[F1] Epoch 033/200 [16.0s] | Train 0.5567 | Val 0.5323 | Dopant RMSE 0.3080 wt% | Recon 0.2603 | lr 6.25e-05
+[F1] Epoch 034/200 [15.5s] | Train 0.5556 | Val 0.5316 | Dopant RMSE 0.3062 wt% | Recon 0.2605 | lr 6.25e-05
+[F1] Epoch 035/200 [15.5s] | Train 0.5553 | Val 0.5304 | Dopant RMSE 0.3037 wt% | Recon 0.2610 | lr 6.25e-05
+[F1] Epoch 036/200 [16.3s] | Train 0.5544 | Val 0.5341 | Dopant RMSE 0.3126 wt% | Recon 0.2605 | lr 6.25e-05
+[F1] Early stop at epoch 36 (Best Dopant RMSE: 0.2601 wt%)
+[F2/7] spec_scaler scale_ = 0.61192
+=== Fold 2/7: train 106986 | val 17139 ===
+[F2] Epoch 001/200 [17.0s] | Train 2.9062 | Val 1.1712 | Dopant RMSE 0.8334 wt% | Recon 0.5113 | lr 1.00e-03
+[F2] Epoch 002/200 [15.5s] | Train 0.7629 | Val 1.0900 | Dopant RMSE 0.8174 wt% | Recon 0.4364 | lr 1.00e-03
+[F2] Epoch 003/200 [15.5s] | Train 0.7071 | Val 1.0578 | Dopant RMSE 0.8104 wt% | Recon 0.4076 | lr 1.00e-03
+[F2] Epoch 004/200 [16.4s] | Train 0.6827 | Val 1.0532 | Dopant RMSE 0.8176 wt% | Recon 0.3943 | lr 1.00e-03
+[F2] Epoch 005/200 [16.4s] | Train 0.6685 | Val 1.0367 | Dopant RMSE 0.8118 wt% | Recon 0.3862 | lr 1.00e-03
+[F2] Epoch 006/200 [15.6s] | Train 0.6578 | Val 1.0233 | Dopant RMSE 0.8067 wt% | Recon 0.3758 | lr 1.00e-03
+[F2] Epoch 007/200 [16.3s] | Train 0.6500 | Val 1.0170 | Dopant RMSE 0.8032 wt% | Recon 0.3737 | lr 1.00e-03
+[F2] Epoch 008/200 [16.4s] | Train 0.6424 | Val 1.0215 | Dopant RMSE 0.8098 wt% | Recon 0.3703 | lr 1.00e-03
+[F2] Epoch 009/200 [16.7s] | Train 0.6354 | Val 1.0067 | Dopant RMSE 0.7998 wt% | Recon 0.3630 | lr 1.00e-03
+[F2] Epoch 010/200 [16.6s] | Train 0.6297 | Val 1.0164 | Dopant RMSE 0.8088 wt% | Recon 0.3641 | lr 1.00e-03
+[F2] Epoch 011/200 [16.6s] | Train 0.6248 | Val 1.0075 | Dopant RMSE 0.8034 wt% | Recon 0.3610 | lr 1.00e-03
+[F2] Epoch 012/200 [16.4s] | Train 0.6197 | Val 1.0081 | Dopant RMSE 0.8057 wt% | Recon 0.3584 | lr 1.00e-03
+[F2] Epoch 013/200 [16.3s] | Train 0.6161 | Val 0.9987 | Dopant RMSE 0.7984 wt% | Recon 0.3576 | lr 1.00e-03
+[F2] Epoch 014/200 [15.5s] | Train 0.6126 | Val 1.0049 | Dopant RMSE 0.8051 wt% | Recon 0.3555 | lr 1.00e-03
+[F2] Epoch 015/200 [16.4s] | Train 0.6085 | Val 1.0155 | Dopant RMSE 0.8152 wt% | Recon 0.3552 | lr 1.00e-03
+[F2] Epoch 016/200 [15.6s] | Train 0.6039 | Val 1.0145 | Dopant RMSE 0.8159 wt% | Recon 0.3533 | lr 1.00e-03
+[F2] Epoch 017/200 [16.1s] | Train 0.5999 | Val 1.0026 | Dopant RMSE 0.8059 wt% | Recon 0.3519 | lr 1.00e-03
+[F2] Epoch 018/200 [15.6s] | Train 0.5968 | Val 1.0096 | Dopant RMSE 0.8128 wt% | Recon 0.3524 | lr 1.00e-03
+[F2] Epoch 019/200 [16.3s] | Train 0.5807 | Val 0.9960 | Dopant RMSE 0.8041 wt% | Recon 0.3485 | lr 5.00e-04
+[F2] Epoch 020/200 [16.1s] | Train 0.5740 | Val 1.0097 | Dopant RMSE 0.8166 wt% | Recon 0.3472 | lr 5.00e-04
+[F2] Epoch 021/200 [16.1s] | Train 0.5688 | Val 1.0037 | Dopant RMSE 0.8117 wt% | Recon 0.3463 | lr 5.00e-04
+[F2] Epoch 022/200 [15.6s] | Train 0.5651 | Val 1.0189 | Dopant RMSE 0.8253 wt% | Recon 0.3468 | lr 5.00e-04
+[F2] Epoch 023/200 [16.6s] | Train 0.5612 | Val 1.0052 | Dopant RMSE 0.8136 wt% | Recon 0.3452 | lr 5.00e-04
+[F2] Epoch 024/200 [15.9s] | Train 0.5518 | Val 1.0036 | Dopant RMSE 0.8133 wt% | Recon 0.3429 | lr 2.50e-04
+[F2] Epoch 025/200 [16.2s] | Train 0.5491 | Val 1.0085 | Dopant RMSE 0.8182 wt% | Recon 0.3431 | lr 2.50e-04
+[F2] Epoch 026/200 [16.3s] | Train 0.5469 | Val 1.0058 | Dopant RMSE 0.8158 wt% | Recon 0.3429 | lr 2.50e-04
+[F2] Epoch 027/200 [16.2s] | Train 0.5454 | Val 1.0024 | Dopant RMSE 0.8129 wt% | Recon 0.3424 | lr 2.50e-04
+[F2] Epoch 028/200 [15.7s] | Train 0.5438 | Val 1.0004 | Dopant RMSE 0.8113 wt% | Recon 0.3425 | lr 2.50e-04
+[F2] Epoch 029/200 [15.6s] | Train 0.5404 | Val 1.0004 | Dopant RMSE 0.8118 wt% | Recon 0.3413 | lr 1.25e-04
+[F2] Epoch 030/200 [15.5s] | Train 0.5396 | Val 1.0012 | Dopant RMSE 0.8129 wt% | Recon 0.3417 | lr 1.25e-04
+[F2] Epoch 031/200 [15.5s] | Train 0.5388 | Val 1.0007 | Dopant RMSE 0.8125 wt% | Recon 0.3420 | lr 1.25e-04
+[F2] Epoch 032/200 [15.5s] | Train 0.5379 | Val 1.0010 | Dopant RMSE 0.8129 wt% | Recon 0.3406 | lr 1.25e-04
+[F2] Epoch 033/200 [15.9s] | Train 0.5375 | Val 1.0012 | Dopant RMSE 0.8132 wt% | Recon 0.3411 | lr 1.25e-04
+[F2] Early stop at epoch 33 (Best Dopant RMSE: 0.7984 wt%)
+[F3/7] spec_scaler scale_ = 0.61166
+=== Fold 3/7: train 106056 | val 18069 ===
+[F3] Epoch 001/200 [16.4s] | Train 2.4660 | Val 0.7583 | Dopant RMSE 0.3483 wt% | Recon 0.4913 | lr 1.00e-03
+[F3] Epoch 002/200 [16.1s] | Train 0.8228 | Val 0.6805 | Dopant RMSE 0.3143 wt% | Recon 0.4192 | lr 1.00e-03
+[F3] Epoch 003/200 [16.4s] | Train 0.7684 | Val 0.6564 | Dopant RMSE 0.3144 wt% | Recon 0.3966 | lr 1.00e-03
+[F3] Epoch 004/200 [16.1s] | Train 0.7418 | Val 0.6375 | Dopant RMSE 0.3064 wt% | Recon 0.3742 | lr 1.00e-03
+[F3] Epoch 005/200 [15.7s] | Train 0.7254 | Val 0.6263 | Dopant RMSE 0.3047 wt% | Recon 0.3646 | lr 1.00e-03
+[F3] Epoch 006/200 [16.0s] | Train 0.7117 | Val 0.6187 | Dopant RMSE 0.3018 wt% | Recon 0.3581 | lr 1.00e-03
+[F3] Epoch 007/200 [15.5s] | Train 0.7029 | Val 0.6122 | Dopant RMSE 0.2941 wt% | Recon 0.3542 | lr 1.00e-03
+[F3] Epoch 008/200 [15.8s] | Train 0.6936 | Val 0.6177 | Dopant RMSE 0.3163 wt% | Recon 0.3474 | lr 1.00e-03
+[F3] Epoch 009/200 [16.1s] | Train 0.6854 | Val 0.6044 | Dopant RMSE 0.2942 wt% | Recon 0.3478 | lr 1.00e-03
+[F3] Epoch 010/200 [16.0s] | Train 0.6789 | Val 0.6012 | Dopant RMSE 0.2910 wt% | Recon 0.3418 | lr 1.00e-03
+[F3] Epoch 011/200 [16.1s] | Train 0.6722 | Val 0.6002 | Dopant RMSE 0.2923 wt% | Recon 0.3413 | lr 1.00e-03
+[F3] Epoch 012/200 [15.5s] | Train 0.6672 | Val 0.6011 | Dopant RMSE 0.2999 wt% | Recon 0.3393 | lr 1.00e-03
+[F3] Epoch 013/200 [15.5s] | Train 0.6625 | Val 0.6042 | Dopant RMSE 0.3116 wt% | Recon 0.3374 | lr 1.00e-03
+[F3] Epoch 014/200 [15.4s] | Train 0.6586 | Val 0.6064 | Dopant RMSE 0.3184 wt% | Recon 0.3354 | lr 1.00e-03
+[F3] Epoch 015/200 [15.4s] | Train 0.6514 | Val 0.6009 | Dopant RMSE 0.3096 wt% | Recon 0.3337 | lr 1.00e-03
+[F3] Epoch 016/200 [15.4s] | Train 0.6355 | Val 0.5948 | Dopant RMSE 0.3040 wt% | Recon 0.3299 | lr 5.00e-04
+[F3] Epoch 017/200 [16.0s] | Train 0.6298 | Val 0.5887 | Dopant RMSE 0.2897 wt% | Recon 0.3293 | lr 5.00e-04
+[F3] Epoch 018/200 [16.0s] | Train 0.6251 | Val 0.5924 | Dopant RMSE 0.3009 wt% | Recon 0.3286 | lr 5.00e-04
+[F3] Epoch 019/200 [16.0s] | Train 0.6178 | Val 0.6086 | Dopant RMSE 0.3377 wt% | Recon 0.3289 | lr 5.00e-04
+[F3] Epoch 020/200 [16.1s] | Train 0.6127 | Val 0.6009 | Dopant RMSE 0.3226 wt% | Recon 0.3277 | lr 5.00e-04
+[F3] Epoch 021/200 [16.1s] | Train 0.6083 | Val 0.5950 | Dopant RMSE 0.3093 wt% | Recon 0.3262 | lr 5.00e-04
+[F3] Epoch 022/200 [16.1s] | Train 0.6018 | Val 0.5927 | Dopant RMSE 0.3049 wt% | Recon 0.3271 | lr 5.00e-04
+[F3] Epoch 023/200 [16.1s] | Train 0.5883 | Val 0.6012 | Dopant RMSE 0.3278 wt% | Recon 0.3244 | lr 2.50e-04
+[F3] Epoch 024/200 [15.9s] | Train 0.5824 | Val 0.5957 | Dopant RMSE 0.3162 wt% | Recon 0.3242 | lr 2.50e-04
+[F3] Epoch 025/200 [16.6s] | Train 0.5774 | Val 0.5969 | Dopant RMSE 0.3193 wt% | Recon 0.3234 | lr 2.50e-04
+[F3] Epoch 026/200 [16.7s] | Train 0.5736 | Val 0.6001 | Dopant RMSE 0.3264 wt% | Recon 0.3238 | lr 2.50e-04
+[F3] Epoch 027/200 [16.1s] | Train 0.5706 | Val 0.5987 | Dopant RMSE 0.3240 wt% | Recon 0.3237 | lr 2.50e-04
+[F3] Epoch 028/200 [15.4s] | Train 0.5618 | Val 0.5997 | Dopant RMSE 0.3276 wt% | Recon 0.3222 | lr 1.25e-04
+[F3] Epoch 029/200 [15.5s] | Train 0.5589 | Val 0.6020 | Dopant RMSE 0.3329 wt% | Recon 0.3223 | lr 1.25e-04
+[F3] Epoch 030/200 [16.1s] | Train 0.5569 | Val 0.6015 | Dopant RMSE 0.3320 wt% | Recon 0.3226 | lr 1.25e-04
+[F3] Epoch 031/200 [16.4s] | Train 0.5550 | Val 0.6041 | Dopant RMSE 0.3378 wt% | Recon 0.3219 | lr 1.25e-04
+[F3] Epoch 032/200 [16.4s] | Train 0.5531 | Val 0.6016 | Dopant RMSE 0.3330 wt% | Recon 0.3218 | lr 1.25e-04
+[F3] Epoch 033/200 [16.4s] | Train 0.5502 | Val 0.6015 | Dopant RMSE 0.3335 wt% | Recon 0.3215 | lr 6.25e-05
+[F3] Epoch 034/200 [15.8s] | Train 0.5490 | Val 0.6020 | Dopant RMSE 0.3349 wt% | Recon 0.3219 | lr 6.25e-05
+[F3] Epoch 035/200 [16.1s] | Train 0.5479 | Val 0.6017 | Dopant RMSE 0.3338 wt% | Recon 0.3214 | lr 6.25e-05
+[F3] Epoch 036/200 [16.2s] | Train 0.5474 | Val 0.6036 | Dopant RMSE 0.3380 wt% | Recon 0.3217 | lr 6.25e-05
+[F3] Epoch 037/200 [16.2s] | Train 0.5467 | Val 0.6058 | Dopant RMSE 0.3427 wt% | Recon 0.3213 | lr 6.25e-05
+[F3] Early stop at epoch 37 (Best Dopant RMSE: 0.2897 wt%)
+[F4/7] spec_scaler scale_ = 0.61212
+=== Fold 4/7: train 105742 | val 18383 ===
+[F4] Epoch 001/200 [16.7s] | Train 2.6782 | Val 0.8006 | Dopant RMSE 0.4479 wt% | Recon 0.4767 | lr 1.00e-03
+[F4] Epoch 002/200 [15.7s] | Train 0.8179 | Val 0.7613 | Dopant RMSE 0.4634 wt% | Recon 0.4239 | lr 1.00e-03
+[F4] Epoch 003/200 [15.6s] | Train 0.7604 | Val 0.7230 | Dopant RMSE 0.4340 wt% | Recon 0.3956 | lr 1.00e-03
+[F4] Epoch 004/200 [16.0s] | Train 0.7301 | Val 0.7537 | Dopant RMSE 0.4955 wt% | Recon 0.3899 | lr 1.00e-03
+[F4] Epoch 005/200 [16.1s] | Train 0.7118 | Val 0.7476 | Dopant RMSE 0.4979 wt% | Recon 0.3817 | lr 1.00e-03
+[F4] Epoch 006/200 [16.2s] | Train 0.7001 | Val 0.7177 | Dopant RMSE 0.4590 wt% | Recon 0.3746 | lr 1.00e-03
+[F4] Epoch 007/200 [16.3s] | Train 0.6920 | Val 0.7058 | Dopant RMSE 0.4466 wt% | Recon 0.3707 | lr 1.00e-03
+[F4] Epoch 008/200 [16.2s] | Train 0.6856 | Val 0.7131 | Dopant RMSE 0.4612 wt% | Recon 0.3706 | lr 1.00e-03
+[F4] Epoch 009/200 [16.4s] | Train 0.6705 | Val 0.7121 | Dopant RMSE 0.4674 wt% | Recon 0.3641 | lr 5.00e-04
+[F4] Epoch 010/200 [16.1s] | Train 0.6649 | Val 0.7112 | Dopant RMSE 0.4677 wt% | Recon 0.3614 | lr 5.00e-04
+[F4] Epoch 011/200 [16.8s] | Train 0.6597 | Val 0.7014 | Dopant RMSE 0.4543 wt% | Recon 0.3610 | lr 5.00e-04
+[F4] Epoch 012/200 [15.9s] | Train 0.6553 | Val 0.7233 | Dopant RMSE 0.4886 wt% | Recon 0.3600 | lr 5.00e-04
+[F4] Epoch 013/200 [16.9s] | Train 0.6513 | Val 0.7138 | Dopant RMSE 0.4754 wt% | Recon 0.3588 | lr 5.00e-04
+[F4] Epoch 014/200 [16.6s] | Train 0.6384 | Val 0.7109 | Dopant RMSE 0.4735 wt% | Recon 0.3571 | lr 2.50e-04
+[F4] Epoch 015/200 [16.3s] | Train 0.6327 | Val 0.7170 | Dopant RMSE 0.4842 wt% | Recon 0.3566 | lr 2.50e-04
+[F4] Epoch 016/200 [16.2s] | Train 0.6264 | Val 0.7209 | Dopant RMSE 0.4897 wt% | Recon 0.3560 | lr 2.50e-04
+[F4] Epoch 017/200 [15.5s] | Train 0.6190 | Val 0.7237 | Dopant RMSE 0.4955 wt% | Recon 0.3553 | lr 2.50e-04
+[F4] Epoch 018/200 [15.8s] | Train 0.6108 | Val 0.7233 | Dopant RMSE 0.4948 wt% | Recon 0.3557 | lr 2.50e-04
+[F4] Epoch 019/200 [15.6s] | Train 0.5963 | Val 0.7249 | Dopant RMSE 0.4979 wt% | Recon 0.3544 | lr 1.25e-04
+[F4] Epoch 020/200 [16.0s] | Train 0.5882 | Val 0.7293 | Dopant RMSE 0.5046 wt% | Recon 0.3538 | lr 1.25e-04
+[F4] Epoch 021/200 [16.1s] | Train 0.5818 | Val 0.7400 | Dopant RMSE 0.5198 wt% | Recon 0.3533 | lr 1.25e-04
+[F4] Epoch 022/200 [16.2s] | Train 0.5756 | Val 0.7282 | Dopant RMSE 0.5028 wt% | Recon 0.3535 | lr 1.25e-04
+[F4] Epoch 023/200 [16.3s] | Train 0.5717 | Val 0.7110 | Dopant RMSE 0.4776 wt% | Recon 0.3531 | lr 1.25e-04
+[F4] Early stop at epoch 23 (Best Dopant RMSE: 0.4340 wt%)
+[F5/7] spec_scaler scale_ = 0.61161
+=== Fold 5/7: train 106672 | val 17453 ===
+[F5] Epoch 001/200 [16.8s] | Train 2.9794 | Val 0.7247 | Dopant RMSE 0.3779 wt% | Recon 0.4332 | lr 1.00e-03
+[F5] Epoch 002/200 [16.5s] | Train 0.8304 | Val 0.6430 | Dopant RMSE 0.3323 wt% | Recon 0.3668 | lr 1.00e-03
+[F5] Epoch 003/200 [16.4s] | Train 0.7755 | Val 0.6185 | Dopant RMSE 0.3362 wt% | Recon 0.3367 | lr 1.00e-03
+[F5] Epoch 004/200 [15.8s] | Train 0.7495 | Val 0.6014 | Dopant RMSE 0.3317 wt% | Recon 0.3232 | lr 1.00e-03
+[F5] Epoch 005/200 [16.2s] | Train 0.7325 | Val 0.5917 | Dopant RMSE 0.3295 wt% | Recon 0.3142 | lr 1.00e-03
+[F5] Epoch 006/200 [15.9s] | Train 0.7196 | Val 0.5870 | Dopant RMSE 0.3362 wt% | Recon 0.3055 | lr 1.00e-03
+[F5] Epoch 007/200 [15.9s] | Train 0.7097 | Val 0.5899 | Dopant RMSE 0.3470 wt% | Recon 0.3021 | lr 1.00e-03
+[F5] Epoch 008/200 [16.2s] | Train 0.6995 | Val 0.5804 | Dopant RMSE 0.3363 wt% | Recon 0.2980 | lr 1.00e-03
+[F5] Epoch 009/200 [16.2s] | Train 0.6930 | Val 0.5785 | Dopant RMSE 0.3394 wt% | Recon 0.2953 | lr 1.00e-03
+[F5] Epoch 010/200 [15.9s] | Train 0.6859 | Val 0.5695 | Dopant RMSE 0.3268 wt% | Recon 0.2909 | lr 1.00e-03
+[F5] Epoch 011/200 [16.3s] | Train 0.6792 | Val 0.5845 | Dopant RMSE 0.3602 wt% | Recon 0.2894 | lr 1.00e-03
+[F5] Epoch 012/200 [16.2s] | Train 0.6747 | Val 0.5789 | Dopant RMSE 0.3522 wt% | Recon 0.2889 | lr 1.00e-03
+[F5] Epoch 013/200 [16.3s] | Train 0.6726 | Val 0.5658 | Dopant RMSE 0.3296 wt% | Recon 0.2853 | lr 1.00e-03
+[F5] Epoch 014/200 [16.1s] | Train 0.6661 | Val 0.5746 | Dopant RMSE 0.3491 wt% | Recon 0.2871 | lr 1.00e-03
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/700/p3vae_700.py", line 1700, in <module>
+    save_dict["plot_sample_tags_test"] = np.array(plot_lbx_tags)
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/700/p3vae_700.py", line 1400, in main
+    lbx_phys_sum = np.zeros((len(test_idx), n_wl), dtype=np.float32) if include_lbx else None
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/700/p3vae_700.py", line 1087, in train_one_fold
+    tr_loss = 0.0
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/.venv/lib64/python3.9/site-packages/torch/nn/utils/clip_grad.py", line 20, in _no_grad_wrapper
+    return func(*args, **kwargs)
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/.venv/lib64/python3.9/site-packages/torch/nn/utils/clip_grad.py", line 67, in clip_grad_norm_
+    norms.extend(torch._foreach_norm(device_grads, norm_type))
+KeyboardInterrupt

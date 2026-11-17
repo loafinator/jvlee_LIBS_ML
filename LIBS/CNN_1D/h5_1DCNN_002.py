@@ -295,8 +295,9 @@ def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="GPU PLS Benc
     """Generates an NxM parity grid plot matching P3VAE visualization."""
     active_elem_idx = [j for j in range(y_true_wt.shape[1]) if y_true_wt[:, j].max() > 1e-5]
     n_active = len(active_elem_idx)
-    cols = 4
-    rows = int(np.ceil(n_active / cols)) if n_active > 0 else 1
+    cols = 2
+    rows = 2
+    # rows = int(np.ceil(n_active / cols)) if n_active > 0 else 1
 
     fig, axes = plt.subplots(rows, cols, figsize=(cols * 3.8, rows * 3.4))
     axes_flat = np.atleast_1d(axes).flatten()
@@ -323,7 +324,6 @@ def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="GPU PLS Benc
     for idx_plot in range(n_active, len(axes_flat)):
         fig.delaxes(axes_flat[idx_plot])
 
-    plt.suptitle(f"{title_tag} \n Concentration Parity Grid", fontsize=12, fontweight="bold", y=1.02)
     plt.tight_layout()
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches="tight")
@@ -665,9 +665,9 @@ def main(
     oof_parity_path = output_dir / f"gpu_cnn1d_oof_parity_{dataset_tag}_{TIMESTAMP}.png"
     lockbox_parity_path = output_dir / f"gpu_cnn1d_lockbox_parity_{dataset_tag}_{TIMESTAMP}.png"
 
-    plot_parity_grid(true_cv_wt, pred_cv_wt, actual_target_names, title_tag=f"1D CNN OOF ({dataset_tag})", save_path=oof_parity_path)
+    plot_parity_grid(true_cv_wt, pred_cv_wt, actual_target_names, title_tag=f"1D CNN OOF", save_path=oof_parity_path)
     if include_lbx:
-        plot_parity_grid(true_test_wt, pred_test_wt, actual_target_names, title_tag=f"1D CNN LOCKBOX ({dataset_tag})", save_path=lockbox_parity_path) # type: ignore
+        plot_parity_grid(true_test_wt, pred_test_wt, actual_target_names, title_tag=f"1D CNN LOCKBOX", save_path=lockbox_parity_path) # type: ignore
 
     cache_path = output_dir / f"cnn1d_predictions_{dataset_tag}.npz"
     save_dict = dict(
@@ -686,20 +686,41 @@ def main(
 
 
 if __name__ == "__main__":
-    main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
-        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/CNN_1D/processed-data_20261110b/exp"),
-        include_synthetic=False,
-        seeds=SEEDS,
-        include_lbx=False
-    )
+    # main(
+    #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
+    #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
+    #     output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/CNN_1D/processed-data_20261110b/exp"),
+    #     include_synthetic=False,
+    #     seeds=SEEDS,
+    #     include_lbx=False
+    # )
 
-    main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
-        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/CNN_1D/processed-data_20261110b/exp-syn"),
-        include_synthetic=True,
-        seeds=SEEDS,
-        include_lbx=False
-    )
+    # main(
+    #     h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
+    #     split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
+    #     output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/CNN_1D/processed-data_20261110b/exp-syn"),
+    #     include_synthetic=True,
+    #     seeds=SEEDS,
+    #     include_lbx=False
+    # )
+
+    runs = {
+        "exp": Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/CNN_1D/processed-data_20261110b/exp/cnn1d_predictions_exp-syn_processed-data_20261110b.npz"),
+        "exp-syn": Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/CNN_1D/processed-data_20261110b/exp-syn/cnn1d_predictions_exp-syn_processed-data_20261110b.npz"),
+    }
+
+    for mode_label, cache_path in runs.items():
+        with np.load(cache_path) as d:
+            true_cv_wt = d["y_true_cv"]
+            pred_cv_wt = d["y_pred_cv"]
+            actual_target_names = d["target_names"].tolist()
+
+            # Re-plot OOF parity grid in the same folder
+            oof_parity_path = cache_path.parent / f"{mode_label}_cnn1d_oof_parity_{TIMESTAMP}.png"
+            plot_parity_grid(
+                true_cv_wt,
+                pred_cv_wt,
+                actual_target_names,
+                title_tag=f"1D CNN OOF ({mode_label})",
+                save_path=oof_parity_path,
+            )

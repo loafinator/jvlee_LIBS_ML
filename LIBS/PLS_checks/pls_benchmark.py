@@ -611,3 +611,37 @@ if __name__ == "__main__":
         seeds=SEEDS,
         dataset_tag='20261110b'
     )
+
+    # TODO: not currently working (file not found)
+    # runs = {
+    #     "exp": Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/PLS/processed-data_20261110b/exp/pls_predictions_20261110b.npz"),
+    #     "exp-syn": Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/PLS/processed-data_20261110b/exp-syn/pls_predictions_20261110b.npz"),
+    # }
+    # TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # for mode_label, cache_path in runs.items():
+    #     with np.load(cache_path) as d:
+    #         true_cv_wt = d["y_true_cv"]
+    #         pred_cv_wt = d["y_pred_cv"]
+    #         actual_target_names = d["target_names"].tolist()
+
+    #         # Re-plot OOF parity grid in the same folder
+    #         oof_parity_path = cache_path.parent / f"{mode_label}_pls_oof_parity_{TIMESTAMP}.png"
+    #         plot_parity_grid(
+    #             true_cv_wt,
+    #             pred_cv_wt,
+    #             actual_target_names,
+    #             title_tag=f"PLS OOF ({mode_label})",
+    #             save_path=oof_parity_path,
+    #         )
+
+    #         # Re-plot Lockbox parity grid (saved in PLS caches)
+    #         if "y_true_test" in d and "y_pred_test" in d:
+    #             lbx_parity_path = cache_path.parent / f"{mode_label}_pls_lbx_parity_{TIMESTAMP}.png"
+    #             plot_parity_grid(
+    #                 d["y_true_test"],
+    #                 d["y_pred_test"],
+    #                 actual_target_names,
+    #                 title_tag=f"PLS LOCKBOX ({mode_label})",
+    #                 save_path=lbx_parity_path,
+    #             )

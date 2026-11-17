@@ -92,9 +92,7 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# =============================================================================
-# Model & Loss Definitions
-# =============================================================================
+# Classes
 class BankedPhysicsDecoder(nn.Module):
     def __init__(
         self,
@@ -462,16 +460,13 @@ class LIBSSpectraDataset(Dataset):
         }
 
 
-# =============================================================================
-# Data Loading, Fingerprinted Splits & Chunked Memory-Safe Utilities
-# =============================================================================
+# Load
 def seed_everything(seed: int = 42):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
-
 
 def compute_dataset_fingerprint(data: dict) -> str:
     """Computes a fast cryptographic hash of targets, groups, and lockbox flags."""
@@ -480,7 +475,6 @@ def compute_dataset_fingerprint(data: dict) -> str:
     h.update(np.ascontiguousarray(data['group_id']).tobytes())
     h.update(np.ascontiguousarray(data['is_lockbox']).tobytes())
     return h.hexdigest()
-
 
 def load_crossval_data(h5_path: str) -> dict:
     """Loads pre-cleaned dataset as float32 tensors stored in System CPU RAM (matching benchmark scripts)."""
@@ -524,7 +518,6 @@ def load_crossval_data(h5_path: str) -> dict:
         wavelengths=wavelengths,
         names=names,
     )
-
 
 def assign_group_folds(
     X, group_id, is_synthetic, dopant_idx, elem_names=None,
@@ -571,7 +564,6 @@ def assign_group_folds(
     fold_id[exp] = best_fog[inv]
     return fold_id
 
-
 def build_splits_for_seed(data, split_dir, num_folds, seed, allow_cache: bool = True):
     """Loads existing pre-computed CV splits for a given seed or creates them if absent or stale."""
     split_dir = Path(split_dir)
@@ -616,6 +608,7 @@ def build_splits_for_seed(data, split_dir, num_folds, seed, allow_cache: bool = 
     return test_idx, cv_idx, cv_fold_id
 
 
+# Compute
 def compute_subset_mean_spectrum(X: torch.Tensor, indices: np.ndarray, chunk_size: int = 4096) -> torch.Tensor:
     """Computes column-wise mean spectrum over X[indices] in chunks without allocating a full slice copy."""
     idx_t = torch.as_tensor(indices, dtype=torch.long)
@@ -623,7 +616,6 @@ def compute_subset_mean_spectrum(X: torch.Tensor, indices: np.ndarray, chunk_siz
     for c in torch.split(idx_t, chunk_size):
         acc += X[c].sum(dim=0, dtype=torch.float64)
     return (acc / max(len(indices), 1)).float()
-
 
 def compute_global_mean_and_sst(X: torch.Tensor, indices: np.ndarray, chunk_size: int = 4096) -> tuple[float, float, int]:
     """Computes global scalar mean, total sum of squares (SST), and element count in chunks."""
@@ -640,7 +632,6 @@ def compute_global_mean_and_sst(X: torch.Tensor, indices: np.ndarray, chunk_size
         sst += float((X[c].double() - x_mean).pow_(2).sum().item())
     return x_mean, sst, n_elem
 
-
 def compute_chunked_sse_arrays(y_true: torch.Tensor | np.ndarray, y_pred: torch.Tensor | np.ndarray, chunk_size: int = 4096) -> float:
     """Computes float64 SSE between two same-shaped arrays in chunks with minimal temporary memory."""
     n = len(y_true)
@@ -650,7 +641,6 @@ def compute_chunked_sse_arrays(y_true: torch.Tensor | np.ndarray, y_pred: torch.
         p_c = torch.as_tensor(y_pred[s:s + chunk_size], dtype=torch.float64)
         sse += float((t_c - p_c).pow_(2).sum().item())
     return sse
-
 
 def fold_range_check(Y_wt, fold_id, is_synth, names, dopants=('Ce', 'Gd', 'Sm', 'U'), logger=None):
     Y_np = Y_wt.cpu().numpy() if hasattr(Y_wt, 'cpu') else np.asarray(Y_wt)
@@ -675,7 +665,6 @@ def fold_range_check(Y_wt, fold_id, is_synth, names, dopants=('Ce', 'Gd', 'Sm', 
             log(logger=logger, msg=msg)
         else:
             print(msg)
-
 
 def worst_groups(true_wt, pred_wt, gid, names, dopants=('Ce', 'Gd', 'Sm', 'U'), top=5, logger=None):
     true_np = true_wt.cpu().numpy() if hasattr(true_wt, 'cpu') else np.asarray(true_wt)
@@ -707,9 +696,7 @@ def worst_groups(true_wt, pred_wt, gid, names, dopants=('Ce', 'Gd', 'Sm', 'U'), 
         print(full_msg)
 
 
-# =============================================================================
-# Plotting & Metric Tables (Matching Forward & Reverse Benchmarks)
-# =============================================================================
+# Plot
 def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="P3VAE Encoder", save_path=None):
     """Generates an NxM concentration parity grid plot matching Forward PLS & 1D CNN."""
     active_elem_idx = [j for j in range(y_true_wt.shape[1]) if y_true_wt[:, j].max() > 1e-5]
@@ -749,38 +736,40 @@ def plot_parity_grid(y_true_wt, y_pred_wt, target_names, title_tag="P3VAE Encode
         print(f"Saved Parity Plot to: {save_path}")
     plt.close()
 
-
-def print_benchmark_table(y_true, y_pred_model, y_train_mean, title_tag, elem_names, model_label="P3VAE Encoder"):
-    """Prints element-wise metrics comparing P3VAE Encoder against Dummy Baselines."""
+def print_benchmark_table(y_true, y_pred_model, y_train_mean, title_tag, elem_names, model_label):
+    """
+    Prints element-wise metrics comparing PLS against Dummy Baselines.
+    """
     active_idx = [j for j in range(y_true.shape[1]) if y_true[:, j].max() > 1e-5]
-
+    
     print("\n" + "=" * 95)
+    print(f" model: {model_label}")
     print(f" {title_tag}")
     print("=" * 95)
     print(f"{'Element':<8} | {'Strategy':<18} | {'R^2':<8} | {'MAE (wt%)':<10} | {'RMSE (wt%)':<10} | {'Max True':<10}")
     print("-" * 95)
-
+    
     for j in active_idx:
         name = elem_names[j]
         yt = y_true[:, j]
         yp = y_pred_model[:, j]
-
+        
+        # Baselines
         pred_zero = np.zeros_like(yt)
         pred_mean = np.full_like(yt, y_train_mean[j])
-
+        
         strategies = [
             ("Predict Zero", pred_zero),
             ("Predict Mean", pred_mean),
-            (model_label, yp),
+            ("p3VAE Model", yp)
         ]
-
+        
         for strat_name, y_hat in strategies:
             r2 = r2_score(yt, y_hat)
             mae = mean_absolute_error(yt, y_hat)
             rmse = np.sqrt(mean_squared_error(yt, y_hat))
             print(f"{name:<8} | {strat_name:<18} | {r2:8.3f} | {mae:10.4f} | {rmse:10.4f} | {yt.max():10.3f}")
         print("-" * 95)
-
 
 def rmse_calcs(y_true, y_pred):
     active_cols = y_true.max(axis=0) > 1e-5
@@ -791,7 +780,6 @@ def rmse_calcs(y_true, y_pred):
         for col in np.where(active_cols)[0]
     ]))
 
-
 def r2_calcs(y_true, y_pred):
     active_cols = y_true.max(axis=0) > 1e-5
     if not np.any(active_cols):
@@ -800,7 +788,6 @@ def r2_calcs(y_true, y_pred):
         r2_score(y_true[:, col], y_pred[:, col])
         for col in np.where(active_cols)[0]
     ]))
-
 
 def select_representative_samples(
     y_concentrations: np.ndarray,
@@ -861,7 +848,6 @@ def select_representative_samples(
 
     return sample_indices, sample_tags
 
-
 def plot_spectral_reconstruction_subset(
     x_true_sub: np.ndarray,
     x_pred_sub: np.ndarray,
@@ -912,7 +898,6 @@ def plot_spectral_reconstruction_subset(
         plt.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"Saved Spectral Overlay Plot to: {save_path}")
     plt.close()
-
 
 def plot_physics_residual_breakdown_subset(
     x_true_sub: np.ndarray,
@@ -969,9 +954,7 @@ def plot_physics_residual_breakdown_subset(
     plt.close()
 
 
-# =============================================================================
-# Single-Fold Training & Memory-Safe Streaming Evaluation
-# =============================================================================
+# One fold training
 def train_one_fold(
     X_cv: torch.Tensor,
     row_maxes_cv: np.ndarray,
@@ -1066,18 +1049,32 @@ def train_one_fold(
     criterion = PhysicsVAELoss(
         element_weights=element_weights,
         alpha_recon=1.0,
-        beta_sup=20.0,
+        beta_sup=50.0,
         gamma_kl=1e-4,
         use_log_conc=False,
     ).to(device_obj)
 
-    optimizer = torch.optim.AdamW(raw_model.parameters(), lr=lr, weight_decay=weight_decay)
+    # Where your optimizer is created in the training loop:
+    phys_head_params = (
+        list(raw_model.fc_mean_phys.parameters())
+        + list(raw_model.fc_logvar_phys.parameters())
+    )
+    phys_head_ids = {id(p) for p in phys_head_params}
+    base_params = [p for p in raw_model.parameters() if id(p) not in phys_head_ids]
+
+    optimizer = torch.optim.AdamW(
+        [
+            {"params": base_params, "weight_decay": WEIGHT_DECAY},
+            {"params": phys_head_params, "weight_decay": 1e-2},
+        ],
+        lr=LEARNING_RATE,
+    )
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="min", factor=0.5, patience=lr_patience, min_lr=MIN_LR
     )
     use_amp = device_obj.type == 'cuda'
     amp_scaler = torch.amp.GradScaler("cuda", enabled=use_amp)  # type: ignore
-    early_stopper = EarlyStopping(patience=stop_patience)
+    early_stopper = EarlyStopping(patience=stop_patience, min_delta=1e-06)
 
     dop_idx_t = torch.tensor(dopant_indices_in_vae, dtype=torch.long, device=device_obj)
     dop_scales_gpu = elem_scale_wt_gpu[dop_idx_t]
@@ -1090,7 +1087,7 @@ def train_one_fold(
         tr_loss = 0.0
         n_tr_seen = 0
 
-        for batch in tqdm(train_loader, desc=f"F{fold + 1} E{epoch:03d}", mininterval=5, leave=False):
+        for batch in train_loader:
             spectra = batch['spectrum'].to(device_obj, non_blocking=True) / scale_gpu
             targets = batch['targets'].to(device_obj, non_blocking=True)
             batch_gpu = {'spectrum': spectra, 'targets': targets}
@@ -1257,13 +1254,13 @@ def train_one_fold(
     return res_dict
 
 
-# =============================================================================
-# Main Execution Pipeline
-# =============================================================================
+# Main
 def main(
     h5_file: Path | str = H5_FILE,
     split_dir: Path | str = SPLIT_DIR,
     output_dir: Path | str = OUTPUT_DIR,
+    encoder_dir: Path | str | None = None,
+    decoder_dir: Path | str | None = None,
     master_table_path: Path | str = MASTER_TABLE_PATH,
     include_synthetic: bool = False,
     seeds: list[int] = SEEDS,
@@ -1286,6 +1283,11 @@ def main(
     split_dir = Path(split_dir).resolve()
     output_dir = Path(output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    encoder_dir = Path(encoder_dir).resolve() if encoder_dir else output_dir
+    decoder_dir = Path(decoder_dir).resolve() if decoder_dir else output_dir
+    encoder_dir.mkdir(parents=True, exist_ok=True)
+    decoder_dir.mkdir(parents=True, exist_ok=True)
     master_table_path = Path(master_table_path).resolve()
 
     log_path = LOG_DIR / f"p3vae700_{dataset_tag}_{mode_tag}_{TIMESTAMP}.txt"
@@ -1494,7 +1496,7 @@ def main(
         logger=logger,
     )
 
-    oof_parity_path = output_dir / f"p3vae_oof_parity_{dataset_tag}_{TIMESTAMP}.png"
+    oof_parity_path = encoder_dir / f"p3vae_oof_parity_{dataset_tag}_{TIMESTAMP}.png"
     plot_parity_grid(
         true_eval_wt,
         pred_eval_wt,
@@ -1519,7 +1521,7 @@ def main(
             elem_names=actual_target_names,
             model_label="P3VAE Encoder",
         )
-        lbx_parity_path = output_dir / f"p3vae_lbx_parity_{dataset_tag}_{TIMESTAMP}.png"
+        lbx_parity_path = encoder_dir / f"p3vae_lbx_parity_{dataset_tag}_{TIMESTAMP}.png"
         plot_parity_grid(
             Y_test_wt,
             pred_test_wt,
@@ -1568,7 +1570,7 @@ def main(
         orig_sample_indices=plot_exp_indices,
         sample_tags=plot_exp_tags,
         elem_names=actual_target_names,
-        save_path=output_dir / f"p3vae_oof_spectra_full_{dataset_tag}_{TIMESTAMP}.png",
+        save_path=decoder_dir / f"p3vae_oof_spectra_full_{dataset_tag}_{TIMESTAMP}.png",
         model_name="P3VAE Full Decoder",
     )
 
@@ -1580,7 +1582,7 @@ def main(
         orig_sample_indices=plot_exp_indices,
         sample_tags=plot_exp_tags,
         elem_names=actual_target_names,
-        save_path=output_dir / f"p3vae_oof_spectra_physics_{dataset_tag}_{TIMESTAMP}.png",
+        save_path=decoder_dir / f"p3vae_oof_spectra_physics_{dataset_tag}_{TIMESTAMP}.png",
         model_name="P3VAE Physics Decoder",
     )
 
@@ -1594,7 +1596,7 @@ def main(
         orig_sample_indices=plot_exp_indices,
         sample_tags=plot_exp_tags,
         elem_names=actual_target_names,
-        save_path=output_dir / f"p3vae_oof_physics_vs_residual_{dataset_tag}_{TIMESTAMP}.png",
+        save_path=decoder_dir / f"p3vae_oof_physics_vs_residual_{dataset_tag}_{TIMESTAMP}.png",
         title_tag=f"P3VAE OOF ({mode_tag})",
     )
 
@@ -1638,7 +1640,7 @@ def main(
             orig_sample_indices=plot_lbx_indices,
             sample_tags=plot_lbx_tags,
             elem_names=actual_target_names,
-            save_path=output_dir / f"p3vae_lbx_spectra_full_{dataset_tag}_{TIMESTAMP}.png",
+            save_path=decoder_dir / f"p3vae_lbx_spectra_full_{dataset_tag}_{TIMESTAMP}.png",
             model_name="P3VAE Full Decoder",
         )
         plot_spectral_reconstruction_subset(
@@ -1649,7 +1651,7 @@ def main(
             orig_sample_indices=plot_lbx_indices,
             sample_tags=plot_lbx_tags,
             elem_names=actual_target_names,
-            save_path=output_dir / f"p3vae_lbx_spectra_physics_{dataset_tag}_{TIMESTAMP}.png",
+            save_path=decoder_dir / f"p3vae_lbx_spectra_physics_{dataset_tag}_{TIMESTAMP}.png",
             model_name="P3VAE Physics Decoder",
         )
 
@@ -1717,6 +1719,8 @@ if __name__ == "__main__":
         h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
         split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
         output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp"),
+        encoder_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/encoder_benchmarks/exp",
+        decoder_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/decoder_benchmarks/exp",
         master_table_path="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv",
         include_synthetic=False,
         seeds=SEEDS,
@@ -1730,6 +1734,8 @@ if __name__ == "__main__":
         h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
         split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
         output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn"),
+        encoder_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/encoder_benchmarks/exp-syn",
+        decoder_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/decoder_benchmarks/exp-syn",
         master_table_path="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv",
         include_synthetic=True,
         seeds=SEEDS,
