@@ -1,0 +1,105 @@
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting Memory-Safe P3VAE (615 Arch) Encoder + Decoder Benchmark Pipeline [cuda] ===
+Dataset: 20261110b (exp) | Folds: 7 | Seeds: [42]
+Loaded 347985 total shots | Real: 147985 | Synthetic: 200000
+[Range Check] Fold 0: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 1: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 3.372 / train 6.040
+[Range Check] Fold 2: Ce: val 2.842 / train 2.842 | Gd: val 2.746 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 3: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 4: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 5: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 6: Ce: val 2.842 / train 2.842 | Gd: val 2.746 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+
+--- Training P3VAE across Folds [0] [Exp Only] ---
+[F1/7] spec_scaler scale_ = 0.61381
+=== Fold 1/7: train 106162 | val 17963 ===
+[BankedPhysicsDecoder] Bank check at g=0.247 nm -> Ce: max=1.031 (area=196.0), Gd: max=1.003 (area=65.6), Sm: max=1.031 (area=39.1), U: max=1.074 (area=190.2)
+[F1] Epoch 001/200 [27.5s] | Train 15.7617 | Val 2.9437 | Dopant RMSE 0.3426 wt% | Recon 2.1904 | lr 1.00e-03
+[F1] Epoch 002/200 [24.4s] | Train 2.9515 | Val 2.9382 | Dopant RMSE 0.3940 wt% | Recon 2.1674 | lr 1.00e-03
+[F1] Epoch 003/200 [25.1s] | Train 2.9215 | Val 2.9321 | Dopant RMSE 0.4108 wt% | Recon 2.1558 | lr 1.00e-03
+[F1] Epoch 004/200 [30.6s] | Train 2.9024 | Val 2.9233 | Dopant RMSE 0.4066 wt% | Recon 2.1521 | lr 1.00e-03
+[F1] Epoch 005/200 [27.3s] | Train 2.8906 | Val 2.8882 | Dopant RMSE 0.3454 wt% | Recon 2.1479 | lr 1.00e-03
+[F1] Epoch 006/200 [25.2s] | Train 2.8817 | Val 2.9950 | Dopant RMSE 0.5195 wt% | Recon 2.1530 | lr 1.00e-03
+[F1] Epoch 007/200 [25.0s] | Train 2.8669 | Val 2.8848 | Dopant RMSE 0.3231 wt% | Recon 2.1565 | lr 5.00e-04
+[F1] Epoch 008/200 [26.9s] | Train 2.8590 | Val 2.8849 | Dopant RMSE 0.3524 wt% | Recon 2.1422 | lr 5.00e-04
+[F1] Epoch 009/200 [25.3s] | Train 2.8516 | Val 2.8635 | Dopant RMSE 0.3007 wt% | Recon 2.1448 | lr 5.00e-04
+[F1] Epoch 010/200 [27.5s] | Train 2.8434 | Val 2.8633 | Dopant RMSE 0.3086 wt% | Recon 2.1411 | lr 5.00e-04
+[F1] Epoch 011/200 [25.5s] | Train 2.8342 | Val 2.9071 | Dopant RMSE 0.3406 wt% | Recon 2.1707 | lr 5.00e-04
+[F1] Epoch 012/200 [28.9s] | Train 2.8221 | Val 2.9348 | Dopant RMSE 0.4349 wt% | Recon 2.1471 | lr 5.00e-04
+[F1] Epoch 013/200 [26.9s] | Train 2.8104 | Val 2.8654 | Dopant RMSE 0.3144 wt% | Recon 2.1411 | lr 5.00e-04
+[F1] Epoch 014/200 [25.2s] | Train 2.7982 | Val 2.8745 | Dopant RMSE 0.3236 wt% | Recon 2.1460 | lr 5.00e-04
+[F1] Epoch 015/200 [25.9s] | Train 2.7810 | Val 2.8644 | Dopant RMSE 0.3126 wt% | Recon 2.1402 | lr 2.50e-04
+[F1] Epoch 016/200 [23.2s] | Train 2.7718 | Val 2.8692 | Dopant RMSE 0.3232 wt% | Recon 2.1403 | lr 2.50e-04
+[F1] Epoch 017/200 [26.4s] | Train 2.7651 | Val 2.8693 | Dopant RMSE 0.3229 wt% | Recon 2.1412 | lr 2.50e-04
+[F1] Epoch 018/200 [31.1s] | Train 2.7599 | Val 2.8810 | Dopant RMSE 0.3481 wt% | Recon 2.1404 | lr 2.50e-04
+[F1] Epoch 019/200 [28.0s] | Train 2.7562 | Val 2.9225 | Dopant RMSE 0.4198 wt% | Recon 2.1430 | lr 2.50e-04
+[F1] Epoch 020/200 [27.9s] | Train 2.7495 | Val 2.8722 | Dopant RMSE 0.3312 wt% | Recon 2.1399 | lr 1.25e-04
+[F1] Epoch 021/200 [28.5s] | Train 2.7458 | Val 2.8727 | Dopant RMSE 0.3319 wt% | Recon 2.1399 | lr 1.25e-04
+[F1] Epoch 022/200 [31.5s] | Train 2.7439 | Val 2.8696 | Dopant RMSE 0.3255 wt% | Recon 2.1397 | lr 1.25e-04
+[F1] Epoch 023/200 [30.1s] | Train 2.7427 | Val 2.8701 | Dopant RMSE 0.3266 wt% | Recon 2.1394 | lr 1.25e-04
+[F1] Epoch 024/200 [27.9s] | Train 2.7414 | Val 2.8704 | Dopant RMSE 0.3270 wt% | Recon 2.1397 | lr 1.25e-04
+[F1] Epoch 025/200 [25.7s] | Train 2.7390 | Val 2.8708 | Dopant RMSE 0.3286 wt% | Recon 2.1393 | lr 6.25e-05
+[F1] Epoch 026/200 [23.8s] | Train 2.7377 | Val 2.8713 | Dopant RMSE 0.3295 wt% | Recon 2.1394 | lr 6.25e-05
+[F1] Epoch 027/200 [26.5s] | Train 2.7371 | Val 2.8725 | Dopant RMSE 0.3321 wt% | Recon 2.1395 | lr 6.25e-05
+[F1] Epoch 028/200 [30.7s] | Train 2.7364 | Val 2.8721 | Dopant RMSE 0.3314 wt% | Recon 2.1396 | lr 6.25e-05
+[F1] Epoch 029/200 [27.2s] | Train 2.7358 | Val 2.8723 | Dopant RMSE 0.3316 wt% | Recon 2.1393 | lr 6.25e-05
+[F1] Early stop at epoch 29 (Best Dopant RMSE: 0.3007 wt%)
+[F1] Learned elem_scale -> Ce: 0.0713, Gd: 0.0371, Sm: 0.0960, U: 0.0293 | residual_scale=0.1149
+
+✅ P3VAE Encoder OOF Summary | Mean Dopant RMSE: 0.2725 wt% | Mean R^2: 0.6544
+
+===============================================================================================
+ model: P3VAE Encoder
+ P3VAE Encoder OOF Benchmarks [Exp Only]
+===============================================================================================
+Element  | Strategy           | R^2      | MAE (wt%)  | RMSE (wt%) | Max True  
+-----------------------------------------------------------------------------------------------
+Ce       | Predict Zero       |   -0.950 |     1.1002 |     1.5761 |      2.842
+Ce       | Predict Mean       |    0.000 |     1.0477 |     1.1286 |      2.842
+Ce       | p3VAE Model        |    0.957 |     0.1384 |     0.2331 |      2.842
+-----------------------------------------------------------------------------------------------
+Gd       | Predict Zero       |   -0.211 |     0.3906 |     0.9349 |      2.937
+Gd       | Predict Mean       |   -0.000 |     0.6352 |     0.8494 |      2.937
+Gd       | p3VAE Model        |    0.705 |     0.2183 |     0.4613 |      2.937
+-----------------------------------------------------------------------------------------------
+Sm       | Predict Zero       |   -0.002 |     0.0049 |     0.1183 |      5.857
+Sm       | Predict Mean       |    0.000 |     0.0097 |     0.1182 |      5.857
+Sm       | p3VAE Model        |    0.200 |     0.0673 |     0.1057 |      5.857
+-----------------------------------------------------------------------------------------------
+U        | Predict Zero       |   -0.411 |     0.3756 |     0.6959 |      6.040
+U        | Predict Mean       |    0.000 |     0.4792 |     0.5858 |      6.040
+U        | p3VAE Model        |    0.755 |     0.1651 |     0.2898 |      6.040
+-----------------------------------------------------------------------------------------------
+=== Top 5 Worst Performing Composition Groups (wt%) ===
+Group 552  | Shots: 1    | Log-MSE: 0.2904 | True: [0.    0.    2.928 0.   ] | Pred Mean: [0.254 0.427 0.461 0.082]
+Group 1344 | Shots: 1    | Log-MSE: 0.1927 | True: [0. 0. 0. 0.] | Pred Mean: [0.072 0.074 1.391 0.035]
+Group 630  | Shots: 1    | Log-MSE: 0.1280 | True: [0.    0.    4.577 0.   ] | Pred Mean: [0.1   0.045 1.748 0.019]
+Group 1250 | Shots: 1    | Log-MSE: 0.1237 | True: [0. 0. 0. 0.] | Pred Mean: [0.158 0.086 0.979 0.026]
+Group 1053 | Shots: 1024 | Log-MSE: 0.1155 | True: [0.    0.    0.    1.344] | Pred Mean: [0.103 0.81  0.149 1.473]
+Saved Parity Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/encoder_benchmarks/exp-syn/722/p3vae_oof_parity_20261110b_20261119_131039.png
+
+=========================================================================================================
+ P3VAE Decoder OOF Spectral Reconstruction Benchmarks [Exp Only]
+ Note: Full Decoder uses spectrum-encoded matrix residual (autoencoder upper bound);
+       True-Conc Physics uses 7 modeled elements + spectrum-inferred broadening.
+=========================================================================================================
+Decoder Pathway                                      | Spectral RMSE   | Overall R^2 
+---------------------------------------------------------------------------------------------------------
+Mean-Spectrum Baseline                               |         0.00645 |       0.5525
+Physics-Only Decoder (Pred Conc -> NIST)             |         0.00988 |      -0.0514
+Physics Decoder (True 7-Elem Conc + Pred Gamma)      |         0.00990 |      -0.0550
+Full P3VAE Decoder (Physics + Matrix Residual)       |         0.00899 |       0.1302
+=========================================================================================================
+Saved Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/decoder_benchmarks/exp-syn/722/p3vae_oof_spectra_full_20261110b_20261119_131039.png
+Saved Spectral Overlay Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/decoder_benchmarks/exp-syn/722/p3vae_oof_spectra_physics_20261110b_20261119_131039.png
+Saved Physics vs. Residual Breakdown Plot to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/decoder_benchmarks/exp-syn/722/p3vae_oof_physics_vs_residual_20261110b_20261119_131039.png
+Cached compact P3VAE encoder + decoder results to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/722/p3vae_predictions_20261110b.npz
+P3VAE Pipeline completed in 14.60 minutes.

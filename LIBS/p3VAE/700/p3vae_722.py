@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 """
-jvlee_LIBS_ML > LIBS > p3VAE > 700 > p3vae_711.py
+jvlee_LIBS_ML > LIBS > p3VAE > 700 > p3vae_722.py
 
-Fix the synthetic-to-experimental domain gap
+This is an attempt to fix the dopant to dopant scaling so that the 
+scaling for Ce doesn't destroy all the signals for U and Sm
 """
 
 import os
@@ -101,14 +102,12 @@ class BankedPhysicsDecoder(nn.Module):
         df = pd.read_csv(master_table_path)
         centers = torch.tensor(df['wavelength_nm'].values, dtype=torch.float32)
         amps = torch.tensor(df['base_intensity'].values, dtype=torch.float32)
-        amps = amps / amps.max()
         wl = wl_grid.detach().cpu().float()
         gammas = torch.logspace(math.log10(g_min), math.log10(g_max), n_gamma)
 
         bank = torch.zeros(n_gamma, n_elements, wl.numel())
         for k, g in enumerate(gammas):
             for e in range(n_elements):
-                # Map channel 'e' to line table entry via name or original feature index
                 if 'element' in df.columns and elem_names is not None:
                     m = (df['element'].astype(str).values == elem_names[e])
                 elif keep_idx is not None:
@@ -116,13 +115,31 @@ class BankedPhysicsDecoder(nn.Module):
                 else:
                     m = (df['elem_idx'].values == e)
 
-                c, a = centers[m], amps[m]
+                c = centers[m]
+                a = amps[m]
+                if len(a) > 0:
+                    # Normalize per element so U (4.68e3) and Ce (2.41e9) start on equal footing
+                    a = a / a.max().clamp(min=1e-8)
+
                 for i in range(0, len(c), 256):
                     d = (wl[None, :] - c[i:i + 256, None]) ** 2 + g ** 2 + 1e-6
-                    bank[k, e] += (a[i:i + 256, None] * (g / math.pi) / d).sum(0)
+                    # Peak-normalized Lorentzian so peak amplitude does not collapse as g changes
+                    bank[k, e] += (a[i:i + 256, None] * (g ** 2) / d).sum(0)
+
+        # Quick sanity print at median broadening index to verify all elements are O(1)
+        mid_k = n_gamma // 2
+        names = elem_names if elem_names is not None else [f"elem_{e}" for e in range(n_elements)]
+        scale_summary = ", ".join(
+            f"{names[e]}: max={bank[mid_k, e].max().item():.3f} (area={bank[mid_k, e].sum().item():.1f})"
+            for e in range(n_elements)
+        )
+        print(f"[BankedPhysicsDecoder] Bank check at g={gammas[mid_k].item():.3f} nm -> {scale_summary}")
+
         self.register_buffer('bank', bank)
         self.register_buffer('log_g', gammas.log())
         self.G = n_gamma
+        # Learnable per-element sensitivity factor (softplus(0.0) ~= 0.693 initial gain)
+        self.elem_scale_raw = nn.Parameter(torch.zeros(n_elements))
 
     def forward(self, conc: torch.Tensor, broadening: torch.Tensor, chunk_size: int | None = None) -> torch.Tensor:
         with torch.autocast(device_type=conc.device.type, enabled=False):
@@ -133,7 +150,9 @@ class BankedPhysicsDecoder(nn.Module):
             lo = pos.floor().clamp(0, self.G - 2).long()
             w = (pos - lo).clamp(0, 1)[:, None, None]
             prof = (1 - w) * self.bank[lo] + w * self.bank[lo + 1]  # [B, E, W]
-            return torch.einsum('be,bew->bw', conc, prof)
+
+            elem_scale = F.softplus(self.elem_scale_raw).unsqueeze(0)  # [1, E]
+            return torch.einsum('be,bew->bw', conc * elem_scale, prof)
 
 
 class PhysicsInformedVAE(nn.Module):
@@ -215,16 +234,18 @@ class PhysicsInformedVAE(nn.Module):
             g_max=5.0,
         )
 
-        # Keep matrix decoder small (128 hidden units) to limit unphysical cheating
+        # Coarse 64-knot continuum decoder (~12.5 nm spacing) so it can model smooth
+        # plasma continuum background but CANNOT steal narrow atomic emission lines
         self.matrix_decoder = nn.Sequential(
-            nn.Linear(self.matrix_latent_dim, 128),
+            nn.Linear(self.matrix_latent_dim, 64),
             nn.ReLU(),
-            nn.Linear(128, input_dim),
+            nn.Linear(64, 64),
             nn.Sigmoid(),
         )
+        self.input_dim = input_dim
 
         # Initialize residual scale small (0.05) so physics decoder handles primary line fitting
-        self.residual_scale = nn.Parameter(torch.tensor([0.05]))
+        self.residual_scale_logit = nn.Parameter(torch.tensor([-2.0]))  # 0.25 * sigmoid(-2.0) ~= 0.030 initially
 
         nn.init.constant_(self.fc_logvar_phys.weight, 0.0)
         nn.init.constant_(self.fc_logvar_phys.bias, 0.0)
@@ -273,7 +294,10 @@ class PhysicsInformedVAE(nn.Module):
 
         # 5. Spectrum Reconstruction
         ideal_physics_spectrum = self.physics_decoder(concentrations, broadening, chunk_size=CHUNK_SIZE)
-        matrix_residual = self.matrix_decoder(z_matrix) * self.residual_scale
+        residual_scale = 0.25 * torch.sigmoid(self.residual_scale_logit)
+        coarse_bg = self.matrix_decoder(z_matrix).unsqueeze(1)  # [B, 1, 64]
+        smooth_bg = F.interpolate(coarse_bg, size=self.input_dim, mode="linear", align_corners=True).squeeze(1)
+        matrix_residual = smooth_bg * residual_scale
         reconstructed_spectrum = ideal_physics_spectrum + matrix_residual
 
         return {
@@ -332,8 +356,11 @@ class PhysicsVAELoss(nn.Module):
         pred_conc = model_outputs["concentrations"]
         true_conc = batch["targets"]
 
-        # 1. Spectral Reconstruction Loss
+        # 1. Spectral Reconstruction Loss (Full + Direct Physics Anchor)
         recon_loss = F.mse_loss(x_recon, x_target, reduction="none").sum(dim=-1).mean()
+        phys_recon_loss = F.mse_loss(
+            model_outputs["ideal_physics_spectrum"], x_target, reduction="none"
+        ).sum(dim=-1).mean()
 
         # 2. Dopant-Focused Concentration Loss
         if self.use_log_conc:
@@ -353,6 +380,7 @@ class PhysicsVAELoss(nn.Module):
 
         total_loss = (
             (self.alpha_recon * recon_loss)
+            + (0.25 * self.alpha_recon * phys_recon_loss)
             + (self.beta_sup * sup_loss)
             + (self.gamma_kl * kl_loss)
         )
@@ -1010,11 +1038,12 @@ def train_one_fold(
 
     train_idx = np.where(train_mask)[0]
     val_idx = np.where(val_mask)[0]
+    exp_train_idx = np.where((cv_fold_id != fold) & (is_synth_cv == 0))[0]
     pin = device_obj.type == 'cuda'
 
     # Fit SpectralScaler from precomputed 1D row maxes (0 bytes of spectrum slice copies)
     spec_scaler = SpectralScaler(mode='robust_max', q=99.9)
-    spec_scaler.fit_from_row_maxes(row_maxes_cv[train_idx])
+    spec_scaler.fit_from_row_maxes(row_maxes_cv[exp_train_idx])
     scale_gpu = spec_scaler.scale_.to(device_obj)  # type: ignore
     log(logger=logger, msg=f"[F{fold + 1}/{NUM_FOLDS}] spec_scaler scale_ = {scale_gpu.item():.5f}")
 
@@ -1144,7 +1173,12 @@ def train_one_fold(
     raw_model.load_state_dict(ckpt['model_state_dict'])
     raw_model.eval()
 
-    mu_tr_gpu = compute_subset_mean_spectrum(X_cv, train_idx).to(device_obj)
+    learned_scales = F.softplus(raw_model.physics_decoder.elem_scale_raw).detach().cpu().numpy()
+    learned_res_scale = (0.25 * torch.sigmoid(raw_model.residual_scale_logit)).item()
+    scale_str = ", ".join(f"{n}: {s:.4f}" for n, s in zip(vae_elem_names, learned_scales))
+    log(logger=logger, msg=f"[F{fold + 1}] Learned elem_scale -> {scale_str} | residual_scale={learned_res_scale:.4f}")
+
+    mu_tr_gpu = compute_subset_mean_spectrum(X_cv, exp_train_idx).to(device_obj)
     scale_val = float(spec_scaler.scale_.item())  # type: ignore
 
     sse_base = torch.zeros((), dtype=torch.float64, device=device_obj)
@@ -1267,7 +1301,7 @@ def main(
     decoder_dir.mkdir(parents=True, exist_ok=True)
     master_table_path = Path(master_table_path).resolve()
 
-    log_path = LOG_DIR / f"p3vae701_{dataset_tag}_{mode_tag}_{TIMESTAMP}.txt"
+    log_path = LOG_DIR / f"p3vae722_{dataset_tag}_{mode_tag}_{TIMESTAMP}.txt"
     logger = get_worker_logger(log_path.stem)
 
     # 1. Load Data (Optional subsample for fast smoke testing without overwriting split cache)
@@ -1391,7 +1425,7 @@ def main(
 
     print(f"\n--- Training P3VAE across Folds {run_folds} [{'Syn+Exp' if include_synthetic else 'Exp Only'}] ---")
     for k in run_folds:
-        fold_ckpt = TRAINED_MODEL_DIR / f"p3vae701_{dataset_tag}_{mode_tag}_{TIMESTAMP}_fold{k + 1}.pt"
+        fold_ckpt = TRAINED_MODEL_DIR / f"p3vae722_{dataset_tag}_{mode_tag}_{TIMESTAMP}_fold{k + 1}.pt"
         res = train_one_fold(
             X_cv=X_cv,
             row_maxes_cv=row_maxes_cv,
@@ -1692,12 +1726,13 @@ def main(
 
 
 if __name__ == "__main__":
+
     main(
         h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
         split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp/701"),
-        encoder_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/encoder_benchmarks/exp/701",
-        decoder_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/decoder_benchmarks/exp/701",
+        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/722"),
+        encoder_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/encoder_benchmarks/exp-syn/722",
+        decoder_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/decoder_benchmarks/exp-syn/722",
         master_table_path="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv",
         include_synthetic=False,
         seeds=SEEDS,
@@ -1705,19 +1740,6 @@ if __name__ == "__main__":
         target_names=['Ce', 'Gd', 'Sm', 'U'],
         include_lbx=False,
         sample_nums=None,
-    )
-
-    main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
-        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/701"),
-        encoder_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/encoder_benchmarks/exp-syn/701",
-        decoder_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/decoder_benchmarks/exp-syn/701",
-        master_table_path="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv",
-        include_synthetic=True,
-        seeds=SEEDS,
-        dataset_tag='20261110b',
-        target_names=['Ce', 'Gd', 'Sm', 'U'],
-        include_lbx=False,
-        sample_nums=None,
+        folds=[0],
+        # epochs=2
     )

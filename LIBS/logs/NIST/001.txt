@@ -1,0 +1,27 @@
+new_NIST_data.py loading ...
+Loaded 124125 non-lockbox experimental shots for calibration (targets=['Ce', 'Gd', 'Sm', 'U']).
+Extracting single-element basis spectra from NIST CSV library...
+Calibrating NIST basis sensitivities and R(lambda) to non-lockbox experimental data...
+The maximum number of function evaluations is exceeded.
+Function evaluations 60, initial cost 4.2854e+03, final cost 3.8349e+03, first-order optimality 2.81e-01.
+
+Calibrated per-element sensitivity scalars:
+  [Ce]: 16.3388
+  [Gd]: 0.2308
+  [Sm]: 0.0075
+  [ U]: 0.4337
+Saved calibrated compositions manifest to: /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/NIST/NIST_combined/calibrated_4dopant_compositions_wt_pct.csv
+  Processed and saved chunk 0 to 20000 / 200000
+  Processed and saved chunk 20000 to 40000 / 200000
+  Processed and saved chunk 40000 to 60000 / 200000
+  Processed and saved chunk 60000 to 80000 / 200000
+  Processed and saved chunk 80000 to 100000 / 200000
+  Processed and saved chunk 100000 to 120000 / 200000
+  Processed and saved chunk 120000 to 140000 / 200000
+  Processed and saved chunk 140000 to 160000 / 200000
+  Processed and saved chunk 160000 to 180000 / 200000
+  Processed and saved chunk 180000 to 200000 / 200000
+✅ Saved calibrated synthetic dataset to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/NIST/NIST_combined/calibrated_4dopant_synthetic_200k.h5
+Loaded Experimental: X=(147985, 10000), y=(147985, 4), targets=['Ce', 'Gd', 'Sm', 'U']
+✅ Successfully exported merged dataset to /lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261118.h5
+   Final Shapes: X=(347985, 10000), y=(347985, 4)

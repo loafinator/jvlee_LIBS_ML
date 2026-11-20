@@ -202,7 +202,6 @@ class PhysicsInformedVAE(nn.Module):
 
         phys_dim = self.n_elements + self.n_broadening
         self.fc_mean_phys = nn.Linear(256, phys_dim)
-        self.fc_logvar_phys = nn.Linear(256, phys_dim)
 
         self.fc_mean_matrix = nn.Linear(64, self.matrix_latent_dim)
         self.fc_logvar_matrix = nn.Linear(64, self.matrix_latent_dim)
@@ -229,8 +228,6 @@ class PhysicsInformedVAE(nn.Module):
         # Initialize residual scale small (0.05) so physics decoder handles primary line fitting
         self.residual_scale = nn.Parameter(torch.tensor([0.05]))
 
-        nn.init.constant_(self.fc_logvar_phys.weight, 0.0)
-        nn.init.constant_(self.fc_logvar_phys.bias, 0.0)
         nn.init.constant_(self.fc_logvar_matrix.weight, 0.0)
         nn.init.constant_(self.fc_logvar_matrix.bias, 0.0)
 
@@ -241,9 +238,9 @@ class PhysicsInformedVAE(nn.Module):
             return mu + eps * std
         return mu
 
-    def _extract_physical_params(self, z_phys: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        concs_raw = z_phys[:, :self.n_elements]
-        gamma_raw = z_phys[:, self.n_elements:]
+    def _extract_physical_params(self, mu_p: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        concs_raw = mu_p[:, :self.n_elements]
+        gamma_raw = mu_p[:, self.n_elements:]
 
         concentrations = torch.clamp(F.softplus(concs_raw), min=1e-5, max=1.0)
         broadening = torch.clamp(F.softplus(gamma_raw), min=1e-3, max=10.0)
@@ -264,10 +261,8 @@ class PhysicsInformedVAE(nn.Module):
 
         # 3. Physical Parameters
         mu_p = torch.clamp(self.fc_mean_phys(h_phys), min=-10.0, max=10.0)
-        logvar_p = torch.clamp(self.fc_logvar_phys(h_phys), min=-6.0, max=6.0)
-        z_phys = self.reparameterize(mu_p, logvar_p)
 
-        concentrations, broadening = self._extract_physical_params(z_phys)
+        concentrations, broadening = self._extract_physical_params(mu_p)
 
         # 4. Matrix Continuum Parameters
         mu_m = self.fc_mean_matrix(h_matrix)
@@ -286,7 +281,6 @@ class PhysicsInformedVAE(nn.Module):
             'concentrations': concentrations,
             'broadening': broadening,
             'mu_p': mu_p,
-            'logvar_p': logvar_p,
             'mu_m': mu_m,
             'logvar_m': logvar_m,
         }
@@ -350,9 +344,8 @@ class PhysicsVAELoss(nn.Module):
         sup_loss = element_errors.mean()
 
         # 3. Free-Bits KL Divergence
-        kl_phys = self._kl_divergence(model_outputs["mu_p"], model_outputs["logvar_p"])
         kl_matrix = self._kl_divergence(model_outputs["mu_m"], model_outputs["logvar_m"])
-        kl_loss = kl_phys + kl_matrix
+        kl_loss = kl_matrix
 
         total_loss = (
             (self.alpha_recon * recon_loss)
@@ -443,7 +436,7 @@ def iter_batches(
     bs: int,
     shuffle: bool,
     drop_last: bool = False,
-):
+    ):
     idx_t = torch.as_tensor(idx, dtype=torch.long, device=X.device)
     if shuffle:
         idx_t = idx_t[torch.randperm(len(idx_t), device=X.device)]
@@ -522,7 +515,7 @@ def load_crossval_data(h5_path: str) -> dict:
 def assign_group_folds(
     X, group_id, is_synthetic, dopant_idx, elem_names=None,
     n_splits=5, n_trials=2000, min_groups_per_dopant=1, seed=42
-):
+    ):
     """Stratified group fold assignment matching all benchmark scripts."""
     exp = np.where(is_synthetic == 0)[0]
     groups, inv = np.unique(group_id[exp], return_inverse=True)
@@ -803,7 +796,7 @@ def select_representative_samples(
     y_concentrations: np.ndarray,
     elem_names: list[str],
     sample_nums: list[int] | None = None,
-) -> tuple[list[int], list[str]]:
+    ) -> tuple[list[int], list[str]]:
     """Selects the exact same 6 representative samples used in Reverse PLS & Reverse MLP."""
     n_samples = len(y_concentrations)
     dop_cols = [j for j, n in enumerate(elem_names) if n in DOPANT_NAMES]
@@ -869,7 +862,7 @@ def plot_spectral_reconstruction_subset(
     elem_names: list[str],
     save_path: Path | None = None,
     model_name: str = "P3VAE Full Decoder",
-):
+    ):
     """Plots True vs Predicted spectra for pre-selected representative rows."""
     n_plots = len(orig_sample_indices)
     if n_plots == 0:
@@ -923,7 +916,7 @@ def plot_physics_residual_breakdown_subset(
     elem_names: list[str],
     save_path: Path | None = None,
     title_tag: str = "P3VAE OOF",
-):
+    ):
     """Plots Physics vs Matrix Residual decomposition for the Complex Mixture sample."""
     if not orig_sample_indices:
         return
@@ -1002,7 +995,7 @@ def train_one_fold(
     lbx_conc_sum: np.ndarray | None = None,
     plot_lbx_indices: list[int] | None = None,
     plot_lbx_res_sum: np.ndarray | None = None,
-) -> dict[str, Any]:
+    ) -> dict[str, Any]:
     torch._dynamo.reset()
 
     if include_synthetic:
@@ -1252,7 +1245,7 @@ def main(
     folds: list[int] | None = None,
     max_samples: int | None = None,
     use_compile: bool = False,
-):
+    ):
     TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
     mode_tag = "exp-syn" if include_synthetic else "exp"
     print(f"=== Starting Memory-Safe P3VAE (615 Arch) Encoder + Decoder Benchmark Pipeline [{DEVICE}] ===")
@@ -1703,21 +1696,6 @@ if __name__ == "__main__":
         decoder_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/decoder_benchmarks/exp/701",
         master_table_path="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv",
         include_synthetic=False,
-        seeds=SEEDS,
-        dataset_tag='20261110b',
-        target_names=['Ce', 'Gd', 'Sm', 'U'],
-        include_lbx=False,
-        sample_nums=None,
-    )
-
-    main(
-        h5_file="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5",
-        split_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/fold_splits/processed-data_20261110b",
-        output_dir=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/P3VAE/processed-data_20261110b/exp-syn/701"),
-        encoder_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/encoder_benchmarks/exp-syn/701",
-        decoder_dir="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/plots/p3VAE/decoder_benchmarks/exp-syn/701",
-        master_table_path="/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/master_line_table.csv",
-        include_synthetic=True,
         seeds=SEEDS,
         dataset_tag='20261110b',
         target_names=['Ce', 'Gd', 'Sm', 'U'],

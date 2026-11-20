@@ -1,0 +1,36 @@
+Added to the sys.path: /lustre/home/leejv2/git_repos
+file_type_processing.py loading...
+speak.py loading...
+data_prep.py loading ...
+plotting.py loading...
+Added to the sys.path: /lustre/home/leejv2/git_repos
+debug.py loading...
+xpu_setup.py loading...
+gpu_setup.py loading...
+=== Starting Memory-Safe P3VAE (615 Arch) Encoder + Decoder Benchmark Pipeline [cuda] ===
+Dataset: 20261110b (exp-syn) | Folds: 7 | Seeds: [42]
+Loaded 347985 total shots | Real: 147985 | Synthetic: 200000
+[Range Check] Fold 0: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 1: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 3.372 / train 6.040
+[Range Check] Fold 2: Ce: val 2.842 / train 2.842 | Gd: val 2.746 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 3: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 4: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.857 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 5: Ce: val 2.842 / train 2.842 | Gd: val 2.937 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+[Range Check] Fold 6: Ce: val 2.842 / train 2.842 | Gd: val 2.746 / train 2.937 | Sm: val 5.268 / train 5.857 | U: val 6.040 / train 6.040
+
+--- Training P3VAE across Folds [0, 1, 2, 3, 4, 5, 6] [Syn+Exp] ---
+[F1/7] spec_scaler scale_ = 0.61381
+=== Fold 1/7: train 306162 | val 17963 ===
+[BankedPhysicsDecoder] Bank check at g=0.247 nm -> Ce: max=1.031 (area=196.0), Gd: max=1.003 (area=65.6), Sm: max=1.031 (area=39.1), U: max=1.074 (area=190.2)
+[F1] Epoch 001/200 [131.0s] | Train 3.4922 | Val 1.9785 | Dopant RMSE 0.5503 wt% | Recon 1.1096 | lr 1.00e-03
+[F1] Epoch 002/200 [57.7s] | Train 1.6684 | Val 1.5537 | Dopant RMSE 0.4140 wt% | Recon 0.7971 | lr 1.00e-03
+Traceback (most recent call last):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/700/p3vae_721.py", line 1739, in <module>
+    main(
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/700/p3vae_721.py", line 1438, in main
+    res = train_one_fold(
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/700/p3vae_721.py", line 1104, in train_one_fold
+    for batch in iter_batches(X_cv, Y_cv_norm, train_idx, batch_size, shuffle=True, drop_last=drop_last_train):
+  File "/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/p3VAE/700/p3vae_721.py", line 488, in iter_batches
+    yield {'spectrum': X[b], 'targets': Y[b]}
+KeyboardInterrupt

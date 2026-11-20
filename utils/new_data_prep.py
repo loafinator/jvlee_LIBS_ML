@@ -46,6 +46,7 @@ from collections.abc import Container
 from numpy.typing import NDArray
 from sklearn.feature_selection import VarianceThreshold
 from scipy.ndimage import minimum_filter1d, uniform_filter1d
+from scipy.integrate import trapezoid
 
 # endregion
 
@@ -782,6 +783,65 @@ def enrich_file_with_metadata(
     df.to_csv(long_path(enriched_path), index=False)
     log(logger=logger, msg=f"Enriched → {enriched_path.name}  |  shape={df.shape}")
     return enriched_path
+
+def estimate_per_shot_plasma_metadata(
+    X: np.ndarray,
+    wavelengths: np.ndarray,
+    spectrometer_R: float = 1000.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Vectorized per-shot estimation of plasma temperature T_e (eV) via Li I
+    Boltzmann ratio (610.36 nm vs 460.29 nm) and electron density n_e (cm^-3)
+    via deconvolved Stark FWHM of Li I 610.36 nm.
+    """
+    wl = np.asarray(wavelengths, dtype=np.float64)
+    spec = np.asarray(X, dtype=np.float64)
+
+    # 1. Boltzmann Temperature from Li I 610.36 nm (2p->3d) & Li I 460.29 nm (2p->4d)
+    # NIST ASD constants: (wavelength_nm, E_k_eV, g_k * A_ki [s^-1])
+    I_610, fwhm_610 = extract_line_area_and_fwhm(wl, spec, 610.36, half_win_nm=1.5)
+    I_460, _ = extract_line_area_and_fwhm(wl, spec, 460.29, half_win_nm=1.2)
+
+    lam1, E1, gA1 = 610.36, 3.8786, 6.86e8
+    lam2, E2, gA2 = 460.29, 4.5407, 2.22e8
+
+    valid_ratio = (I_610 > 1e-8) & (I_460 > 1e-8)
+    boltz_arg = np.where(
+        valid_ratio,
+        (I_610 * lam1 * gA2) / np.maximum(I_460 * lam2 * gA1, 1e-12),
+        np.exp((E2 - E1) / 0.65),
+    )
+    # Guard against noisy inversions where boltz_arg <= 1.05
+    boltz_arg = np.clip(boltz_arg, 1.05, 50.0)
+    T_e_ev = np.clip((E2 - E1) / np.log(boltz_arg), 0.35, 1.30).astype(np.float32)
+
+    # 2. Electron Density from Stark Lorentzian FWHM of Li I 610.36 nm
+    # Invert Olivero-Longbothum Voigt FWHM: V = 0.5346*L + sqrt(0.2166*L^2 + G^2)
+    fwhm_G = 610.36 / spectrometer_R
+    V = np.maximum(fwhm_610, fwhm_G * 1.01)
+    disc = np.maximum((1.0692 * V) ** 2 - 4.0 * 0.0692 * (V ** 2 - fwhm_G ** 2), 0.0)
+    fwhm_L = np.maximum((1.0692 * V - np.sqrt(disc)) / (2.0 * 0.0692), 0.005)
+
+    # Griem/Konjevic reference for Li I 610.36 nm: full Stark FWHM ~ 0.30 nm at n_e = 1e17 cm^-3
+    n_e_cm3 = np.clip((fwhm_L / 0.30) * 1e17, 1e15, 2e18).astype(np.float32)
+
+    return T_e_ev, n_e_cm3
+
+def extract_line_area_and_fwhm(wl, spec, center_nm: float, half_win_nm: float = 1.2):
+        mask = (wl >= center_nm - half_win_nm) & (wl <= center_nm + half_win_nm)
+        sub_wl = wl[mask]
+        sub_y = spec[:, mask]
+
+        # Local edge continuum subtraction
+        edge_base = 0.5 * (sub_y[:, :2].mean(axis=1, keepdims=True) + sub_y[:, -2:].mean(axis=1, keepdims=True))
+        net_y = np.maximum(sub_y - edge_base, 0.0)
+
+        area = trapezoid(net_y, sub_wl, axis=1)
+        peak_h = net_y.max(axis=1, keepdims=True)
+        above_half = (net_y >= 0.5 * peak_h) & (peak_h > 0)
+        dx = float(np.median(np.diff(sub_wl)))
+        fwhm_v = np.maximum(above_half.sum(axis=1) * dx, dx)
+        return area, fwhm_v
 
 # 1.a. Sanitize the path
 def sanitize_path(
@@ -1750,6 +1810,13 @@ def dataset_cleaning(
         default_shots=50.0
     )
 
+    # Step 1d: Estimate per-shot T_e (eV) and n_e (cm^-3) prior to baseline wing clipping
+    t_e_ev, n_e_cm3 = estimate_per_shot_plasma_metadata(
+        spectra, wavelengths, spectrometer_R=1000.0
+    )
+    df_meta['plasma_temp_eV'] = t_e_ev
+    df_meta['electron_density_cm3'] = n_e_cm3
+
     # Step 2: Baseline subtraction & area normalization
     X_clean = clean_libs_spectrum(spectra)
 
@@ -1796,8 +1863,12 @@ def dataset_cleaning(
     comp_kwargs = {'compression': 'gzip', 'compression_opts': 3} 
     with h5py.File(output_h5, 'w') as hf_out: 
         meta_out = hf_out.create_group('meta') 
-        for c in ['delay', 'energy', 'repetition', 'meta_source', 'is_synthetic', 'is_flat_top', 'sat_check_pass']: 
-            if c in df_meta.columns: 
+        for c in [
+            'delay', 'energy', 'repetition', 'meta_source',
+            'is_synthetic', 'is_flat_top', 'sat_check_pass',
+            'plasma_temp_eV', 'electron_density_cm3',
+        ]:
+            if c in df_meta.columns:
                 dtype = bool if c in ('is_synthetic', 'is_flat_top', 'sat_check_pass') else np.float32
                 meta_out.create_dataset(c, data=df_meta[c].to_numpy(dtype))
         meta_out.create_dataset(

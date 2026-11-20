@@ -262,6 +262,41 @@ def archive_batch_if_ready(force: bool = False, run_timestamp: Optional[str] = N
                 if file_path.exists():
                     zf.write(file_path, arcname=file_path.name)
                     os.remove(file_path)  # Cleanup scratch file
+
+def load_exp_7element_targets(
+    hf_exp: h5py.File,
+    host_elements: tuple[str, ...] = ('Li', 'K', 'Cl'),
+) -> tuple[np.ndarray, list[str]]:
+    """Combines host salt elements from y_aux with dopant elements from y."""
+    y_dop = hf_exp['y'][:]  # type: ignore
+    dop_names = [
+        e.decode('utf-8') if isinstance(e, bytes) else str(e)
+        for e in hf_exp['target_elements'][:]  # type: ignore
+    ]
+
+    # If already 7 elements in y, return directly
+    if all(h in dop_names for h in host_elements):
+        return y_dop.astype(np.float32), dop_names # type: ignore
+
+    if 'y_aux' not in hf_exp or 'y_aux_names' not in hf_exp:
+        raise KeyError("Host elements not in 'y' and 'y_aux'/'y_aux_names' missing from experimental HDF5.")
+
+    y_aux = hf_exp['y_aux'][:]  # type: ignore
+    aux_names = [
+        e.decode('utf-8') if isinstance(e, bytes) else str(e)
+        for e in hf_exp['y_aux_names'][:]  # type: ignore
+    ]
+
+    host_cols = []
+    present_hosts = []
+    for h in host_elements:
+        if h in aux_names:
+            host_cols.append(y_aux[:, aux_names.index(h)]) # type: ignore
+            present_hosts.append(h)
+
+    y_7 = np.column_stack(host_cols + [y_dop]).astype(np.float32)
+    names_7 = present_hosts + dop_names
+    return y_7, names_7
 # endregion
 
 # ==============================================================================
@@ -1401,14 +1436,21 @@ def updated_final_combo(
 
     # 1. Load Experimental Dataset and Metadata
     with h5py.File(exp_h5_path, 'r') as hf_exp:
-        X_exp = hf_exp['X'][:] # type: ignore
-        y_exp = hf_exp['y'][:] # type: ignore
-        exp_wl = hf_exp['wavelengths'][:] # type: ignore
-        target_elements = [
-            e.decode('utf-8') if isinstance(e, bytes) else e 
-            for e in hf_exp['target_elements'][:] # type: ignore
-        ]
-        groups_exp = hf_exp['groups'][:] if 'groups' in hf_exp else np.zeros(len(X_exp), dtype=np.int32) # type: ignore
+        X_exp = hf_exp['X'][:]  # type: ignore
+        y_exp, target_elements = load_exp_7element_targets(hf_exp)  # ['Li', 'K', 'Cl', 'Ce', 'Gd', 'Sm', 'U']
+        exp_wl = hf_exp['wavelengths'][:].astype(np.float32)  # type: ignore
+        if 'is_lockbox' not in hf_exp:
+            raise KeyError(f"Missing 'is_lockbox' in {exp_h5_path}.")
+        is_lockbox = hf_exp['is_lockbox'][:].astype(bool)  # type: ignore
+    # with h5py.File(exp_h5_path, 'r') as hf_exp:
+    #     X_exp = hf_exp['X'][:] # type: ignore
+    #     y_exp = hf_exp['y'][:] # type: ignore
+    #     exp_wl = hf_exp['wavelengths'][:] # type: ignore
+    #     target_elements = [
+    #         e.decode('utf-8') if isinstance(e, bytes) else e 
+    #         for e in hf_exp['target_elements'][:] # type: ignore
+    #     ]
+    #     groups_exp = hf_exp['groups'][:] if 'groups' in hf_exp else np.zeros(len(X_exp), dtype=np.int32) # type: ignore
 
         # Read lockbox mask from experimental dataset
         if 'is_lockbox' in hf_exp:
@@ -1484,46 +1526,11 @@ def updated_final_combo(
 # ==============================================================================
 if __name__ == "__main__":
     print('Hi')
-    # Generate line lookup master table for PyTorch model feature extraction
-    # master_line_table()
-
-    # Generate synthetic data with representative ranges of dopant wt%'s
-    # input_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_singles/Enriched'
-    # output_dir = '/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined'
-    # synthetic_data_generator(
-    #     input_dir=input_dir,
-    #     output_dir=output_dir,
-    #     num_samples=200000,
-    #     host_sigma=0.015,
-    #     max_dopant_wt=12.0,
-    #     category_probs=None
-    # )
-
-    # updated_final_combo(
-    #     exp_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_TD14_TEN.h5"),
-    #     syn_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_synthetic_spectra_200k.h5"),
-    #     syn_csv_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_compositions_wt_pct.csv"),
-    #     merged_h5_out=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TD14_TEN.h5")
-    # )
-
-    # updated_final_combo(
-    #     exp_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/recleaned_data_TDN_TEN.h5"),
-    #     syn_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_synthetic_spectra_200k.h5"),
-    #     syn_csv_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_compositions_wt_pct.csv"),
-    #     merged_h5_out=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/recleaned/exp-syn_TDN_TEN.h5")
-    # )
+    
 
     updated_final_combo(
         exp_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/processed-data_20261110b.h5"),
         syn_h5_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/max12_12345s_synthetic_spectra_200k.h5"),
         syn_csv_path=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/synthetic_compositions_wt_pct.csv"),
-        merged_h5_out=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261110b.h5")
+        merged_h5_out=Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/exp-syn_processed-data_20261120.h5")
     )
-
-    # final_combo(
-    #     exp_h5_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/elemental_experimental.h5"),
-    #     syn_h5_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_synthetic_spectra_200k.h5"),
-    #     syn_csv_path = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/synthetic_compositions_wt_pct.csv") ,
-    #     formatted_syn_h5 = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/NIST_combined/max12_12345s_formatted_synthetic_200k.h5"),
-    #     merged_h5_out = Path("/lustre/home/leejv2/git_repos/jvlee_LIBS_ML/LIBS/data/backups/combined_exp_syn_max12_12345s_dataset.h5"),
-    # )
